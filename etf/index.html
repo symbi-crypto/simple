@@ -4068,9 +4068,9 @@ window.WufuExpr = (function () {
     }
     return null;
   }
-  // 标的「数据止」截止日：静态表优先；缺失时按行情数据实时推算（与 sinceOf 对称，新增标的也能显示末日）
+  // 标的「数据止」截止日：行情数据实时推算优先（联网增量 / 新增标的都跟着走）；
+  // 只有实时算不出来时才退回落包时写死的静态表，避免一直停在旧日期。
   function lastOf(code) {
-    if (typeof WUFU_LAST !== "undefined" && WUFU_LAST && WUFU_LAST[code]) return WUFU_LAST[code];
     var gD = (typeof D !== "undefined" && D) ? D : null;
     var gI = (typeof RDIDX !== "undefined" && RDIDX) ? RDIDX : null;
     try {
@@ -4087,6 +4087,7 @@ window.WufuExpr = (function () {
         if (r2) return r2;
       }
     } catch (e) { }
+    if (typeof WUFU_LAST !== "undefined" && WUFU_LAST && WUFU_LAST[code]) return WUFU_LAST[code];
     return null;
   }
   // 统一文案：数据自 <首日> · 至 <末日>（末日缺失时只显示起始，避免误导）
@@ -4106,6 +4107,24 @@ window.WufuExpr = (function () {
       el.textContent = sinceText(code);
     }
   }
+  /* 随包 / 云端 state.json 补回后，patch-etf.js 会重放补丁改掉 D.calendar，
+     但标的池文案是在那之前渲染的。这里在数据末日变化时重算一次，
+     手动「一键更新行情」后同样会跟上，不用刷新页面。 */
+  (function () {
+    var lastEnd = "";
+    function tick() {
+      try {
+        var d = (typeof D !== "undefined" && D) ? D : null;
+        var end = (d && d.calendar && d.calendar.length) ? d.calendar[d.calendar.length - 1] : "";
+        if (end && end !== lastEnd) { lastEnd = end; refreshPoolSince(); }
+      } catch (e) { }
+    }
+    window.addEventListener("wufu:bundled-ready", function () {
+      [0, 300, 1200, 3000].forEach(function (t) { setTimeout(tick, t); });
+    });
+    setTimeout(tick, 1500);
+    setInterval(tick, 20000);
+  })();
   var poolBox = $("poolBox");
   function renderPool() {
   var cm = activeView === "rebalance" ? rebalanceChecked : (activeView === "dca" ? dcaChecked : poolChecked);

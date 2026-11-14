@@ -1663,6 +1663,27 @@ document.addEventListener("DOMContentLoaded",function(){
       </div>
       <div id="pmList" style="margin-bottom:10px"></div>
 
+      <div style="border-top:1px dashed #2A3A4E;padding-top:9px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button id="pmExportExtra" type="button" class="btn" style="cursor:pointer;font-size:11.5px;padding:6px 12px">导出新增标的名单</button>
+        <span id="pmExtraHint" style="font-size:10.5px;color:#7C8DA1;line-height:1.6">本机新增标的 <b id="pmExtraN">0</b> 只 · 导出后把 etf-extra.json 传回 GitHub，全站和每周同步都会带上它们</span>
+      </div>
+      <script>(function(){
+        function items(){try{var raw=localStorage.getItem("wufuQPatch_v1");var p=raw?JSON.parse(raw):null;return (p&&Array.isArray(p.custom))?p.custom:[];}catch(e){return [];}}
+        function refresh(){var e=document.getElementById("pmExtraN");if(e)e.textContent=items().length;}
+        var b=document.getElementById("pmExportExtra");
+        if(b)b.addEventListener("click",function(){
+          var arr=items(),out={format:"wufu-etf-extra-v1",exportedAt:new Date().toISOString(),count:arr.length,items:arr};
+          try{
+            var a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:"application/json"}));
+            a.href=u;a.download="etf-extra.json";document.body.appendChild(a);a.click();
+            setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1000);
+            var h=document.getElementById("pmExtraHint");
+            if(h)h.textContent="已导出 "+arr.length+" 只；到 GitHub 仓库替换 etf-extra.json 并提交即可，页面会自动带上。";
+          }catch(e){var h2=document.getElementById("pmExtraHint");if(h2)h2.textContent="导出失败："+((e&&e.message)||e);}
+        });
+        refresh();document.addEventListener("DOMContentLoaded",refresh);window.addEventListener("storage",refresh);
+      })();</script>
+
       <div style="border-top:1px solid #2A3A4E;padding-top:10px">
         <div style="font-size:11.5px;color:#4FC3F7;margin-bottom:7px">加入 / 改类别</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">
