@@ -1,0 +1,11 @@
+{
+  "format": "wufu-offline-state-v2",
+  "exportedAt": "2026-11-14T08:30:00.000Z",
+  "origin": "https://你的站点.netlify.app",
+  "dataAsOf": "2026-11-13",
+  "note": "格式样例，不是真实数据。localStorage 里每个值都必须是【字符串】，不能是对象。",
+  "localStorage": {
+    "wufuCbQPatch_v1": "{\"v\":1,\"days\":[{\"date\":\"2026-11-13\",\"base\":\"...\",\"series\":{},\"index\":{}}],\"scale\":null,\"report\":null}",
+    "wufuQPatch_v1": "{\"v\":7,\"days\":[{\"date\":\"2026-11-13\",\"series\":{},\"index\":{}}],\"report\":null}"
+  }
+}

@@ -1,0 +1,47 @@
+/* ============================================================
+   health-common.css — 两个数据体检页共用的一套版面（v41）
+   只统一外观与「第二页」的显示规则，不动任何体检数据或回测逻辑。
+   ============================================================ */
+.h-panel{border-radius:8px}
+.h-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.h-status{font-size:11px;color:#9FB0C3;line-height:1.6}
+.h-mini{font-size:11px;padding:5px 9px;border-radius:6px}
+.h-fold>summary{font-size:11px;color:#4FC3F7;cursor:pointer}
+/* 体检中心右上角：两行显示，日期不被省略号吃掉 */
+.h-asof2{display:flex;flex-direction:column;gap:2px;font-size:11px;line-height:1.35}
+
+/* ---- ETF 系统 · 其他功能：三块平铺、两个标题默认折叠、虚线分隔 ---- */
+/* 正常体检主版面：专属块不显示 */
+html:not(.manage-view) .h-extra{display:none !important}
+/* 第二页：只留三块专属功能，其余（含高级设置）全部收起 */
+html.manage-view body{padding-top:6px}
+html.manage-view header,
+html.manage-view .nav,
+html.manage-view #dataLoadTip,
+html.manage-view #pageErr,
+html.manage-view #tabHealth,
+html.manage-view #advSettings,
+html.manage-view #qckDetailPane,
+html.manage-view #qckExtraLink,
+html.manage-view #hlCfgWrap{display:none !important}
+/* 三块功能都住在 #qckCard 里：容器必须显示，只藏里面的体检通用控件。
+   v42 用 [id^="qck"] 一刀切，把整个容器藏了，三块功能才全看不见。 */
+html.manage-view #qckCard{display:block !important;padding:12px}
+html.manage-view #qckCard>*:not(.h-extra){display:none !important}
+html.manage-view .h-extra:not(#fyWrap){display:block !important}
+html.manage-view #fyWrap{display:flex !important}
+/* 两个标题与「高级设置」同级 summary 样式一致；不开 open 即默认折叠 */
+html.manage-view #advTools>summary,
+html.manage-view #grpWrap>summary{font-size:12px;color:#4FC3F7;cursor:pointer;list-style:none}
+/* 三项功能之间各画一条虚线 */
+html.manage-view #advTools,
+html.manage-view #grpWrap{
+  border-top:1px dashed #3E4E63 !important;
+  padding-top:12px !important;
+  margin-top:12px !important
+}
+html.manage-view [id^="qck"]:not(#qckCard){display:none !important}
+@media (max-width:430px){
+  html.manage-view .h-panel{padding:8px}
+  html.manage-view .h-row{gap:6px}
+}

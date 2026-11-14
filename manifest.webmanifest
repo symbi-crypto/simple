@@ -1,0 +1,14 @@
+{
+  "name": "ETF量化回测系统",
+  "short_name": "ETF回测",
+  "description": "ETF 动量轮动 / 再平衡 / 定投 回测与因子分析",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1B2634",
+  "theme_color": "#0E7490",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

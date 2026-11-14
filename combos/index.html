@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>策略组合</title>
+<meta name="theme-color" content="#0E7490">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<!-- 原样拷贝自 etf/tool.html 主样式块：组合区 DOM/CSS 与 ETF 系统内「策略组合」视图一致 -->
+<link rel="stylesheet" href="../common/combo-system.css">
+<style>
+.grpPick{float:right;font-weight:400;font-size:11px;color:#9FB0C3;cursor:pointer;user-select:none}
+.grpPick input{vertical-align:middle;margin-right:3px}
+.sttag{font-size:10px;color:#FBBF24;margin-left:4px}
+.pill{font-size:10px;color:#7DD3FC;border:1px solid #3E4E63;border-radius:999px;padding:0 5px;margin-left:3px}
+.pill.warn{color:#FBBF24}
+.note{font-size:11px;color:#9FB0C3;line-height:1.8;margin-top:14px;padding:0 2px}
+</style>
+<link rel="stylesheet" href="../common/header.css">
+</head>
+<body>
+<script src="../common/header.js" data-t1="策略" data-t2="组合" data-badge="none" data-page="combos"></script>
+
+
+<!-- ↓↓↓ 以下 #viewCombo 区块原样拷贝自 etf/tool.html 1460-1547 行（仅去掉 display:none、替换因子轮动面板为净值动量参数） ↓↓↓ -->
+<div id="viewCombo">
+  <div style="max-width:1280px;margin:0 auto;padding:12px 16px 40px;box-sizing:border-box">
+    <div class="card">
+      <h2>多策略组合</h2>
+      <p style="font-size:12px;color:#9FB0C3;margin:2px 0 12px;line-height:1.7">从「我的策略」中勾选多个策略、手动分配权重，按所选周期做组合再平衡，合成组合净值；并计算各策略<b>日收益率相关</b>矩阵，辅助判断分散化。</p>
+        <h3>已保存组合 <span class="v" id="comboCount">0 个</span></h3>
+        <div class="row" style="display:flex;align-items:center;margin:8px 0;gap:8px;flex-wrap:wrap">
+          <input id="comboSaveName" type="text" placeholder="组合名，如：稳健版"
+                 style="flex:2;min-width:120px;font-size:12px;padding:3px 6px;border:1px solid #3E4E63;border-radius:4px">
+          <button type="button" id="comboSaveBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">保存</button>
+        </div>
+        <div class="row" style="display:flex;align-items:center;margin:8px 0;gap:8px;flex-wrap:wrap">
+          <select id="comboSel" style="flex:2;min-width:120px;font-size:12px;padding:3px 4px;border:1px solid #3E4E63;border-radius:4px"></select>
+          <button type="button" id="comboLoadBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">加载</button>
+          <button type="button" id="comboRenBtn" style="flex:1;min-width:64px;cursor:pointer" class="btn">重命名</button>
+          <button type="button" id="comboDelBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">删除</button>
+        </div>
+      <h3 style="margin:8px 0 6px;font-size:13px">选择策略与权重</h3>
+      <div style="display:flex;gap:6px;align-items:center;margin:8px 0 6px">
+        <input id="comboSearch" type="text" placeholder="搜索策略名称…" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9">
+        <button id="comboAll" type="button" style="cursor:pointer" class="btn">全选</button>
+        <button id="comboNone" type="button" style="cursor:pointer" class="btn">清空</button>
+      </div>
+      <div id="comboStratList" style="max-height:340px;overflow:auto;border:1px solid #243244;border-radius:6px;padding:8px"></div>
+      <div id="comboWarn" style="display:none;background:rgba(251,191,36,.12);border:1px solid #FBBF24;color:#FCD34D;border-radius:6px;padding:7px 10px;font-size:12px;margin-top:8px"></div>
+      <h3 style="margin:14px 0 6px;font-size:13px">组合参数</h3>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;font-size:12px;color:#D8E2EF">
+        <span>合成方式</span>
+        <label style="display:flex;align-items:center;gap:4px;color:#F1F5F9"><input type="radio" name="comboSynth" value="fixed" checked style="width:14px;height:14px">固定权重</label>
+        <label style="display:flex;align-items:center;gap:4px;color:#F1F5F9"><input type="radio" name="comboSynth" value="rot" style="width:14px;height:14px">净值动量轮动</label>
+      </div>
+      <!-- 原「因子轮动」面板依赖 ETF 引擎，此处替换为等价的净值动量参数；容器结构与样式保持原样 -->
+      <div id="comboRotPanel" style="display:none;background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:12px;color:#7DD3FC;margin-bottom:6px">净值动量轮动 · 按策略净值过去 N 日涨幅排名，持有前 K 名</div>
+        <div class="row" style="display:flex;margin:6px 0;gap:8px;align-items:center;font-size:12px;color:#F1F5F9">
+          <span>动量窗口</span>
+          <input id="momN" type="number" min="2" max="250" value="20" style="flex:0 0 60px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9"> 日
+          <span style="margin-left:12px">持有前</span>
+          <input id="topK" type="number" min="1" max="20" value="2" style="flex:0 0 50px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9"> 名
+        </div>
+        <div style="font-size:11px;color:#7C8DA1">调仓周期与起止日期沿用上方组合参数；权重按当期入选策略等权分配。</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">起始日期<input type="date" id="comboStart" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">结束日期<input type="date" id="comboEnd" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">组合再平衡
+          <span style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+            <select id="comboReb" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9">
+              <option value="none">不调仓（买入持有）</option>
+              <option value="daily">每交易日</option>
+              <option value="weekly" selected>每周</option>
+              <option value="monthly">每月</option>
+              <option value="quarterly">每季</option>
+              <option value="yearly">每年</option>
+            </select>
+            <span style="color:#9FB0C3">每</span>
+            <select id="comboRebInt" style="padding:5px 6px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+            <span style="color:#9FB0C3">个周期调仓</span>
+          </span>
+        </label>
+      </div>
+      <div class="runbar" style="background:transparent;border-top:none;padding:2px 0 0;gap:8px">
+        <button id="comboRun" type="button">运行组合回测</button>
+        <div class="runbar2">
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9FB0C3;white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden" title="自定义基准（默认沪深300）">基准<select id="comboBenchSel" style="flex:1;min-width:0;max-width:100%;text-overflow:ellipsis;font-size:11px;padding:3px 4px;border:1px solid #3E4E63;border-radius:4px;color:#F1F5F9;background:#202E3F"><option value="000300.SH">沪深300</option></select></label>
+          <span class="st" id="comboRunState"></span>
+        </div>
+      </div>
+    </div>
+    <div id="comboResult" style="display:none;margin-top:14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px" id="comboKpis"></div>
+      <div class="card"><h2>净值曲线 <span class="n">组合 / 基准 / 组合相对净值（1.00=持平）</span></h2><div id="comboChart" style="width:100%;height:340px"></div></div>
+      <div class="card"><h2>策略收益率相关性 <span class="n">各策略日收益率序列皮尔逊相关</span></h2><div id="comboHeatmap" style="width:100%;height:340px"></div><div id="comboHmLegend" style="display:none;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:11px;color:#9FB0C3;line-height:1.6"></div></div>
+      <div class="card"><h2>目标权重占比</h2><div id="comboWeightLegend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:10px;padding:8px;border:1px solid #243244;border-radius:6px"></div><div id="comboWeight" style="width:100%;height:300px"></div></div>
+    </div>
+  </div>
+</div>
+<!-- ↑↑↑ 原生 viewCombo 区块结束 ↑↑↑ -->
+
+<div style="max-width:1280px;margin:0 auto;padding:0 16px 40px;box-sizing:border-box">
+  <div class="note">
+    <b>口径说明</b><br>
+    · 成员按 <b>ETF轮动策略 / ETF再平衡策略 / ETF定投策略 / 可转债策略</b> 分组，每组标题右侧「全选本组」可一次勾选或取消该类全部策略。<br>
+    · 成员曲线由各回测系统的「我的策略」按最新行情重算后写入本机；本页只做日期对齐与加权，不重跑引擎。<br>
+    · ETF 日历起于 2004、可转债起于 2017，跨系统组合按<b>日期</b>取共同区间并归一化，缺失处沿用前值，因此「总收益」与单系统里跑出来的不会逐值相同，这是口径不是错误。<br>
+    · 定投曲线按「每元成长倍数」参与合成，统一折算为日收益后再加权；两条净值不能直接相加或相乘。<br>
+    · 系统内组合还支持自定义任意因子轮动，本页为净值动量轮动，属功能等价；组合本身是独立回测页，无「应用组合到回测」。
+  </div>
+</div>
+
+<script src="../common/storage.js"></script>
+<script src="../common/inflate.js"></script>
+<script src="../common/health-config.js"></script>
+<script src="../common/hub-core.js"></script>
+<script src="../common/hub-combo.js"></script>
+<script src="../common/echarts.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var H=window.WufuHub,C=window.WufuHubCombo,$=function(id){return document.getElementById(id);};
+  var idxData=null,all=[],weightCache={},charts={};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  function pct(v,d){return v==null||!isFinite(v)?"—":(v*100).toFixed(d==null?2:d)+"%";}
+  function num(v,d){return v==null||!isFinite(v)?"—":(+v).toFixed(d==null?2:d);}
+  function warn(msg){var w=$("comboWarn");w.style.display="";w.textContent=msg;}
+  function clearWarn(){$("comboWarn").style.display="none";}
+
+  var GROUPS=[["rotation","ETF轮动策略"],["rebalance","ETF再平衡策略"],["dca","ETF定投策略"],["cb","可转债策略"]];
+  function grpKey(x){return x.sys==="cb"?"cb":(x.mode==="dca"?"dca":(x.mode==="rebalance"||x.mode==="reb")?"rebalance":"rotation");}
+  function modeTag(x){return x.sys==="cb"?"（可转债策略）":(grpKey(x)==="rebalance"?"（再平衡策略）":(grpKey(x)==="dca"?"（定投策略）":"（轮动策略）"));}
+
+  /* 成员区渲染：结构原样沿用 etf/tool.html renderComboSetup 的 <details>/<summary>/.comboRow，
+     增加「全选本组」与两系统分组。 */
+  function captureWeights(){
+    document.querySelectorAll(".comboWt").forEach(function(ip){
+      var id=ip.getAttribute("data-id");if(ip.value!=="")weightCache[id]=ip.value;else delete weightCache[id];
+    });
+  }
+  function grpHtml(g,list){
+    if(!list.length)return "";
+    var rows="";
+    list.forEach(function(x){
+      var w=weightCache[x.id]!==undefined?weightCache[x.id]:"20";
+      var stale=!x.curve||(H.readAsOf(x.sys)&&x.curve.asof!==H.readAsOf(x.sys));
+      var tag=x.name+modeTag(x);
+      var mark=!x.curve?'（无曲线）':(stale?'（待刷新）':'');
+      rows+='<label class="comboRow" data-name="'+esc(x.name.toLowerCase())+'" data-mode="'+esc(grpKey(x))+'" style="display:flex;flex-wrap:nowrap;align-items:center;gap:6px;font-size:12px;color:#F1F5F9;padding:4px 6px;cursor:pointer;background:#202E3F;border:1px solid #243244;border-radius:5px">'
+        +'<input type="checkbox" class="comboCk" data-id="'+esc(x.id)+'" data-g="'+g[0]+'" '+(x.curve?"":"disabled")+' style="flex:0 0 auto">'
+        +'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(tag)+'">'+esc(x.name)+mark+'</span>'
+        +'<input type="number" min="0" max="100" step="1" class="comboWt" data-id="'+esc(x.id)+'" value="'+esc(w)+'" style="flex:0 0 52px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9">'
+        +'<span style="color:#7C8DA1;font-size:11px">%</span></label>';
+    });
+    return '<details open data-g="'+g[0]+'" style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:12.5px;color:#7DD3FC;padding:3px 2px;user-select:none">'
+      +'<span class="grpPick"><label><input type="checkbox" class="grpCk" data-g="'+g[0]+'"> 全选本组</label></span>'
+      +'▼ '+g[1]+'（'+list.length+'）</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;padding:2px">'+rows+'</div></details>';
+  }
+  function syncGroups(){
+    GROUPS.forEach(function(g){
+      var h=document.querySelector('.grpCk[data-g="'+g[0]+'"]');if(!h)return;
+      var cks=Array.prototype.slice.call(document.querySelectorAll('.comboCk[data-g="'+g[0]+'"]'));
+      var en=cks.filter(function(c){return !c.disabled;}),on=en.filter(function(c){return c.checked;}).length;
+      h.checked=en.length>0&&on===en.length;h.indeterminate=on>0&&on<en.length;
+    });
+  }
+  function balanceComboWeights(){
+    var cks=document.querySelectorAll(".comboCk"),wts=document.querySelectorAll(".comboWt"),n=0,i;
+    for(i=0;i<cks.length;i++)if(cks[i].checked&&!cks[i].disabled)n++;
+    var each=n?Math.round(100/n*10)/10:0;
+    for(i=0;i<wts.length;i++)wts[i].value=each;
+  }
+  function renderMembers(){
+    captureWeights();all=H.allStrategies();
+    var box=$("comboStratList");
+    if(!all.length){box.innerHTML='<div style="font-size:12px;color:#9FB0C3;padding:10px 2px">暂无已保存策略。<br>请先在回测系统调好参数并保存，再到此页组合多个策略。</div>';return;}
+    var html="";GROUPS.forEach(function(g){html+=grpHtml(g,all.filter(function(x){return grpKey(x)===g[0];}));});
+    var hasDca=all.some(function(x){return grpKey(x)==="dca";});
+    if(hasDca)html+='<div style="font-size:11px;color:#9FB0C3;line-height:1.6;padding:2px 2px 0">定投策略按「每元累计投入成长倍数」折算为净值曲线参与组合，不等同于一次性投入净值。</div>';
+    box.innerHTML=html;
+    document.querySelectorAll(".comboCk").forEach(function(c){c.checked=true;});
+    balanceComboWeights();syncGroups();
+  }
+  function fillBench(){
+    if(!idxData||!idxData.index)return;
+    var sel=$("comboBenchSel"),codes=Object.keys(idxData.index).filter(function(c){return !/^raw_/.test(c);});
+    var NAME={"000300.SH":"沪深300","000852.SH":"中证1000","399303.SZ":"国证2000","index_CBALL":"转债等权","000001.SH":"上证指数","000905.SH":"中证500","399006.SZ":"创业板指","000688.SH":"科创50","HSI.HI":"恒生指数","NDAQ":"纳斯达克100"};
+    var old=sel.value;
+    sel.innerHTML='<option value="">不对比</option>'+codes.map(function(c){return '<option value="'+esc(c)+'">'+esc(NAME[c]||c)+'</option>';}).join("");
+    sel.value=old||"000300.SH";
+  }
+  function chart(id,opt){
+    if(!window.echarts)return;
+    if(!charts[id])charts[id]=window.echarts.init($(id));
+    charts[id].setOption(opt,true);
+  }
+  function drawResult(res,cfg,mem){
+    var k=res.kpi;
+    $("comboKpis").innerHTML=[
+      ["组合累计收益",pct(k.total)],["组合年化",pct(k.cagr)],["最大回撤",pct(k.mdd)],["组合夏普",num(k.sharpe)],
+      ["Calmar",num(k.calmar)],["基准收益",pct(k.benchTotal)],["超额收益",pct(k.excess)],["区间",res.dates[0]+" ~ "+res.dates[res.dates.length-1]]
+    ].map(function(kv){
+      return '<div style="background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px 12px;text-align:center">'
+        +'<div style="font-size:11px;color:#7C8DA1">'+kv[0]+'</div><div style="font-size:17px;color:#4FC3F7;font-weight:600;margin-top:2px">'+kv[1]+'</div></div>';
+    }).join("");
+    var step=Math.max(1,Math.floor(res.dates.length/1200)),ds=[],nv=[],bn=[],rl=[],i;
+    for(i=0;i<res.dates.length;i+=step){
+      ds.push(res.dates[i]);nv.push(res.nav[i]);
+      if(res.benchNav){bn.push(res.benchNav[i]);rl.push(res.benchNav[i]>0?+(res.nav[i]/res.benchNav[i]).toFixed(5):null);}
+    }
+    if(nv[nv.length-1]!==res.nav[res.nav.length-1]){
+      ds.push(res.dates[res.dates.length-1]);nv.push(res.nav[res.nav.length-1]);
+      if(res.benchNav){bn.push(res.benchNav[res.benchNav.length-1]);rl.push(res.benchNav[res.benchNav.length-1]>0?+(res.nav[res.nav.length-1]/res.benchNav[res.benchNav.length-1]).toFixed(5):null);}
+    }
+    var series=[{name:"组合净值",type:"line",showSymbol:false,lineStyle:{width:2.4,color:"#4FC3F7"},itemStyle:{color:"#4FC3F7"},areaStyle:{color:"rgba(79,195,247,.10)"},data:nv}];
+    if(res.benchNav){
+      series.push({name:"基准",type:"line",showSymbol:false,lineStyle:{width:1.8,color:"#9FB0C3"},itemStyle:{color:"#9FB0C3"},data:bn});
+      series.push({name:"组合相对净值",type:"line",showSymbol:false,lineStyle:{width:1.8,color:"#FBBF24"},itemStyle:{color:"#FBBF24"},data:rl,
+        markLine:{silent:true,symbol:"none",animation:false,label:{show:false},lineStyle:{color:"#7C8DA1",width:1,type:"dashed",opacity:.6},data:[{yAxis:1}]}});
+    }
+    chart("comboChart",{backgroundColor:"transparent",tooltip:{trigger:"axis"},legend:{data:series.map(function(s){return s.name;}),textStyle:{color:"#9FB0C3",fontSize:10},top:0,type:"scroll"},
+      grid:{left:52,right:14,top:28,bottom:28},xAxis:{type:"category",data:ds,axisLabel:{color:"#7C8DA1",fontSize:9},axisLine:{lineStyle:{color:"#3E4E63"}}},
+      yAxis:{type:"value",scale:true,axisLabel:{color:"#7C8DA1",fontSize:9},splitLine:{lineStyle:{color:"#2A3A4E"}}},series:series});
+    var showN=Math.min(8,mem.length),sm=mem.slice(0,showN),M=res.corr,data=[];
+    for(i=0;i<showN;i++)for(var j=0;j<showN;j++)data.push([j,i,M[i]&&M[i][j]!=null?+M[i][j].toFixed(2):0]);
+    chart("comboHeatmap",{backgroundColor:"transparent",tooltip:{position:"top",formatter:function(p){return sm[p.value[1]].name+" × "+sm[p.value[0]].name+"："+p.value[2];}},
+      grid:{left:96,right:16,top:12,bottom:78},xAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:"#9FB0C3",fontSize:9,rotate:38},splitArea:{show:true}},
+      yAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:"#9FB0C3",fontSize:9},splitArea:{show:true}},
+      visualMap:{min:-1,max:1,calculable:true,orient:"horizontal",left:"center",bottom:0,textStyle:{color:"#9FB0C3",fontSize:9},inRange:{color:["#34D399","#2A3A4E","#F87171"]}},
+      series:[{type:"heatmap",data:data,label:{show:showN<=6,color:"#F1F5F9",fontSize:9},itemStyle:{borderColor:"#1B2634",borderWidth:1}}]});
+    var lg=$("comboHmLegend");if(mem.length>showN){lg.style.display="flex";lg.textContent="成员 "+mem.length+" 个，热力图仅显示前 "+showN+" 个";}else lg.style.display="none";
+    var wnames=mem.map(function(m){return m.name.slice(0,10);}),wvals=mem.map(function(m){var v=+cfg.weights[m.id]||0;return +v.toFixed(1);});
+    $("comboWeightLegend").innerHTML=mem.map(function(m,i){return '<span style="font-size:11px;color:#9FB0C3">'+esc(m.name.slice(0,12))+' <b style="color:#4FC3F7">'+wvals[i]+'%</b></span>';}).join("");
+    chart("comboWeight",{backgroundColor:"transparent",tooltip:{trigger:"axis",formatter:function(p){return p[0].name+"："+p[0].value+"%";}},
+      grid:{left:110,right:24,top:12,bottom:28},xAxis:{type:"value",axisLabel:{color:"#7C8DA1",fontSize:9,formatter:"{value}%"},splitLine:{lineStyle:{color:"#2A3A4E"}}},
+      yAxis:{type:"category",data:wnames,axisLabel:{color:"#9FB0C3",fontSize:9}},
+      series:[{type:"bar",data:wvals,itemStyle:{color:"#4FC3F7",borderRadius:[0,4,4,0]},barWidth:"55%",label:{show:true,position:"right",color:"#D8E2EF",fontSize:10,formatter:"{c}%"}}]});
+  }
+  function collectCfg(){
+    var members=[],weights={};
+    document.querySelectorAll(".comboCk").forEach(function(ck){if(ck.checked&&!ck.disabled)members.push(ck.getAttribute("data-id"));});
+    document.querySelectorAll(".comboWt").forEach(function(ip){var v=+ip.value;if(v>0)weights[ip.getAttribute("data-id")]=v;});
+    var sr=document.querySelector('input[name="comboSynth"]:checked');
+    return {members:members,weights:weights,weightMode:(sr&&sr.value==="rot")?"momentum":"custom",
+      reb:$("comboReb").value,rebInt:+$("comboRebInt").value||1,
+      momN:+$("momN").value||20,topK:+$("topK").value||2,
+      start:$("comboStart").value,end:$("comboEnd").value,bench:$("comboBenchSel").value};
+  }
+  function applyCfg(c){
+    if(!c)return;
+    var sr=document.querySelector('input[name="comboSynth"][value="'+(c.weightMode==="momentum"?"rot":"fixed")+'"]');if(sr)sr.checked=true;onMode();
+    $("comboReb").value=c.reb||"weekly";$("comboRebInt").value=c.rebInt||1;
+    $("momN").value=c.momN||20;$("topK").value=c.topK||2;
+    $("comboStart").value=c.start||"";$("comboEnd").value=c.end||"";
+    if(c.bench)$("comboBenchSel").value=c.bench;
+    var ids={};(c.members||[]).forEach(function(id){ids[id]=1;});
+    document.querySelectorAll(".comboCk").forEach(function(ck){ck.checked=!!ids[ck.getAttribute("data-id")];});
+    var w=c.weights||{};weightCache={};
+    document.querySelectorAll(".comboWt").forEach(function(ip){var id=ip.getAttribute("data-id"),v=w[id]||"";ip.value=v;if(v)weightCache[id]=v;});
+    syncGroups();fillDates();
+  }
+  function onMode(){
+    var sr=document.querySelector('input[name="comboSynth"]:checked');
+    $("comboRotPanel").style.display=(sr&&sr.value==="rot")?"":"none";
+  }
+  function run(){
+    var cfg=collectCfg(),byId={};all.forEach(function(x){byId[x.id]=x;});
+    var mem=cfg.members.map(function(id){return byId[id];}).filter(function(x){return x&&x.curve;});
+    if(!mem.length){warn("请至少勾选一个带净值曲线的策略；若显示「待刷新 / 无曲线」，到对应回测系统的「我的策略」打开一次，曲线会自动按最新行情重算。");return;}
+    clearWarn();$("comboRunState").textContent="计算中…";
+    var bench=null;
+    if(cfg.bench&&idxData)bench=C.benchSeries(idxData,cfg.bench,cfg.start||"0000-00-00",cfg.end||"9999-99-99");
+    setTimeout(function(){
+      var res=C.build(mem,{start:cfg.start,end:cfg.end,weightMode:cfg.weightMode,weights:cfg.weights,
+        reb:cfg.reb,rebInt:cfg.rebInt,momN:cfg.momN,topK:cfg.topK,bench:bench});
+      if(res.err){$("comboRunState").textContent="";warn(res.err);return;}
+      $("comboRunState").textContent="完成 · "+res.nav.length+" 个交易日";
+      $("comboResult").style.display="";
+      drawResult(res,cfg,mem);
+      $("comboResult").scrollIntoView({behavior:"smooth",block:"start"});
+    },30);
+  }
+  /* 组合存取：优先首页键；兼容 ETF 系统内原生键 wufu_combos_v1 的历史组合 */
+  function readCombos(){
+    var list=H.readHubCombos();
+    if(list.length)return list;
+    try{
+      var old=JSON.parse(localStorage.getItem("wufu_combos_v1")||"[]")||[];
+      return old.map(function(c){
+        return {name:c.name,members:(c.members||[]).map(function(n){return "etf:"+n;}),weights:c.weights||{},
+          weightMode:c.synth==="rot"?"momentum":"custom",reb:c.reb||"weekly",rebInt:c.rebInt||1,
+          momN:20,topK:2,start:c.start||"",end:c.end||"",bench:c.bench||"000300.SH"};
+      });
+    }catch(e){return [];}
+  }
+  function renderSaved(){
+    var list=readCombos(),sel=$("comboSel");
+    $("comboCount").textContent=list.length+" 个";
+    sel.innerHTML=list.length?list.map(function(c,i){return '<option value="'+i+'">'+esc(c.name)+'（'+((c.members||[]).length)+'策略）</option>';}).join(""):'<option value="">暂无已保存组合</option>';
+  }
+  function curCombo(){var list=readCombos(),i=+$("comboSel").value;return isNaN(i)?null:list[i];}
+  /* 与系统内 renderComboSetup 一致：默认起始日取各策略曲线起点中最新者，结束日取共同末日 */
+  function fillDates(){
+    var st="",en="";
+    all.forEach(function(x){
+      if(!x.curve||!x.curve.dates||!x.curve.dates.length)return;
+      var ds=x.curve.dates,a=String(ds[0]).slice(0,10),b=String(ds[ds.length-1]).slice(0,10);
+      if(!st||a>st)st=a;if(!en||b<en)en=b;
+    });
+    if(st&&!$("comboStart").value)$("comboStart").value=st;
+    if(en&&!$("comboEnd").value)$("comboEnd").value=en;
+  }
+  function init(){
+    renderMembers();fillDates();renderSaved();onMode();fillBench();
+    C.loadBench(function(d){idxData=d;fillBench();});
+    document.querySelectorAll('input[name="comboSynth"]').forEach(function(r){r.addEventListener("change",onMode);});
+    $("comboSearch").addEventListener("input",function(){
+      var q=this.value.trim().toLowerCase(),rows=$("comboStratList").querySelectorAll(".comboRow");
+      for(var i=0;i<rows.length;i++)rows[i].style.display=(!q||(rows[i].getAttribute("data-name")||"").indexOf(q)>=0)?"":"none";
+    });
+    $("comboStratList").addEventListener("click",function(e){
+      var pick=e.target.closest?e.target.closest(".grpPick"):null;
+      if(!pick)return;
+      e.stopPropagation();
+      /* 直接点 checkbox：保留原生切换，只阻止 details 展开/收起 */
+      if(e.target.tagName==="INPUT")return;
+      /* 点 label 文字：阻止其默认转发，手动切换并派发 change */
+      e.preventDefault();
+      var ck=pick.querySelector(".grpCk");if(!ck)return;
+      ck.checked=!ck.checked;ck.dispatchEvent(new Event("change",{bubbles:true}));
+    },true);
+    $("comboStratList").addEventListener("change",function(e){
+      var t=e.target;
+      if(t.classList&&t.classList.contains("grpCk")){
+        var g=t.getAttribute("data-g"),on=t.checked;
+        document.querySelectorAll('.comboCk[data-g="'+g+'"]').forEach(function(c){if(!c.disabled)c.checked=on;});
+        balanceComboWeights();syncGroups();
+      }else if(t.classList&&t.classList.contains("comboCk")){balanceComboWeights();syncGroups();}
+    });
+    $("comboStratList").addEventListener("input",function(e){
+      var t=e.target;
+      if(t.classList&&t.classList.contains("comboWt")){
+        var id=t.getAttribute("data-id");if(t.value!=="")weightCache[id]=t.value;else delete weightCache[id];
+      }
+    });
+    $("comboAll").addEventListener("click",function(){document.querySelectorAll(".comboCk").forEach(function(c){if(!c.disabled)c.checked=true;});balanceComboWeights();syncGroups();});
+    $("comboNone").addEventListener("click",function(){document.querySelectorAll(".comboCk").forEach(function(c){c.checked=false;});syncGroups();});
+    $("comboRun").addEventListener("click",run);
+    $("comboSaveBtn").addEventListener("click",function(){
+      var n=$("comboSaveName").value.trim();if(!n){warn("请先填组合名");return;}
+      clearWarn();var list=H.readHubCombos(),c=collectCfg();c.name=n;
+      var k=list.findIndex(function(x){return x.name===n;});
+      if(k>=0)list[k]=c;else list.push(c);
+      H.saveHubCombos(list);renderSaved();$("comboRunState").textContent="组合已保存："+n;
+    });
+    $("comboSel").addEventListener("change",function(){var v=this.value;if(v!=="")$("comboSaveName").value=(curCombo()||{}).name||"";});
+    $("comboLoadBtn").addEventListener("click",function(){var c=curCombo();if(!c)return;applyCfg(c);$("comboSaveName").value=c.name;$("comboRunState").textContent="已载入："+c.name;});
+    $("comboRenBtn").addEventListener("click",function(){
+      var c=curCombo(),n=$("comboSaveName").value.trim();if(!c||!n)return;
+      var list=H.readHubCombos(),i=+$("comboSel").value;if(!list[i])list=readCombos();
+      if(!list[i])return;list[i].name=n;H.saveHubCombos(list);renderSaved();$("comboRunState").textContent="已重命名";
+    });
+    $("comboDelBtn").addEventListener("click",function(){
+      var c=curCombo();if(!c)return;var list=H.readHubCombos(),i=+$("comboSel").value;
+      if(!list[i])return;list.splice(i,1);H.saveHubCombos(list);renderSaved();$("comboRunState").textContent="已删除";
+    });
+    window.addEventListener("resize",function(){Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});});
+    window.addEventListener("pageshow",function(){renderMembers();renderSaved();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
+</script>
+</body>
+</html>

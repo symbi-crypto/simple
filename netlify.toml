@@ -1,0 +1,22 @@
+# GitHub 仓库 → Netlify 主站。publish 指向仓库根目录，主站文件一层不改。
+# 没有 [build] command，也没有 functions：本方案不跑 Netlify Function，取数在 GitHub Actions。
+[build]
+  publish = "."
+  command = ""
+
+# 关键：state.json 是每次 Actions 覆盖的新数据，绝不能被 CDN / 浏览器缓存，
+# 否则又会出现「上传了新数据、打开还是旧日期」。
+[[headers]]
+  for = "/state.json"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+
+# 行情基线是静态文件，正常长缓存即可；整包升版本时 URL 不变也没关系，
+# 页面用的是 ?__swcache=1 绕开 Service Worker 的方式读 state.json。
+[[headers]]
+  for = "/*.gz"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# 保留 SPA 之外的原样直链访问；不做 /* → /index.html 重定向
+# （README 里明确写过：配了 SPA 重定向会让 gz 数据文件被 index.html 顶掉）。

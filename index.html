@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>量化回测工作台</title>
+<meta name="theme-color" content="#0E7490">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="common/hub.css">
+<link rel="stylesheet" href="common/header.css">
+</head>
+<body>
+<script src="./common/header.js" data-t1="量化" data-t2="回测工作台" data-badge="none" data-home="none" data-page="home"></script>
+<div class="wrap">
+  <div id="offlineNote" class="mut" style="display:none;margin:2px 0 8px;color:#6EE7B7">
+    ✓ 页面与主要数据已缓存到本机，之后断网也能打开各系统
+  </div>
+
+  <div class="sec">
+    <h2>回测系统 <small>两个系统独立运行，数据互不干扰</small></h2>
+    <div class="grid2">
+      <a class="card" href="./etf/index.html">
+        <span class="tag">ETF</span><h3>ETF 量化回测系统</h3>
+        <p>动量轮动 / 再平衡 / 定投、因子 IC、参数调优、相关性、我的策略。</p>
+      </a>
+      <a class="card" href="./cb/index.html">
+        <span class="tag cb">可转债</span><h3>可转债轮动回测系统</h3>
+        <p>动态标的池、筛选与排名因子、排除 ST 已公告、择时管理、我的策略。</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>工具与数据 <small>数据体检、策略组合集中管理</small></h2>
+    <div class="grid2">
+      <a class="card" href="./health/index.html">
+        <span class="tag tool">数据体检中心</span><h3>数据体检中心</h3>
+        <p>上方两个导航页，分别进入 ETF 系统与可转债系统的数据体检页，各自更新行情、修复数据、更新交易日历。</p>
+      </a>
+      <a class="card" href="./combos/index.html">
+        <span class="tag tool">策略组合</span><h3>策略组合</h3>
+        <p>两系统策略同池，成员权重、轮动、再平衡、KPI、相关矩阵、组合存取。</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="foot">量化回测工作台 · 数据只保存在本机</div>
+</div>
+
+<script src="./common/storage.js"></script>
+<script src="./common/health-config.js"></script>
+<script src="./common/hub-core.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+name: 每周行情同步
+
+# 北京时间 周五 17:37（UTC 09:37），每周一次。
+# 选周五收盘后：周末打开站点就是本周完整数据；避开整点，减少 Actions 排队被跳过。
+# 一次点击会把「上次末日 → 今天」之间所有交易日一次补齐，漏跑一周下次也会自动补上。
+# 想换时间只改下面 cron 一行（GitHub cron 用 UTC）；想临时补跑用 Actions 页 Run workflow。
+on:
+  schedule:
+    - cron: '37 9 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wufu-weekly-update
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: 取仓库
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 装无头浏览器（零依赖，不改仓库文件）
+        run: |
+          npm install --no-save --no-package-lock playwright@1.49.0
+          npx playwright install chromium
+
+      - name: 跑取数 → 生成 state.json
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          STEP_TIMEOUT_MS: ${{ vars.STEP_TIMEOUT_MS }}
+        run: node scripts/update.mjs
+
+      - name: 数据日期变新才提交（没变化不触发 Netlify 构建）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain -- state.json)" ]; then
+            echo "本周没有更新到更晚的行情，不提交、不触发构建。"
+            exit 0
+          fi
+          git add state.json
+          git commit -m "chore: 周度行情增量 $(date -u +%F)"
+          git push

@@ -1,0 +1,14 @@
+{
+  "name": "可转债量化回测系统（外置版）",
+  "short_name": "转债回测",
+  "description": "可转债轮动回测、因子分析与数据体检",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1B2634",
+  "theme_color": "#0E7490",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,591 @@
+/* 原样拷贝自 etf/tool.html 主样式块（15-566 行），勿手改 */
+:root{
+  --bg:#1B2634; --card:#202E3F; --line:#243244;
+  --ink:#F1F5F9; --mut:#9FB0C3; --acc:#4FC3F7; --acc2:#22D3EE;
+  --up:#F87171; --down:#34D399; --purple:#A78BFA; --gray:#7C8DA1;
+  --radius:10px;
+}
+/* 图表高度（顶层规则）：此前 .chart 的高度只写在 max-width:640px / max-width:1023px 两个媒体查询内，
+   桌面端（≥1024px）匹配不到任何规则 → 高度塌成 0，净值曲线/回撤/月度热力图全部看不见。现提升为全局。 */
+.chart{width:100%;height:340px}
+.chart.tall{height:400px}
+.chart.short{height:240px}
+*{box-sizing:border-box;margin:0;padding:0}
+/* 下拉框：暗色主题下原生黑色箭头不可见——改为白色箭头（自定义 SVG + color-scheme 兜底） */
+select{ -webkit-appearance:none; -moz-appearance:none; appearance:none; color-scheme:dark; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%23334155'/></svg>") !important; background-repeat:no-repeat !important; background-position:right 9px center !important; background-size:10px 6px !important; padding-right:22px; }
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+header{background:linear-gradient(135deg,#1B2634 0%,#0E7490 130%);color:#fff;padding:16px 24px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-size:20px;font-weight:700;letter-spacing:.5px}
+  header .databadge{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;line-height:1;color:#9FB0C3;background:rgba(14,116,144,.16);border:1px solid rgba(79,195,247,.3);border-radius:6px;padding:4px 9px;white-space:nowrap;box-sizing:border-box}
+  
+  header .databadge .db-date{color:#9FB0C3}
+  @media (max-width:640px){header .databadge{font-size:10px;padding:3px 7px}}
+header h1 .fu{color:var(--acc2)}
+header .sub{font-size:12px;color:#BFDBFE;opacity:.9}
+header .tag{margin-left:auto;font-size:11px;color:#A5F3FC;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);padding:3px 10px;border-radius:999px;white-space:nowrap}
+.wrap{display:flex;gap:16px;padding:16px;align-items:flex-start;max-width:1680px;margin:0 auto}
+#step1{max-width:860px;margin:0 auto;padding:24px 16px}
+.s1card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.s1card h2{font-size:16px;margin-bottom:14px;color:var(--ink)}
+.s1bar{margin-top:16px;text-align:right}
+#nextBtn{background:linear-gradient(135deg,#0E7490,#06B6D4);color:#fff;border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;cursor:pointer}
+#nextBtn:disabled{opacity:.6;cursor:wait}
+#nextBtn:hover:not(:disabled){opacity:.92}
+.s2top{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1680px;margin:0 auto}
+#backBtn{font-size:12.5px;color:var(--acc);background:#202E3F;border:1px solid var(--line);border-radius:6px;padding:5px 14px;cursor:pointer}
+#backBtn:hover{background:#243244}
+.s2tip{font-size:12px;color:var(--mut)}
+.s2sel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 16px;max-width:1680px;margin:0 auto;font-size:12px}
+.s2sel .sellab{color:#7C8DA1;white-space:nowrap}
+.s2sel .seltag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid #243244;border-radius:4px;background:#202E3F;color:#F1F5F9}
+.s2sel .seltag i{font-style:normal;color:#7C8DA1}
+@media (max-width:760px){#step1{padding:14px 10px}.s1card{padding:14px}}
+
+.trades td.fc, .trades th.fc{max-width:240px;white-space:normal;word-break:break-all;line-height:1.4}
+.trades td.fc span,.trades th.fc span{display:inline-block;margin-right:2px}
+/* ---------- 参数面板 ---------- */
+aside{width:400px;flex-shrink:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+aside .phead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line);background:#243244}
+aside .phead b{font-size:14px}
+aside .phead button{font-size:11px;color:var(--acc);background:none;border:none;cursor:pointer;padding:2px 4px}
+aside .phead button:hover{text-decoration:underline}
+.psec{padding:12px 14px;border-bottom:1px solid var(--line)}
+.psec:last-child{border-bottom:none}
+/* 折叠组内：块间只保留虚线，删掉紧挨在虚线上方那条实线（2026-11-05）。
+   仅作用于左侧参数面板 aside；主视图里的 .psec 保留原有实线分隔。 */
+aside .psec{border-bottom:none}
+.psec h3{font-size:12px;color:var(--mut);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.psec h3 .v{color:var(--acc);font-weight:700;font-variant-numeric:tabular-nums}
+  border-top:1px dashed #3E4E63;margin:16px 0 6px;padding-top:13px}
+#sfg-tune .psec:first-child > h3:first-of-type,#sfg-rebwfo .psec:first-child > h3:first-of-type{border-top:none;margin-top:0;padding-top:0}
+#sfg-tune h3 .v,#sfg-tune h3 span,#sfg-rebwfo h3 .v,#sfg-rebwfo h3 span{font-weight:400}
+#sfg-tune .blk-t,#sfg-rebwfo .blk-t{font-size:13.5px;font-weight:600;color:#7DD3FC;letter-spacing:.3px;
+  border-top:1px dashed #3E4E63;margin:16px 14px 6px;padding-top:13px}
+#sfg-tune .blk-t .sub,#sfg-rebwfo .blk-t .sub{font-size:11px;font-weight:400;color:#7C8DA1;margin-left:4px}
+/* ============ 全局样式统一（2026-10-23） ============
+   1) 下拉框统一蓝框（与 .btn 同色系）；填写框统一白底深字
+   2) 标题分级：L1 组/卡片 > L2 内容块 > L3 子项 > L4 正文，且上一级不小于下一级
+   3) 每个折叠组内各内容块用虚线分隔
+   ------------------------------------------------------ */
+
+/* ---- A. 填写框：白底深字（仅文本框/数字框/多行，不含 checkbox/radio/file） ---- */
+input[type="text"],input[type="number"],input[type="date"],input[type="search"],textarea{
+  background:#FFFFFF !important;
+  color:#111827 !important;
+  border:1px solid #8FA3BA !important;
+  border-radius:6px !important;
+  font-size:12px !important;
+  padding:4px 7px !important;
+  min-width:0;
+  font-variant-numeric:tabular-nums;
+}
+input[type="text"]::placeholder,textarea::placeholder{color:#8A97A8 !important;opacity:1}
+input[type="text"]:focus,input[type="number"]:focus,textarea:focus{
+  border-color:#4FC3F7 !important;outline:none;
+  box-shadow:0 0 0 2px rgba(79,195,247,.22) !important;
+}
+
+/* ---- B. 下拉框：蓝色描边（与 .btn 一致），暗底浅字 ---- */
+select{
+  width:100%;
+  font-size:12px !important;
+  padding:5px 8px !important;
+  border:1px solid #4FC3F7 !important;
+  border-radius:6px !important;
+  background-color:#202E3F !important;
+  color:#D8E2EF !important;
+}
+select:hover{border-color:#7DD3FC !important}
+select:focus{outline:none;box-shadow:0 0 0 2px rgba(79,195,247,.22) !important}
+
+/* ---- D. 组内内容块虚线分隔 ----
+   块起始元素为 .psec 或 .blk-t；首块不加分隔。
+   用 :not(:first-child) 而非相邻兄弟选择器——sfg-tune 内 psecStartRob 的
+   前一个兄弟是 wfoBox（非 .psec/.blk-t），相邻选择器会漏掉它。 */
+.sfold-b > .psec:not(:first-child),
+.sfold-b > .blk-t:not(:first-child){
+  border-top:1px dashed #3E4E63;
+  margin-top:18px !important;
+  padding-top:15px;
+}
+/* .blk-t 在 .sfold-b 内需补 14px 左右外边距，与 .psec 的 padding 对齐 */
+.sfold-b > .blk-t{margin-left:14px;margin-right:14px}
+
+.sfold{border-bottom:1px solid var(--line)}
+/* 折叠标题底色与展开内容区（#1B2634）拉开层级，不再只靠一条实线分隔 */
+.sfold-h{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#2A3A4E;color:var(--mut);border:none;padding:9px 14px;font-size:12px;cursor:pointer;text-align:left;box-sizing:border-box}
+.sfold-h:hover{background:#344860}
+.sfold-h b{color:#D8E2EF;font-weight:600}
+.sfold-h .sf-a{font-size:11px;color:var(--acc);white-space:nowrap}
+.sfold-b{padding:6px 0}
+.sfold-b.hide{display:none}
+label.row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:7px;color:var(--ink)}
+input[type=number]{min-width:0;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#202E3F;cursor:pointer;color:var(--ink);transition:all .15s}
+.chips button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chips button:hover{border-color:var(--acc)}
+select{width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:#202E3F;color:var(--ink)}
+.grp{font-size:13px;margin:2px 0 6px;padding:5px 8px;background:#243244;border:1px solid var(--line);border-radius:7px}
+.grp .ghead{display:flex;align-items:center;gap:6px;margin-bottom:2px;font-weight:500}
+.grp .ghead span:first-child{min-width:16px}
+.grp .itm{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#D8E2EF;padding:1.5px 0}
+.grp .itm:hover{color:var(--acc)}
+.grp .itm .pick{cursor:pointer}
+.grp .itm .rot{margin-left:auto;display:flex;align-items:center;gap:3px;font-size:11px;color:#9FB0C3;white-space:nowrap;font-weight:400;cursor:pointer}
+.grp .itm .rot:hover{color:var(--acc)}
+/* 选标的页等各区块的勾选框颜色统一由全局 input[type=checkbox] 规则接管 */
+.grp .itm .rot input{margin:0}
+.runbar{padding:12px 14px;background:#243244;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.runbar2{display:flex;gap:8px;align-items:center;min-width:0}
+.runbar button{flex:0 0 auto;min-width:96px;width:100%;padding:9px 12px;background:var(--acc);border:none;color:#fff;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;transition:filter .15s}
+.runbar button:hover{filter:brightness(1.1)}
+.runbar .st{font-size:11px;color:var(--mut);white-space:nowrap;flex:0 0 auto}
+.notice{font-size:11px;color:#FBBF24;background:#3A2A12;border-radius:6px;padding:4px 8px;margin-top:6px;display:none}
+/* ---------- 结果区 ---------- */
+main{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+.kpi .t{font-size:11px;color:var(--mut);margin-bottom:3px}
+.kpi .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11px;color:var(--mut);margin-top:2px}
+
+.up{color:var(--up)} .down{color:var(--down)}
+.cards{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.card h2{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 .n{font-size:11px;color:var(--mut);font-weight:400}
+.chart{width:100%;height:340px}
+.chart.tall{height:400px}
+.chart.short{height:240px}
+table.trades{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px}
+table.trades th,table.trades td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;white-space:normal;word-break:break-word;font-variant-numeric:tabular-nums;line-height:1.35}
+table.trades th{background:#243244;color:var(--mut);font-weight:500;position:sticky;top:0}
+table.trades td.wk{color:#FBBF24} table.trades td.nm{color:var(--acc)}
+/* IC 排名表：列多，宁可横向滚动也不压缩列宽，避免因子名与数值贴在一起 */
+table.trades.ictbl{width:auto;min-width:430px}
+table.trades.ictbl th,table.trades.ictbl td{padding:6px 6px;font-size:11.5px;line-height:1.35}
+table.trades.ictbl th{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.trades.ictbl td.cov{font-size:9.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.trades.ictbl td.fnm{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.trades.ictbl td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 因子名与数值之间加一道竖分隔线，视觉上彻底分开 */
+table.trades.ictbl td.sep,table.trades.ictbl th.sep{border-left:1px solid var(--line)}
+.tblwrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px}
+/* 数据体检明细表：给每列设固定宽度、整表设最小宽度，改横向滚动，
+   避免手机上「标的」列被挤到几十 px、基金名被压成竖排单字。 */
+table.trades.hltbl{width:100%}
+table.trades.hltbl th,table.trades.hltbl td{padding:5px 6px;line-height:1.45}
+/* 代码另起一行，不再和名称抢同一行的宽度 */
+.trades td .cd,.hltbl td .cd{display:block;color:#7C8DA1;font-size:10px;margin-top:2px;line-height:1.3;word-break:break-all}
+/* 横向滑动提示：只在手机上出现（桌面有滚动条，不必提示） */
+.swipehint{display:none}
+footer{color:var(--mut);font-size:11px;padding:14px 16px;text-align:center;line-height:1.7}
+footer b{color:#9FB0C3}
+.nav{display:flex;gap:5px;padding:10px 16px 0;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{font-size:11.5px;padding:6px 8px;flex:0 0 auto;white-space:nowrap;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:none;background:var(--card);color:var(--mut);cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.nav button.on{background:var(--acc);color:#fff;font-weight:600}
+
+.slist{display:flex;flex-direction:column;gap:8px}
+.srow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.srow:hover{border-color:var(--acc)}
+.srow .nm{font-weight:700;font-size:14px;color:#F1F5F9;margin-bottom:4px}
+.srow .meta{font-size:12px;color:var(--mut);display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:4px}
+.srow .ld{display:inline-flex;flex-wrap:wrap;gap:2px 12px}
+.srow .ld .k{color:var(--mut)}
+.srow .ld .v{color:#E6EEF8;font-weight:600}
+.srow .ld .v.dn{color:var(--down)}
+.srow .pos{font-size:12.5px;color:#D8E2EF}
+.srow .pos b{color:var(--acc)}
+.srow .pos .sell{color:var(--down)}
+.srow .pos .buy{color:var(--up)}
+.sdetail{display:none}
+.sdetail .back{font-size:12px;color:var(--acc);cursor:pointer;border:none;background:none;padding:0;margin:0 0 10px;text-align:left}
+.skpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;margin-bottom:14px}
+.skpis .kpi .v{font-size:15px}
+.syear{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.syear th,.syear td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.syear th:first-child,.syear td:first-child{text-align:left}
+.syear th{background:#243244;color:var(--mut);font-weight:500}
+.syear td.up{color:var(--up)} .syear td.down{color:var(--down)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:4px;margin-top:8px}
+.mcell{font-size:11px;padding:6px 4px;border-radius:6px;text-align:center;color:#F1F5F9;font-variant-numeric:tabular-nums}
+.mcell .y{color:#7C8DA1;font-size:10px;margin-bottom:2px}
+@media (max-width:1023px){
+  .wrap{flex-direction:column;padding:10px}
+  aside{width:100%}
+  aside.closed .pbody{display:none}
+  .chart{height:300px}
+  .chart.tall{height:340px}
+}
+@media (min-width:1024px){
+  aside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+}
+/* ---------- 桌面端结果页排版优化 ---------- */
+/* 宽屏下结果区改为两列：图表与统计并排，避免超长单列滚动 */
+@media (min-width:1280px){
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    align-items:start;
+  }
+  /* 净值曲线 / 回撤 / 月度热力图 / 统计：各占一列，并排展示 */
+  .cards > .card:not(.wide){grid-column:span 1}
+  /* IC 卡片与调仓记录：整行通栏 */
+  .cards > .card.wide{grid-column:span 2}
+  .cards > .card h2{margin-bottom:10px}
+  /* 两列下图表略收高度，单屏可见更多内容 */
+  .chart{height:300px}
+  .chart.short{height:230px}
+}
+/* 调仓记录：无论视口都必须限高滚动，避免 499 笔把页面拉到上万像素 */
+.tblwrap{max-height:420px;overflow:auto}
+@media (min-width:1024px){
+  .tblwrap{max-height:520px}
+}
+/* 内容为空的卡片（如无归因数据的收益归因）直接不占位 */
+.card:empty,.card[hidden]{display:none}
+
+/* ---------- 相关性视图 ---------- */
+/* ---------- 统一操作按钮样式 ----------
+   原先各按钮 inline 样式各异、多数无边框（border:none / background 暗色），
+   在深色面板上几乎看不出是可点的。现统一成「起点稳健性检验」按钮的样式：
+   12px / 5px 12px / 6px 圆角 / 1px 亮蓝边框 #4FC3F7 / 背景 #202E3F / 文字 #D8E2EF。
+   .btn 只作用于普通操作按钮，导航 tab、折叠头、主运行按钮、关闭× 不在此列。 */
+.btn{font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid #4FC3F7;
+  background:#202E3F;color:#D8E2EF;cursor:pointer;line-height:1.6;white-space:nowrap;transition:all .15s;
+  margin:3px 0;min-height:30px}
+.btn:hover{background:#2A3B50;border-color:#7DD3FC;color:#F1F5F9}
+.btn:active{background:#1B2634}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.corr-mini{font-size:11px;color:#D8E2EF;cursor:pointer;border:1px solid #4FC3F7;border-radius:6px;padding:4px 9px;background:#202E3F}
+.corr-mini:hover{border-color:var(--acc);color:var(--acc)}
+.corr-grp{font-size:12.5px;color:#7DD3FC;grid-column:1/-1;margin-top:6px;font-weight:600;border-bottom:1px dashed #3E4E63;padding-bottom:3px;letter-spacing:.3px}
+.corr-item{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 4px;border-radius:4px}
+.corr-item:hover{background:#243244}
+.corr-item input{margin:0}
+.corr-item .corr-nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.corr-item .corr-cd{font-size:10px;color:#7C8DA1}
+.corr-item .rot{margin-left:auto;display:flex;align-items:center;gap:3px;font-size:11px;color:#9FB0C3;white-space:nowrap;font-weight:400;cursor:pointer}
+.corr-item .rot:hover{color:var(--acc)}
+.corr-item .rot input{margin:0;cursor:pointer}
+.corr-item .wlab{display:none;align-items:center;gap:3px;white-space:nowrap;font-size:11px;color:#9FB0C3}
+.corr-kpi{background:#1B2634;border:1px solid var(--line);border-radius:8px;padding:10px}
+.corr-kpi .k{font-size:11px;color:var(--mut)}
+.corr-kpi .v{font-size:18px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.corr-kpi .s{font-size:10px;color:#9FB0C3;margin-top:2px}
+#corrResult table.trades td.low:first-child{color:#34D399}
+#corrResult table.trades td.c{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:640px){ html,body{max-width:100%;overflow-x:hidden} }
+
+    .stats-tabs{display:flex;gap:6px;margin:6px 0 10px;border-bottom:1px solid #3E4E63;flex-wrap:wrap}
+    .sttab{padding:6px 16px;font-size:12.5px;color:#9FB0C3;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;background:transparent;user-select:none}
+    .sttab.active{color:#F1F5F9;background:#1C2A3A;border-color:#3E4E63}
+    .sttab:hover{color:#D8E2EF}
+
+/* ===== [部署版] 加载动画 ===== */
+@keyframes dltspin{to{transform:rotate(360deg)}}
+.dlt-ic.spin{animation:dltspin .8s linear infinite}
+
+/* ===== [部署版] 移动端 / 窄屏响应式适配 ===== */
+@media (max-width:1080px){
+  .wrap{flex-direction:column;padding:10px;gap:10px;align-items:stretch}
+  aside{width:100%;flex-shrink:1}
+  main{min-width:0;width:100%}
+}
+@media (max-width:760px){
+  header{padding:12px 14px;gap:8px}
+  header h1{font-size:16px}
+  header .sub{font-size:11px}
+  header .tag{display:none}
+  .wrap{padding:8px;gap:8px}
+  .s2top{padding:8px 10px;gap:8px}
+  .s2tip{font-size:11px}
+  .s2sel{padding:6px 10px;font-size:11px}
+  #step1{padding:12px 8px}
+  .s1card{padding:14px 12px}
+  /* 标的池：单列，便于点选 */
+  #poolBox{grid-template-columns:1fr !important;max-height:300px !important}
+  /* 参数面板：全宽，内部横向滚动的区块改为纵向堆叠 */
+  aside .psec{padding:10px 12px}
+  .psec h3{font-size:11.5px}
+  /* 图表容器高度压缩 */
+  .card{min-width:0}
+  /* 表格：允许横向滚动 */
+  .trades{font-size:11px}
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* 体检明细表：手机上同样不压缩列宽，靠横向滚动 */
+  table.trades.hltbl th,table.trades.hltbl td{padding:5px 5px;font-size:11px}
+  .swipehint{display:block;font-size:10px;color:#7C8DA1;margin:4px 0 0}
+  /* IC 排名表：手机上允许横向滚动，不压缩列宽，保证不打架 */
+  table.trades.ictbl{width:auto;min-width:410px}
+  table.trades.ictbl th,table.trades.ictbl td{padding:6px 5px;font-size:11px}
+  table.trades.ictbl th{font-size:10px}
+  table.trades.ictbl td.cov{font-size:9.5px}
+  table.trades.ictbl td.fnm{font-size:11px}
+  /* 按钮加大触控区 */
+  button[type="button"],.corr-mini{min-height:34px}
+  .sfold-h{padding:11px 14px}
+  /* 输入控件不溢出 */
+  input[type="number"],input[type="text"],select{max-width:100%}
+}
+@media (max-width:420px){
+  header h1{font-size:15px}
+  body{font-size:13px}
+  .wrap{padding:6px}
+  #poolBox{max-height:260px !important}
+}
+/* 通用：阻止长文本/代码撑破布局 */
+main,aside,.card,.psec{min-width:0}
+img,svg,canvas{max-width:100%}
+
+
+/* ---- C. 标题分级（置于样式表末尾，确保覆盖前面 .card h2 / .sfold-h 等规则） ----
+   L1 卡片/分组标题 > L2 内容块标题 > L3 子项标题 > L4 正文，上一级不小于下一级 */
+.card h2{font-size:15px !important;font-weight:700 !important;color:#F1F5F9 !important}
+.card h2 .n{font-size:11.5px !important;font-weight:400 !important}
+.sfold-h b{font-size:14px !important;font-weight:700 !important;color:#E2E8F0 !important;letter-spacing:.3px}
+.sfold-h{font-size:13px !important}
+.psec h3,.blk-t{font-size:13.5px !important;font-weight:600 !important;color:#7DD3FC !important;letter-spacing:.3px;
+  margin-bottom:8px !important;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.psec h3 span,.psec h3 .v,.blk-t .sub{font-size:11px !important;font-weight:400 !important;color:#7C8DA1 !important}
+.grp .ghead{font-size:12.5px !important;font-weight:600 !important;color:#D8E2EF !important}
+.grp .itm{font-size:12px !important;font-weight:400 !important;color:#D8E2EF !important}
+label.row{font-size:12.5px !important;color:#D8E2EF !important}
+
+/* 标的池：L3 分组标题 12.5px > L4 条目 12px（原 11px < 12px，违反层级） */
+.corr-grp{font-size:12.5px !important;font-weight:600 !important;color:#7DD3FC !important;border-bottom:1px dashed #3E4E63 !important}
+.corr-item{font-size:12px !important;font-weight:400 !important}
+
+/* ---- 勾选框统一尺寸与颜色 ----
+   实测存在 14x14 与 13x13 两种（部分靠 inline width/height，部分靠浏览器默认），
+   统一为 16x16 / 15x15。颜色全系统按「选标的」页的 var(--acc)（#4FC3F7）收敛：
+   原先浏览器默认蓝、橙色轮动标记、各处 inline 硬编码色，全部由本规则覆盖，
+   保证任意页面、任意位置、静态或动态生成的勾选框都是同一色。 */
+input[type="checkbox"]{
+  width:16px !important;height:16px !important;
+  flex:0 0 16px !important;margin:0 !important;
+  accent-color:var(--acc) !important;
+  -webkit-appearance:checkbox;appearance:checkbox;
+}
+input[type="radio"]{width:15px !important;height:15px !important;flex:0 0 15px !important;margin:0 !important;accent-color:var(--acc) !important}
+
+/* ---- 下拉框展开后保持深色 ----
+   select 本身已是暗底，但原生 option 列表由系统绘制，默认白底 → 点开时"变浅"。
+   补 option 深色样式 + color-scheme:dark 兜底。 */
+option{background-color:#1B2634 !important;color:#D8E2EF !important}
+select{color-scheme:dark !important}
+optgroup{background-color:#1B2634 !important;color:#9FB0C3 !important}
+
+/* ---- 折叠组展开后内容区保持深色 ----
+   .sfold-b 原为透明 → 透出父级 #202E3F，比折叠头 #1B2634 浅。
+   显式设为与折叠头同色，展开后整体保持深色一致。 */
+.sfold-b{background:#1B2634}
+
+/* 兜底：div.row 若已声明 flex-wrap/gap 却未声明 display，gap 不生效
+   （`.row{display:flex}` 实际是 `label.row` 的规则，div.row 匹配不到），
+   导致按钮以 inline-block 排列、间距只剩空白符宽度（约 3px）。 */
+div.row[style*="flex-wrap"]{display:flex;align-items:center}
+div.row[style*="gap:"]{display:flex;align-items:center}
+
+/* ============ 控件外观统一（2026-10-23） ============ */
+
+/* ---- A. 高度统一 34px：输入框 / 下拉框 / 普通按钮 ----
+   textarea 需保留多行，不纳入；checkbox / radio 保持 16px / 15px。 */
+input[type="text"],input[type="number"],input[type="date"],input[type="search"],select,
+.btn,.corr-mini{
+  height:34px !important;
+  min-height:34px !important;
+  padding:0 9px !important;
+  font-size:12px !important;
+  line-height:34px !important;
+  box-sizing:border-box !important;
+}
+/* 按钮左右内距略宽，视觉更舒展 */
+.btn,.corr-mini{padding:0 12px !important;line-height:1 !important;
+  display:inline-flex !important;align-items:center !important;justify-content:center !important}
+/* textarea 只统一字号/边框，不限高 */
+textarea{font-size:12px !important;padding:6px 9px !important;
+  border:1px solid #8FA3BA !important;border-radius:6px !important;
+  background:#FFFFFF !important;color:#111827 !important}
+/* 按钮需垂直留白，靠 margin 而非撑高容器 */
+.btn{margin:3px 0 !important}
+
+/* ---- B. 下拉框改为与输入框一致：白底黑字、无蓝边 ----
+   （上一轮做成蓝框暗底；现按需求改为白底。箭头 SVG 已同步改深色，
+     否则白底上的白箭头不可见。） */
+select{
+  background-color:#FFFFFF !important;
+  color:#111827 !important;
+  border:1px solid #8FA3BA !important;
+  border-radius:6px !important;
+  font-size:12px !important;
+  padding-right:24px !important;   /* 给箭头留位 */
+  color-scheme:light !important;
+}
+select:hover{border-color:#4FC3F7 !important}
+select:focus{outline:none;border-color:#4FC3F7 !important;box-shadow:0 0 0 2px rgba(79,195,247,.22) !important}
+option{background-color:#FFFFFF !important;color:#111827 !important}
+optgroup{background-color:#FFFFFF !important;color:#334155 !important}
+/* 输入/下拉聚焦样式一致 */
+input[type="text"]:focus,input[type="number"]:focus,input[type="date"]:focus,textarea:focus{
+  border-color:#4FC3F7 !important;outline:none;box-shadow:0 0 0 2px rgba(79,195,247,.22) !important}
+
+/* ---- C. 修复：运行回测下方「基准」下拉框右侧被状态文字遮住 ----
+   根因：.runbar2 是 flex 且不换行；#runState 为 flex:0 0 auto + nowrap，
+   内容（"已更新 · 98ms · 2366 个交易日"）较长时不收缩，
+   把基准 label 挤到 min-width:0，其 overflow:hidden 再把 select 右侧切掉。 */
+.runbar2{flex-wrap:wrap !important;row-gap:6px !important}
+/* 基准 label：给足最小宽度，不再被压成 0 */
+.runbar2 > label{flex:1 1 150px !important;min-width:150px !important;overflow:visible !important}
+#benchSel,#comboBenchSel{min-width:110px !important}
+/* 状态文字允许换行，避免横向挤占 */
+.runbar .st{white-space:normal !important;flex:1 1 auto !important;min-width:0 !important;line-height:1.35 !important}
+
+/* select 高度统一补强：A 段的 padding:0 9px 会覆盖 B 段的 padding-right:24px，
+   导致箭头压住文字。此处重设顺序：先 padding 后 padding-right。 */
+select{padding:0 24px 0 9px !important;line-height:34px !important;height:34px !important;min-height:34px !important;
+  box-sizing:border-box !important;display:block;width:100%}
+/* date 类型在 WebKit 下需显式统一边框/圆角 */
+input[type="date"]{border:1px solid #8FA3BA !important;border-radius:6px !important;background:#FFFFFF !important;color:#111827 !important}
+
+/* ============ 控件细节对齐（2026-10-23） ============ */
+
+/* ---- A. 窄下拉框（比较符号 ≥≤ / 方向 正向反向）：减小箭头区，避免符号被挤出 ----
+   全局 select 用 padding-right:24px 给箭头留位；窄框上这会吃掉全部文字区
+   （38px 宽 - 24px 箭头 = 14px，≥ 与「正向」均显示不全）。 */
+.sel-op{padding:0 16px 0 4px !important;text-align:center !important;text-align-last:center !important}
+.sel-dir{padding:0 16px 0 6px !important;text-align:left !important;text-align-last:left !important}
+
+/* ---- B. 起点稳健性 / WFO 表格：补行线（原 .swfo 无任何样式定义） ---- */
+/* 关键：宽度不足时"横向滚动"而不是压扁列宽——此前 width:100% + nowrap 会让文字挤进相邻列造成重叠 */
+.swfo{border-collapse:collapse;min-width:560px;table-layout:auto}
+.swfo th,.swfo td{border-bottom:1px solid #2E3D50;padding:5px 6px;text-align:right;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.swfo th:first-child,.swfo td:first-child{text-align:left}
+/* 区间列（如 2022-03-23 ~ 2023-04-04）最长，允许折行以收窄 */
+.swfo th:nth-child(2),.swfo td:nth-child(2){white-space:normal;word-break:keep-all}
+.swfo thead th{background:#243244;color:#9FB0C3;font-weight:600;position:sticky;top:0;z-index:1}
+.swfo tbody tr:hover{background:#202E3F}
+/* 窄屏：字号与内距同步收一档 */
+@media (max-width:560px){
+  .swfo{min-width:520px}
+  .swfo th,.swfo td{font-size:11px;padding:4px 5px}
+  .swfo th:nth-child(2),.swfo td:nth-child(2){font-size:10.5px}
+}
+/* 横向滚动提示（仅窄屏显示） */
+.tblhint{display:none;font-size:11px;color:#7C8DA1;margin:2px 0 4px}
+@media (max-width:560px){ .tblhint{display:block} }
+
+/* ---- C. 起点稳健性：下方汇总/说明与上方标题左对齐（去掉任何缩进） ---- */
+#startRobBox,#startRobNote,#startRobSum{margin-left:0 !important;padding-left:0 !important}
+#startRobSum{margin-top:10px !important;line-height:1.8 !important}
+#startRobNote{margin-bottom:8px !important}
+
+/* ---- D. 基准行：状态文字强制换到下一行，让基准标签与下拉框在同一行对齐 ---- */
+#runState,#comboRunState{flex:1 1 100% !important;white-space:normal !important;min-width:0 !important;
+  line-height:1.35 !important;font-size:11px !important}
+.runbar2 > label{flex:1 1 100% !important;min-width:0 !important;overflow:visible !important}
+#benchSel,#comboBenchSel{flex:1 1 auto !important;min-width:0 !important}
+
+/* ---- E. 调优维度：输入框列对齐；勾选框统一在最左 ---- */
+#psecTune .row > span[style*="width:88px"]{flex:0 0 88px !important}
+#psecTune .row > input[type="checkbox"]{order:0;margin-left:0 !important;flex:0 0 16px !important}
+
+/* ---- 控件高度收窄：34 → 30px ---- */
+input[type="text"],input[type="number"],input[type="date"],input[type="search"],select,
+.btn,.corr-mini{
+  height:30px !important;min-height:30px !important;line-height:30px !important;
+}
+.btn,.corr-mini{line-height:1 !important}
+
+/* ---- 回测区间日期栏收窄 ---- */
+#startSel,#endSel{flex:0 0 150px !important;width:150px !important;max-width:150px !important}
+
+/* ---- 真实可得池等 label.row 的勾选框统一移到行末 ---- */
+label.row > input[type="checkbox"]{order:2 !important;margin-left:auto !important}
+
+/* ---- 勾选框与文字统一间距（不贴太近） ---- */
+.corr-item input[type="checkbox"],.grp .itm input[type="checkbox"],
+label.row input[type="checkbox"],.row input[type="checkbox"]{margin-right:8px !important}
+
+/* ---- 筛选/排名条件：三个白框强制一行 ---- */
+.row[style*="grid"] > div[style*="justify-self:end"]{flex-wrap:nowrap !important}
+
+/* ---- 勾选框与文字统一间距：统一为 8px（原先标的池 gap 6px 且被 margin:0 抵消） ---- */
+.corr-item{gap:8px !important}
+.corr-item input[type="checkbox"]{margin:0 0 0 0 !important;flex:0 0 16px}
+.corr-item .corr-nm{margin-left:0 !important}
+.grp .itm{gap:8px !important}
+.grp .itm input[type="checkbox"]{margin:0 !important}
+/* label.row 内：文字在左、勾选框在右（order:2），两者间距由 space-between 决定，
+   这里只保证勾选框不贴边、且与相邻文字不重叠 */
+label.row{gap:10px !important}
+label.row > input[type="checkbox"]{margin:0 0 0 auto !important;flex:0 0 16px !important}
+
+/* ---- 筛选/排名条件：三个白框强制一行 ----
+   注意：不能用属性选择器 [style*="justify-self:end"] —— 浏览器会把
+   style 属性规范化为 "justify-self: end;"（冒号后加空格），选择器匹配不到。
+   改用 JS 里直接赋 className="fparam"，此处按 class 生效。 */
+.fparam{flex-wrap:nowrap !important}
+.fparam > *{flex-shrink:0}
+
+/* ---- 筛选/排名条件：param 内所有子项（含 "%""~" 等 span）与控件等高居中 ----
+   诊断发现：% 号 span 高约 18px，居中后 top 比 30px 的输入框高 6px，
+   视觉上像是"换到了下一行"。统一高度后基线对齐。 */
+.fparam > *{flex-shrink:0}
+.fparam > span{height:30px;display:inline-flex;align-items:center;line-height:1}
+.fparam{row-gap:0 !important}
+
+/* ---- 因子管理标题：与其他 L2 内容块标题一致（13.5px / 600 / 亮蓝） ----
+   该 h3 内有 span + button，flex 布局下 span 需显式继承，否则回落到浏览器默认。 */
+h3.l2t, h3.l2t > span{font-size:13.5px !important;font-weight:600 !important;color:#7DD3FC !important;
+  letter-spacing:.3px !important;line-height:1.4 !important}
+h3.l2t{margin-bottom:8px !important}
+
+/* ---- 持仓权重：只持 1 名时提示"权重模式不适用" ----
+   数学必然：n=1 时等权/逆波动率/风险平价均返回 1，三者结果完全相同。
+   并非参数未生效，此处给出提示避免误判。 */
+
+/* ---- 原样拷贝自 etf/tool.html <style id="qckCss">（573-612 行）---- */
+/* 傻瓜版首屏：只留两个按钮、两行结果、一个 Key；高级设置是唯一折叠 */
+#advSettings { padding:12px; margin-bottom:12px; }
+#advSettings > summary { font-size:12px; color:#4FC3F7; cursor:pointer; list-style:none; }
+#advSettings > summary::-webkit-details-marker { display:none; }
+#advSettings > summary::before { content:"▸ "; }
+#advSettings[open] > summary::before { content:"▾ "; }
+.qckFold { margin:9px 0 0; }
+.qckFold > summary { font-size:12px; color:#4FC3F7; cursor:pointer; list-style:none; }
+.qckFold > summary::-webkit-details-marker { display:none; }
+.qckFold > summary::before { content:"▸ "; }
+.qckFold[open] > summary::before { content:"▾ "; }
+/* 高级设置内部不再有折叠：summary 隐藏、内容强制展开 */
+#advSettings details:not(#advSettings) > summary { display:none !important; }
+#advSettings details:not(#advSettings) { margin:6px 0; }
+.advH { font-size:11.5px; color:#4FC3F7; font-weight:bold; letter-spacing:.4px;
+        margin:14px 0 8px; padding-bottom:5px; border-bottom:1px solid #2A3A4E; }
+.qckLegacy, .advHideKey { display:none !important; }
+.qckLine { font-size:11.5px; color:#9FB0C3; line-height:1.75; margin:3px 0; }
+#qckCard { padding:14px; margin-bottom:12px; }
+#qckMsg { font-size:12px; padding:9px 11px; border-radius:6px; margin:9px 0; line-height:1.7; }
+#qckDetail { color:#4FC3F7; cursor:pointer; text-decoration:underline; }
+
+/* 高级设置二次简化：排障明细移出折叠，只留一个入口 */
+.qckLegacy2 { display:none !important; }
+#qckDetailPane { margin:10px 0 4px; }
+/* 排障明细里各块可单独收起，标题保持可见 */
+#qckDetailPane details > summary { cursor:pointer; }
+/* ---- 容器实线框统一提亮：与虚线分隔线同色（#3E4E63） ----
+   原先容器边框用 --line(#243244)，在深色底上几乎看不见；
+   只提亮"框住内容的容器"，表格内线、导航标签、输入框边框保持原样。 */
+.s1card,.card,.kpi,.srow,.grp,.tblwrap,.corr-kpi,aside,
+#poolBox,#corrPool,#icPool,#comboStratList,#comboRotPanel,#crFacFltBox,#crFacRankBox,#comboWeightLegend,#fmFuncsWrap,#dedupHelp,
+[style*="border:1px solid #243244"],[style*="border:1px solid #2A3546"],[style*="border:1px solid var(--line)"]{
+  border-color:#3E4E63 !important;
+}
+/* 交互态强调色不被统一规则吃掉 */
+.srow:hover{border-color:var(--acc) !important;}
+
