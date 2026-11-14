@@ -1,12 +1,12 @@
 /* ============================================================
-   GitHub Actions · 每周行情同步（v53）
+   GitHub Actions · 每周行情同步（v0.53）
 
    思路：不重写取数逻辑。用 actions/checkout 拿到的仓库文件在 Actions 本机
    起一个静态站点（127.0.0.1），无头浏览器打开它，点两套系统原有的
    「一键更新行情」，等「数据止」真正到达最近交易日，再读出补丁生成 state.json。
    不走公网：花生壳 / 部分主机按来源 IP 放行，云机房会被 403 挡在门外。
 
-   v53 新增「本机覆盖层」：仓库根目录 local-overrides.json（修复点 + ETF 新增标的，
+   v0.53 新增「本机覆盖层」：仓库根目录 local-overrides.json（修复点 + ETF 新增标的，
    由系统里「导出修复补丁」生成）每次运行都合并，放在生成 state.json 之后当最后一层
    覆盖；没有新行情的那一周也照样合并，不再搭「有新行情」那班车。内容没变化就不写
    state.json、不提交、不触发构建。旧 etf-extra.json 仍兼容；空模板 enabled=false 不动数据。
@@ -52,7 +52,7 @@ const TARGETS = [
 ];
 
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
-/* v53 本地自测：只跑覆盖层合并，不启动浏览器、不写仓库文件 */
+/* v0.53 本地自测：只跑覆盖层合并，不启动浏览器、不写仓库文件 */
 if (process.env.WUFU_OVERRIDE_SELFTEST === '1') {
   const mk = () => ({
     'wufuQPatch_v1': JSON.stringify({ v:7, days:[{date:'2026-11-13'}], custom:[{code:'OLD'}], corrections:[{c:'X',date:'2026-11-10'}] }),
@@ -82,7 +82,7 @@ if (process.env.WUFU_SELFTEST === '1') {
   console.log(JSON.stringify({ goal: recentTradingDay(), extra: readExtra().length }));
   process.exit(0);
 }
-/* v53 自测：内容没变化不写文件、不触发构建 */
+/* v0.53 自测：内容没变化不写文件、不触发构建 */
 if (process.env.WUFU_NOCHANGE_SELFTEST === '1') {
   const tmp = path.join(ROOT, '.selftest-status.json');
   try { fs.unlinkSync(tmp); } catch (e) { }
@@ -246,7 +246,7 @@ async function syncOne(ctx, t, goal) {
   }
 }
 
-/* ---------- v53 · 本机覆盖层 ----------
+/* ---------- v0.53 · 本机覆盖层 ----------
    local-overrides.json（修复点 + ETF 新增标的全量名单）每次同步都作为最后一层覆盖。
    enabled=false 的空模板 → 返回 null，一个字节都不动本机。
    fixes.etf / fixes.cb 为 null 表示「不动修复」；字段齐全但全空表示「清空修复」（撤销）。

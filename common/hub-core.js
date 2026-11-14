@@ -7,7 +7,7 @@
        —— 花生壳这类不连仓库的静态托管，靠这一步把云端数据自动带回系统
      · 大键走 WufuStore → IndexedDB；本机已有的不覆盖，主行情补丁按日期比
      · 补完派发 wufu:bundled-ready，两套系统据此重放补丁、刷新日期
-   v53 · state.json 顶层的 overrides（修复点 + ETF 新增标的）每次打开都作为最后一层
+   v0.53 · state.json 顶层的 overrides（修复点 + ETF 新增标的）每次打开都作为最后一层
         覆盖：只读本机补丁、只改修复类字段与 custom，行情 days 与本机更晚数据不动
    任何一路失败都静默跳过，不弹窗、不阻塞、断网照常打开。
    ============================================================ */
@@ -116,7 +116,7 @@
     done(true);
     return null;
   }
-  /* v53 · 本机覆盖层（每次同步都合并，作为最后一层） */
+  /* v0.53 · 本机覆盖层（每次同步都合并，作为最后一层） */
   var OV_EMPTY = { corrections: [], ohlcFix: {}, navFix: {}, resupply: {}, swaps: [],
                    refactors: [], exempt: [], fyFix: {}, fyCheck: null };
   var OV_ETF = ["corrections","ohlcFix","navFix","resupply","swaps","refactors","exempt","fyFix","fyCheck"];
