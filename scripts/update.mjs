@@ -39,9 +39,11 @@ const STEP_TIMEOUT_MS = Number(process.env.STEP_TIMEOUT_MS || 20 * 60 * 1000);
 
 /* 只搬这两个键。它们各自内部已含 days / scale / st / ann / corrections 等全部增量，
    一个键就够；其它本机键（策略、组合、扶摇 Key 等）一律不进仓库。 */
+/* 一键更新按钮在「数据体检」视图里（index.html 是回测首页，没有这个按钮），
+   路径与 health/index.html 里的 iframe src 保持一致。 */
 const TARGETS = [
-  { name: '可转债', url: '/cb/index.html', key: 'wufuCbQPatch_v1' },
-  { name: 'ETF',    url: '/etf/index.html', key: 'wufuQPatch_v1' }
+  { name: '可转债', url: '/cb/tool.html?view=health#/health',  key: 'wufuCbQPatch_v1' },
+  { name: 'ETF',    url: '/etf/tool.html?view=health#/health', key: 'wufuQPatch_v1' }
 ];
 
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
@@ -81,7 +83,7 @@ async function waitReady(page) {
     d = d || window.__WUFU_D || window.D || null;
     return !!(d && d.calendar && d.calendar.length && d.series);
   }, null, { timeout: 180000 });
-  await page.waitForSelector('#wufuUpdRun', { timeout: 60000 });
+  await page.waitForSelector('#wufuUpdRun', { state: 'attached', timeout: 60000 });
 }
 
 /* 打开一个系统页 → 点更新 → 等补丁里出现更晚的日期。失败抛错，由调用方记下并保留旧值。 */
