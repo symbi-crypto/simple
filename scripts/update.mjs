@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = path.join(ROOT, 'state.json');
+const STATUS = path.join(ROOT, 'sync-status.json');
 const SITE = String(process.env.SITE_URL || '').trim().replace(/\/+$/, '');
 const PUBLIC_SITE = String(process.env.PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
 /* 每周一次要拉 5 个交易日，请求量约是每日版的 5 倍，默认给到 20 分钟/侧。
@@ -195,8 +196,9 @@ async function syncOne(ctx, t) {
   const oldAsOf = keys.reduce((m, k) => { const d = lastDate(oldLS[k]); return d > m ? d : m; }, '');
 
   if (!changed) {
-    console.log('\n本次没有任何一侧取到更晚的行情，state.json 保持原样，不提交、不触发构建。');
+    console.log('\n本次没有任何一侧取到更晚的行情，state.json 保持原样，不提交行情。');
     notes.forEach(n => console.log('  · ' + n));
+    fs.writeFileSync(STATUS, JSON.stringify({ dataAsOf: '', targets: notes, site: SITE }, null, 2) + '\n', 'utf8');
     return;
   }
   if (dataAsOf && oldAsOf && dataAsOf < oldAsOf) {
@@ -212,6 +214,7 @@ async function syncOne(ctx, t) {
     localStorage: out
   };
   fs.writeFileSync(STATE, JSON.stringify(state) + '\n', 'utf8');
+  fs.writeFileSync(STATUS, JSON.stringify({ dataAsOf, targets: notes, site: SITE }, null, 2) + '\n', 'utf8');
   console.log(`\n✓ 已写 state.json：数据止 ${dataAsOf || '基线'}，${keys.length} 个补丁键，${(fs.statSync(STATE).size / 1024).toFixed(1)} KB`);
   notes.forEach(n => console.log('  · ' + n));
 })().catch(e => die(String(e && e.stack || e)));
