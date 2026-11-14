@@ -44,7 +44,13 @@ const TARGETS = [
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
 /* 本地自测：WUFU_SELFTEST=1 只算目标交易日与回传名单数，不启动浏览器 */
 if (process.env.WUFU_SELFTEST === '1') {
-  console.log(JSON.stringify({ goal: recentTradingDay(), extra: readExtra().length }));
+  const saved = fs.existsSync(EXTRA) ? fs.readFileSync(EXTRA, 'utf8') : null;
+  fs.writeFileSync(EXTRA, JSON.stringify({ format: 'wufu-etf-extra-v1', items: [{ code: 'TEST.SZ', name: '自测', bars: [] }] }));
+  const st = { localStorage: { wufuQPatch_v1: JSON.stringify({ days: [], custom: [] }) } };
+  const m = mergeExtra(st);
+  const custom = JSON.parse(st.localStorage.wufuQPatch_v1).custom;
+  console.log(JSON.stringify({ goal: recentTradingDay(), extra: 1, merged: m, custom: custom.length }));
+  if (saved != null) fs.writeFileSync(EXTRA, saved); else fs.unlinkSync(EXTRA);
   process.exit(0);
 }
 if (!SITE) die('未设置 SITE_URL：workflow 里应指向 http://127.0.0.1:8787 的本地静态站点。');
@@ -284,6 +290,22 @@ function countNewSeries(raw) {
   const oldAsOf = keys.reduce((m, k) => { const d = lastDate(oldLS[k]); return d > m ? d : m; }, '');
 
   if (!changed) {
+    /* 没有新行情，也可能刚回传了新增标的名单：照样合并，
+       否则名单要等到下一个有行情的周五才生效。 */
+    const baseState = old || {
+      format: 'wufu-offline-state-v2', exportedAt: new Date().toISOString(),
+      origin: PUBLIC_SITE || SITE, dataAsOf: '', note: '', localStorage: {}
+    };
+    const st = Object.assign({}, baseState, { localStorage: Object.assign({}, baseState.localStorage, out) });
+    const m = mergeExtra(st);
+    if (m) {
+      st.note = 'GitHub Actions 自动生成；页面打开时由 hub-core.js 自动补回本机并重放。' + notes.join('；') + `；ETF 回传名单合并 ${m} 只新标的`;
+      fs.writeFileSync(STATE, JSON.stringify(st) + '\n', 'utf8');
+      fs.writeFileSync(STATUS, JSON.stringify({ goal, dataAsOf: st.dataAsOf || '', targets: notes, cbNewSeries: cbNew, etfExtraMerged: m, etfExtra: extraCount, site: SITE }, null, 2) + '\n', 'utf8');
+      console.log(`\n✓ 无新行情，但合并了 ${m} 只回传新标的，state.json 已更新。`);
+      notes.forEach(n => console.log('  · ' + n));
+      return;
+    }
     console.log('\n本次没有任何一侧取到更晚的行情，state.json 保持原样，不提交行情。');
     notes.forEach(n => console.log('  · ' + n));
     fs.writeFileSync(STATUS, JSON.stringify({ goal, dataAsOf: '', targets: notes, cbNewSeries: cbNew, etfExtra: extraCount, site: SITE }, null, 2) + '\n', 'utf8');
