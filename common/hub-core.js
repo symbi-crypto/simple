@@ -1,12 +1,13 @@
 /* ============================================================
-   v47 · 随包状态自动生效（导出离线包 → 上传 → 打开就是最新）
-   export.js 会把导出瞬间的本机状态（策略 / 组合 / 行情增量 / 修复记录…）
-   写成包内的 state.json。本段在任何页面加载时读它，把「本机缺的」补回来：
-     · 大键（行情增量等）走 WufuStore → IndexedDB，不占 5MB 小本本
-     · 小键直接进 localStorage
-     · 本机已有的一律不覆盖；两个主行情补丁按「数据止」比日期，包里更新才覆盖
+   v49 · 随包状态自动生效 + GitHub 仓库同步
+   export.js / Actions 生成的 state.json 里装着策略、组合、行情增量…
+   页面加载时按「数据止」挑最新的一份补回本机：
+     · 先读站点自带的 state.json（离线包 / Netlify 自动重建，立刻生效）
+     · 再读 GitHub 仓库里的 state.json（Actions 每周推，两个 CDN 通道互为备份）
+       —— 花生壳这类不连仓库的静态托管，靠这一步把云端数据自动带回系统
+     · 大键走 WufuStore → IndexedDB；本机已有的不覆盖，主行情补丁按日期比
      · 补完派发 wufu:bundled-ready，两套系统据此重放补丁、刷新日期
-   state.json 不存在（原始部署包）时静默跳过，零副作用。
+   任何一路失败都静默跳过，不弹窗、不阻塞、断网照常打开。
    ============================================================ */
 (function () {
   "use strict";
@@ -49,45 +50,86 @@
     try { window.dispatchEvent(new CustomEvent("wufu:bundled-ready", { detail: detail })); }
     catch (e) { try { window.dispatchEvent(new Event("wufu:bundled-ready")); } catch (e2) { } }
   }
-  function run() {
-    var url;
-    try { url = new URL("state.json?__swcache=1", siteRoot()).href; }
-    catch (e) { return; }
-    fetch(url, { cache: "no-store" }).then(function (r) {
-      return (r && r.ok) ? r.json() : null;
-    }).then(function (j) {
-      var ls = j && j.localStorage;
-      if (!ls || typeof ls !== "object") return null;
-      var S = window.WufuStore, small = 0, big = 0, skip = 0, pending = false;
-      Object.keys(ls).forEach(function (k) {
-        var v = ls[k];
-        if (v == null || typeof v !== "string") return;
-        var cur = null;
-        try { cur = window.localStorage.getItem(k); } catch (e) { }
-        if (cur != null && cur !== "") {
-          if (!PRIMARY.test(k)) { skip++; return; }
-          var a = lastDate(cur), b = lastDate(v);
-          if (!b || (a && a >= b)) { skip++; return; }
+  /* GitHub 仓库里的 state.json：jsDelivr 为主、raw 为备，都是公开只读 */
+  var GH_REMOTE = [
+    "https://cdn.jsdelivr.net/gh/symbi-crypto/simple@main/state.json",
+    "https://raw.githubusercontent.com/symbi-crypto/simple/main/state.json"
+  ];
+  function asof(j) {
+    var a = String((j && j.dataAsOf) || "").slice(0, 10);
+    return a || String((j && j.exportedAt) || "").slice(0, 10);
+  }
+  function getJSON(url, ms) {
+    return new Promise(function (resolve) {
+      var done = false, timer = null, ctl = null;
+      function fin(v) {
+        if (done) return;
+        done = true;
+        try { if (timer) clearTimeout(timer); } catch (e) { }
+        resolve(v);
+      }
+      try {
+        var opt = { cache: "no-store" };
+        if (typeof AbortController !== "undefined") { ctl = new AbortController(); opt.signal = ctl.signal; }
+        timer = setTimeout(function () {
+          try { if (ctl) ctl.abort(); } catch (e) { }
+          fin(null);
+        }, ms || 3500);
+        fetch(url, opt).then(function (r) { return (r && r.ok) ? r.json() : null; })
+          .then(function (j) { fin(j || null); })
+          .catch(function () { fin(null); });
+      } catch (e) { fin(null); }
+    });
+  }
+  function apply(j) {
+    var ls = j && j.localStorage;
+    if (!ls || typeof ls !== "object") return null;
+    var S = window.WufuStore, small = 0, big = 0, skip = 0, pending = false;
+    Object.keys(ls).forEach(function (k) {
+      var v = ls[k];
+      if (v == null || typeof v !== "string") return;
+      var cur = null;
+      try { cur = window.localStorage.getItem(k); } catch (e) { }
+      if (cur != null && cur !== "") {
+        if (!PRIMARY.test(k)) { skip++; return; }
+        var a = lastDate(cur), b = lastDate(v);
+        if (!b || (a && a >= b)) { skip++; return; }
+      }
+      try {
+        if (S && S.put) {
+          var r = S.put(k, v);
+          if (!r.ok) return;
+          if (r.pending) pending = true;
+        } else {
+          window.localStorage.setItem(k, v);
         }
-        try {
-          if (S && S.put) {
-            var r = S.put(k, v);
-            if (!r.ok) return;
-            if (r.pending) pending = true;
-          } else {
-            window.localStorage.setItem(k, v);
-          }
-          if (BIG_RE.test(k) || v.length > 48 * 1024) big++; else small++;
-        } catch (e) { }
-      });
-      var done = function (ok) {
-        fire({ exportedAt: j.exportedAt || "", dataAsOf: j.dataAsOf || "",
-               small: small, big: big, skip: skip, stored: ok });
-      };
-      if (pending && S && S.flush) return S.flush().then(function (f) { done(!f || f.ok !== false); });
-      done(true);
-      return null;
-    }).catch(function () { });
+        if (BIG_RE.test(k) || v.length > 48 * 1024) big++; else small++;
+      } catch (e) { }
+    });
+    var done = function (ok) {
+      fire({ exportedAt: j.exportedAt || "", dataAsOf: j.dataAsOf || "",
+             small: small, big: big, skip: skip, stored: ok });
+    };
+    if (pending && S && S.flush) return S.flush().then(function (f) { done(!f || f.ok !== false); });
+    done(true);
+    return null;
+  }
+  function run() {
+    var urls = [];
+    try { urls.push(new URL("state.json?__swcache=1", siteRoot()).href); } catch (e) { }
+    GH_REMOTE.forEach(function (u) { urls.push(u); });
+    if (!urls.length) return;
+    /* 包内 / 仓库几路一起问，按「数据止」挑最新的一份，只补一次、只重放一次 */
+    Promise.all(urls.map(function (u) { return getJSON(u, 3500); }))
+      .then(function (list) {
+        var best = null;
+        list.forEach(function (j) {
+          if (!j || !j.localStorage || typeof j.localStorage !== "object") return;
+          if (!best || asof(j) > asof(best)) best = j;
+        });
+        if (best) return apply(best);
+        return null;
+      }).catch(function () { });
   }
   try { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run); else run(); }
   catch (e) { try { run(); } catch (e2) { } }
