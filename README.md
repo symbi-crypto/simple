@@ -1,3 +1,11 @@
+> **本仓库当前状态（2026-11-14）**：52 个站点文件已由助手通过 API 直接推送到 `main`，远端与本地逐字节校验通过；`.github/workflows/update.yml` 已被识别为「每周行情同步」（active）。
+>
+> **不用再传文件**：不要再点 `Add file → Upload files`，也不需要 `UPLOAD_THIS.zip`、分卷包或 `setup.yml`。
+>
+> 仍需人工做两件事：
+> 1. `Settings → Actions → General → Workflow permissions` 选 `Read and write permissions` → `Save`（本次临时令牌没有 Administration 权限，代设不了）。
+> 2. Netlify 额度恢复后 `Import an existing project` 连本仓库部署；拿到真实域名后，把 Variables 里的 `SITE_URL` 从占位值改成真实地址，再 `Actions → 每周行情同步 → Run workflow` 跑一次。
+
 # 首页版部署包（ETF + 可转债）
 
 ## v50 · 每周自动更新，主站在 Netlify（云端为主、体检中心备用）
