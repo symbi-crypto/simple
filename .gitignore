@@ -1,0 +1,10 @@
+# Actions 里 npm install 会生成这个，绝不能进仓库
+node_modules/
+package-lock.json
+
+# 本地杂项
+.DS_Store
+*.log
+.chk_*
+
+# 注意：state.json 必须提交，不要写进这里
