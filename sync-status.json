@@ -1,0 +1,8 @@
+{
+  "dataAsOf": "",
+  "targets": [
+    "可转债：本次未取到更晚行情（page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('#wufuUpdRun') to be visible\n），保留原值",
+    "ETF：本次未取到更晚行情（page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('#wufuUpdRun') to be visible\n），保留原值"
+  ],
+  "site": "http://127.0.0.1:8787"
+}
