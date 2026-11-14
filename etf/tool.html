@@ -1664,29 +1664,41 @@ document.addEventListener("DOMContentLoaded",function(){
       <div id="pmList" style="margin-bottom:10px"></div>
 
       <div style="border-top:1px dashed #2A3A4E;padding-top:9px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button id="pmExportExtra" type="button" class="btn" style="cursor:pointer;font-size:11.5px;padding:6px 12px">导出新增标的名单</button>
+        <button id="pmExportExtra" type="button" class="btn" style="cursor:pointer;font-size:11.5px;padding:6px 12px">导出修复补丁</button>
         <button id="pmExtraHow" type="button" class="btn" style="cursor:pointer;font-size:11.5px;padding:6px 12px">? 怎么替换</button>
-        <span id="pmExtraHint" style="font-size:10.5px;color:#7C8DA1;line-height:1.6">本机新增标的 <b id="pmExtraN">0</b> 只 · 导出后把 etf-extra.json 传回 GitHub，下次同步后全站带上</span>
+        <span id="pmExtraHint" style="font-size:10.5px;color:#7C8DA1;line-height:1.6">本机新增标的 <b id="pmExtraN">0</b> 只 · 修复点 <b id="pmFixN">0</b> 处 · 一个文件同时带回 GitHub</span>
         <div id="pmExtraHowBox" style="display:none;flex-basis:100%;width:100%;box-sizing:border-box;font-size:11.5px;line-height:1.85;color:#B9C8D9;background:rgba(79,195,247,.06);border:1px solid #2A3A4E;border-radius:6px;padding:10px 12px;margin-top:2px">
-          <div style="color:#4FC3F7;margin-bottom:5px">把 etf-extra.json 放回 GitHub（3 步）</div>
-          <div>1. 下载的文件若带「(1)」，先改名成 <b>etf-extra.json</b>。</div>
-          <div>2. 打开仓库 → <b>Add file</b> → <b>Upload files</b> → 拖入同名文件 → <b>Commit changes</b>（覆盖原有的空名单）。</div>
-          <div>3. 等下一次<b>周五 17:37 自动同步成功</b>后强刷页面，新标的就出现在「选择标的」，其它设备也会自动带上。</div>
-          <div style="margin-top:6px;color:#8FA3B8">注意：手动 Run workflow 不会合并名单；导出的是全量名单，请固定一台设备管新增标的；别把 state.json 传上去。</div>
+          <div style="color:#4FC3F7;margin-bottom:5px">把 local-overrides.json 放回 GitHub（3 步）</div>
+          <div>1. 下载的文件若带「(1)」，先改名成 <b>local-overrides.json</b>。</div>
+          <div>2. 仓库 → <b>Add file</b> → <b>Upload files</b> → 拖入同名文件 → <b>Commit changes</b>（覆盖原有的空模板）。</div>
+          <div>3. 下一次同步（<b>周五 17:37 自动</b>，或手动 Run workflow）后强刷一次：修复点和新标的对全站生效。<b>每次同步都会合并</b>，没有新行情的那周也合并，之后不用重传。</div>
+          <div style="margin-top:6px;color:#8FA3B8">注意：文件只含修复点与新增标的，不含策略 / 组合 / 修复日志；导出的是全量，固定一台设备管新增与撤销；撤销修复或移出标的后也要重新导出一次覆盖；别把 state.json 传上去。</div>
         </div>
       </div>
       <script>(function(){
-        function items(){try{var raw=localStorage.getItem("wufuQPatch_v1");var p=raw?JSON.parse(raw):null;return (p&&Array.isArray(p.custom))?p.custom:[];}catch(e){return [];}}
-        function refresh(){var e=document.getElementById("pmExtraN");if(e)e.textContent=items().length;}
+        var KE="wufuQPatch_v1",KC="wufuCbQPatch_v1";
+        var FE=["corrections","ohlcFix","navFix","resupply","swaps","refactors","exempt","fyFix","fyCheck"];
+        var FC=["corrections","ohlcFix","resupply","exempt","swaps","refactors"];
+        var EMPTY={corrections:[],ohlcFix:{},navFix:{},resupply:{},swaps:[],refactors:[],exempt:[],fyFix:{},fyCheck:null};
+        function emptyVal(f){var v=EMPTY[f];return Array.isArray(v)?[]:(v&&typeof v==="object"?{}:null);}
+        function raw(k){var v=null;try{v=localStorage.getItem(k);}catch(e){}if(!v){try{v=window.WufuStore&&WufuStore.get?WufuStore.get(k):null;}catch(e){}}return v;}
+        function patch(k){try{var v=raw(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+        function collect(p,fields){var o={},n=0;fields.forEach(function(f){var v=p&&p[f];if(v===undefined||v===null)v=emptyVal(f);o[f]=v;if(Array.isArray(v))n+=v.length;else if(v&&typeof v==="object")n+=Object.keys(v).length;});return {fields:o,count:n};}
+        function stat(){var pe=patch(KE),pc=patch(KC);return {pe:pe,pc:pc,fe:collect(pe,FE),fc:collect(pc,FC),arr:(pe&&Array.isArray(pe.custom))?pe.custom:[]};}
+        function refresh(){var x=stat(),a=document.getElementById("pmExtraN"),b=document.getElementById("pmFixN");if(a)a.textContent=x.arr.length;if(b)b.textContent=x.fe.count+x.fc.count;}
         var b=document.getElementById("pmExportExtra");
         if(b)b.addEventListener("click",function(){
-          var arr=items(),out={format:"wufu-etf-extra-v1",exportedAt:new Date().toISOString(),count:arr.length,items:arr};
+          var x=stat(),out={format:"wufu-local-overrides-v1",enabled:true,exportedAt:new Date().toISOString(),
+            note:"本机修复点 + ETF 新增标的全量名单；不含策略 / 组合 / 修复日志；每次同步都会作为最后一层覆盖合并",
+            fixes:{etf:x.fe.fields,cb:x.fc.fields},
+            etfExtra:{format:"wufu-etf-extra-v1",count:x.arr.length,items:x.arr},
+            stats:{fixPoints:x.fe.count+x.fc.count,etfExtra:x.arr.length}};
           try{
             var a=document.createElement("a"),u=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:"application/json"}));
-            a.href=u;a.download="etf-extra.json";document.body.appendChild(a);a.click();
+            a.href=u;a.download="local-overrides.json";document.body.appendChild(a);a.click();
             setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1000);
             var h=document.getElementById("pmExtraHint");
-            if(h)h.textContent="已导出 "+arr.length+" 只；按右侧「怎么替换」提交到 GitHub，下次周五同步后生效。";
+            if(h)h.textContent="已导出 1 个文件：修复点 "+(x.fe.count+x.fc.count)+" 处 + 新增标的 "+x.arr.length+" 只；按右侧「怎么替换」提交到 GitHub。";
           }catch(e){var h2=document.getElementById("pmExtraHint");if(h2)h2.textContent="导出失败："+((e&&e.message)||e);}
         });
         var hb=document.getElementById("pmExtraHow"),box=document.getElementById("pmExtraHowBox");
@@ -1695,7 +1707,10 @@ document.addEventListener("DOMContentLoaded",function(){
           box.style.display=open?"none":"block";
           hb.textContent=open?"? 怎么替换":"收起说明";
         });
-        refresh();document.addEventListener("DOMContentLoaded",refresh);window.addEventListener("storage",refresh);
+        refresh();document.addEventListener("DOMContentLoaded",refresh);
+        window.addEventListener("storage",refresh);
+        window.addEventListener("wufu:bundled-ready",refresh);
+        setTimeout(refresh,1200);setTimeout(refresh,3500);
       })();</script>
 
       <div style="border-top:1px solid #2A3A4E;padding-top:10px">

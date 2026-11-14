@@ -7,6 +7,8 @@
        —— 花生壳这类不连仓库的静态托管，靠这一步把云端数据自动带回系统
      · 大键走 WufuStore → IndexedDB；本机已有的不覆盖，主行情补丁按日期比
      · 补完派发 wufu:bundled-ready，两套系统据此重放补丁、刷新日期
+   v53 · state.json 顶层的 overrides（修复点 + ETF 新增标的）每次打开都作为最后一层
+        覆盖：只读本机补丁、只改修复类字段与 custom，行情 days 与本机更晚数据不动
    任何一路失败都静默跳过，不弹窗、不阻塞、断网照常打开。
    ============================================================ */
 (function () {
@@ -114,6 +116,49 @@
     done(true);
     return null;
   }
+  /* v53 · 本机覆盖层（每次同步都合并，作为最后一层） */
+  var OV_EMPTY = { corrections: [], ohlcFix: {}, navFix: {}, resupply: {}, swaps: [],
+                   refactors: [], exempt: [], fyFix: {}, fyCheck: null };
+  var OV_ETF = ["corrections","ohlcFix","navFix","resupply","swaps","refactors","exempt","fyFix","fyCheck"];
+  var OV_CB = ["corrections","ohlcFix","resupply","exempt","swaps","refactors"];
+  function ovEmpty(f) { var v = OV_EMPTY[f]; return Array.isArray(v) ? [] : (v && typeof v === "object" ? {} : null); }
+  function applyOverrides(j) {
+    var ov = j && j.overrides;
+    if (!ov || ov.enabled === false || !ov.fixes) return 0;
+    var S = window.WufuStore, jobs = [
+      { key: "wufuQPatch_v1", fields: OV_ETF, fix: ov.fixes && ov.fixes.etf,
+        items: (ov.etfExtra && Array.isArray(ov.etfExtra.items)) ? ov.etfExtra.items : null },
+      { key: "wufuCbQPatch_v1", fields: OV_CB, fix: ov.fixes && ov.fixes.cb, items: null }
+    ];
+    var changed = 0, pending = false;
+    jobs.forEach(function (t) {
+      if (!t.fix && !t.items) return;
+      var raw = null;
+      try { raw = window.localStorage.getItem(t.key); } catch (e) { }
+      if (!raw && S && S.get) { try { raw = S.get(t.key); } catch (e2) { } }
+      if (!raw) return;                     /* 本机还没有补丁：apply() 已写入仓库那份（自带覆盖层） */
+      var p, before;
+      try { p = JSON.parse(raw); before = JSON.stringify(p); } catch (e) { return; }
+      if (!p || typeof p !== "object") return;
+      if (t.fix) t.fields.forEach(function (f) {
+        var v = t.fix[f];
+        p[f] = (v !== undefined && v !== null) ? v : ovEmpty(f);
+      });
+      if (t.items) p.custom = t.items;
+      var after = JSON.stringify(p);
+      if (after === before) return;
+      try {
+        if (S && S.put) { var r = S.put(t.key, after); if (r && r.ok === false) return; if (r && r.pending) pending = true; }
+        else window.localStorage.setItem(t.key, after);
+        changed++;
+      } catch (e) { }
+    });
+    if (!changed) return 0;
+    var done = function () { fire({ exportedAt: j.exportedAt || "", dataAsOf: j.dataAsOf || "", overrides: changed }); };
+    if (pending && S && S.flush) return S.flush().then(function () { done(); return changed; });
+    done();
+    return changed;
+  }
   function run() {
     var urls = [];
     try { urls.push(new URL("state.json?__swcache=1", siteRoot()).href); } catch (e) { }
@@ -127,7 +172,7 @@
           if (!j || !j.localStorage || typeof j.localStorage !== "object") return;
           if (!best || asof(j) > asof(best)) best = j;
         });
-        if (best) return apply(best);
+        if (best) return Promise.resolve(apply(best)).then(function () { return applyOverrides(best); });
         return null;
       }).catch(function () { });
   }

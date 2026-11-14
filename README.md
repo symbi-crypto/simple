@@ -1,3 +1,14 @@
+# v53 · 一个文件回传「修复补丁 + 新增标的」
+
+系统「ETF系统·其他功能 → 标的管理 → 导出修复补丁」会下载 `local-overrides.json`：
+只含两套系统的**修复点**和 **ETF 新增标的全量名单**，不含策略 / 组合 / 修复日志。
+GitHub 仓库 → `Add file` → `Upload files` 覆盖同名文件 → `Commit changes` 即可；
+`每周行情同步` **每次运行都合并**（没新行情的那周也合并），作为生成 `state.json`
+之后的最后一层覆盖，页面打开时由 `hub-core.js` 再盖一次，所有设备长期一致。
+撤销修复 / 移出标的后，重新导出一次空内容覆盖同名文件即可清空。
+仓库根目录的空模板 `enabled=false`，未启用时一个字节都不动本机数据；
+旧 `etf-extra.json` 仍兼容。内容没变化就不写 `state.json`、不提交、不触发构建。
+
 > **本仓库当前状态（2026-11-14）**：52 个站点文件已由助手通过 API 直接推送到 `main`，远端与本地逐字节校验通过；`.github/workflows/update.yml` 已被识别为「每周行情同步」（active）。
 >
 > **不用再传文件**：不要再点 `Add file → Upload files`，也不需要 `UPLOAD_THIS.zip`、分卷包或 `setup.yml`。

@@ -1,0 +1,11 @@
+{
+  "format": "wufu-local-overrides-v1",
+  "enabled": false,
+  "note": "空模板：enabled=false 表示未启用，不会改动任何本机数据。点系统里「导出修复补丁」下载同名文件覆盖本文件并提交，之后每次同步自动合并。",
+  "fixes": {},
+  "etfExtra": {
+    "format": "wufu-etf-extra-v1",
+    "count": 0,
+    "items": []
+  }
+}

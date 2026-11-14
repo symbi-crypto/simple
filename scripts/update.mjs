@@ -1,10 +1,15 @@
 /* ============================================================
-   GitHub Actions · 每周行情同步（v51）
+   GitHub Actions · 每周行情同步（v53）
 
    思路：不重写取数逻辑。用 actions/checkout 拿到的仓库文件在 Actions 本机
    起一个静态站点（127.0.0.1），无头浏览器打开它，点两套系统原有的
    「一键更新行情」，等「数据止」真正到达最近交易日，再读出补丁生成 state.json。
    不走公网：花生壳 / 部分主机按来源 IP 放行，云机房会被 403 挡在门外。
+
+   v53 新增「本机覆盖层」：仓库根目录 local-overrides.json（修复点 + ETF 新增标的，
+   由系统里「导出修复补丁」生成）每次运行都合并，放在生成 state.json 之后当最后一层
+   覆盖；没有新行情的那一周也照样合并，不再搭「有新行情」那班车。内容没变化就不写
+   state.json、不提交、不触发构建。旧 etf-extra.json 仍兼容；空模板 enabled=false 不动数据。
 
    v51 修掉三件真毛病：
    1) 旧判据是「补丁末日 > 更新前末日」。周六重跑时本机已被 state.json 补到
@@ -29,6 +34,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = path.join(ROOT, 'state.json');
 const STATUS = path.join(ROOT, 'sync-status.json');
 const EXTRA = path.join(ROOT, 'etf-extra.json');
+const OVERRIDES = path.join(ROOT, 'local-overrides.json');
+const FIX_ETF = ['corrections','ohlcFix','navFix','resupply','swaps','refactors','exempt','fyFix','fyCheck'];
+const FIX_CB = ['corrections','ohlcFix','resupply','exempt','swaps','refactors'];
+const EMPTY = { corrections: [], ohlcFix: {}, navFix: {}, resupply: {}, swaps: [],
+                refactors: [], exempt: [], fyFix: {}, fyCheck: null };
 const HOLIDAY = path.join(ROOT, 'common/holiday-cn.json');
 const SITE = String(process.env.SITE_URL || '').trim().replace(/\/+$/, '');
 const PUBLIC_SITE = String(process.env.PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
@@ -42,15 +52,50 @@ const TARGETS = [
 ];
 
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
+/* v53 本地自测：只跑覆盖层合并，不启动浏览器、不写仓库文件 */
+if (process.env.WUFU_OVERRIDE_SELFTEST === '1') {
+  const mk = () => ({
+    'wufuQPatch_v1': JSON.stringify({ v:7, days:[{date:'2026-11-13'}], custom:[{code:'OLD'}], corrections:[{c:'X',date:'2026-11-10'}] }),
+    'wufuCbQPatch_v1': JSON.stringify({ v:1, days:[{date:'2026-11-13'}], corrections:[] })
+  });
+  const ov = normalizeOverrides({ format:'wufu-local-overrides-v1', enabled:true,
+    fixes:{ etf:{ corrections:[{c:'A',date:'2026-11-11'}], ohlcFix:{B:1} }, cb:{ corrections:[{c:'C',date:'2026-11-12'}] } },
+    etfExtra:{ format:'wufu-etf-extra-v1', count:1, items:[{code:'NEW',bars:[]}] } });
+  const ls = mk(), r = mergeOverrides(ls, ov);
+  const pe = JSON.parse(ls['wufuQPatch_v1']), pc = JSON.parse(ls['wufuCbQPatch_v1']);
+  const ok1 = pe.corrections.length === 1 && pe.corrections[0].c === 'A' && pe.ohlcFix.B === 1
+    && pe.custom.length === 1 && pe.custom[0].code === 'NEW' && pe.days[0].date === '2026-11-13'
+    && pc.corrections[0].c === 'C' && r.fixPoints === 3 && r.custom === 1;
+  const r2 = mergeOverrides(ls, ov);
+  const ok2 = r2.fixPoints === r.fixPoints && ls['wufuQPatch_v1'] === JSON.stringify(pe);
+  const empty = normalizeOverrides({ format:'wufu-local-overrides-v1', enabled:true, fixes:{etf:{},cb:{}}, etfExtra:{items:[]} });
+  const ls2 = mk(); mergeOverrides(ls2, empty);
+  const pe2 = JSON.parse(ls2['wufuQPatch_v1']);
+  const ok3 = pe2.corrections.length === 0 && Object.keys(pe2.ohlcFix).length === 0
+    && pe2.custom.length === 0 && pe2.days.length === 1;
+  console.log(JSON.stringify({ ok: ok1 && ok2 && ok3, ok1, ok2, ok3, r, r2, daysKept: pe.days.length }));
+  if (!(ok1 && ok2 && ok3)) process.exit(1);
+  process.exit(0);
+}
 /* 本地自测：WUFU_SELFTEST=1 只算目标交易日与回传名单数，不启动浏览器 */
 if (process.env.WUFU_SELFTEST === '1') {
-  const saved = fs.existsSync(EXTRA) ? fs.readFileSync(EXTRA, 'utf8') : null;
-  fs.writeFileSync(EXTRA, JSON.stringify({ format: 'wufu-etf-extra-v1', items: [{ code: 'TEST.SZ', name: '自测', bars: [] }] }));
-  const st = { localStorage: { wufuQPatch_v1: JSON.stringify({ days: [], custom: [] }) } };
-  const m = mergeExtra(st);
-  const custom = JSON.parse(st.localStorage.wufuQPatch_v1).custom;
-  console.log(JSON.stringify({ goal: recentTradingDay(), extra: 1, merged: m, custom: custom.length }));
-  if (saved != null) fs.writeFileSync(EXTRA, saved); else fs.unlinkSync(EXTRA);
+  console.log(JSON.stringify({ goal: recentTradingDay(), extra: readExtra().length }));
+  process.exit(0);
+}
+/* v53 自测：内容没变化不写文件、不触发构建 */
+if (process.env.WUFU_NOCHANGE_SELFTEST === '1') {
+  const tmp = path.join(ROOT, '.selftest-status.json');
+  try { fs.unlinkSync(tmp); } catch (e) { }
+  const obj = { goal: '2026-11-13', dataAsOf: '2026-11-13', targets: ['x'] };
+  const w1 = writeIfChanged(tmp, obj);
+  const w2 = writeIfChanged(tmp, obj);
+  const a = { localStorage: { k: 'v' }, dataAsOf: '2026-11-13', note: 'n', origin: 'o' };
+  const b = Object.assign({}, a, { exportedAt: 'changed' });
+  const eq = stateCore(a) === stateCore(b);
+  try { fs.unlinkSync(tmp); } catch (e) { }
+  const ok = w1 === true && w2 === false && eq;
+  console.log(JSON.stringify({ ok, firstWrite: w1, secondWrite: w2, coreIgnoresExportedAt: eq }));
+  if (!ok) process.exit(1);
   process.exit(0);
 }
 if (!SITE) die('未设置 SITE_URL：workflow 里应指向 http://127.0.0.1:8787 的本地静态站点。');
@@ -201,30 +246,81 @@ async function syncOne(ctx, t, goal) {
   }
 }
 
-/* 把「导出新增标的名单」回传的 etf-extra.json 合并进 state.json 的 ETF 补丁。
-   custom 里含完整 bars/rawBars，页面补回本机后全站立刻能看到新标的，
-   之后每周增量继续给它补日期。只在补丁已存在时合并，绝不凭空造一个空补丁。 */
-function mergeExtra(state) {
+/* ---------- v53 · 本机覆盖层 ----------
+   local-overrides.json（修复点 + ETF 新增标的全量名单）每次同步都作为最后一层覆盖。
+   enabled=false 的空模板 → 返回 null，一个字节都不动本机。
+   fixes.etf / fixes.cb 为 null 表示「不动修复」；字段齐全但全空表示「清空修复」（撤销）。
+   旧 etf-extra.json 仍兼容：只在没有启用新文件时转成「只带名单」的覆盖层。 */
+function emptyVal(f) {
+  const v = EMPTY[f];
+  return Array.isArray(v) ? [] : (v && typeof v === 'object' ? {} : null);
+}
+function normalizeOverrides(j) {
+  const fx = (src, fields) => {
+    if (!src || typeof src !== 'object') return null;
+    const o = {};
+    fields.forEach(f => { const v = src[f]; o[f] = (v === undefined || v === null) ? emptyVal(f) : v; });
+    return o;
+  };
+  const items = (j.etfExtra && Array.isArray(j.etfExtra.items)) ? j.etfExtra.items : null;
+  return {
+    format: 'wufu-local-overrides-v1', enabled: true,
+    fixes: { etf: fx(j.fixes && j.fixes.etf, FIX_ETF), cb: fx(j.fixes && j.fixes.cb, FIX_CB) },
+    etfExtra: { format: 'wufu-etf-extra-v1', count: items ? items.length : 0, items: items },
+    legacy: !!j.legacy
+  };
+}
+function readOverrides() {
+  let j = null;
+  try { j = JSON.parse(fs.readFileSync(OVERRIDES, 'utf8')); } catch (e) { }
+  if (j && j.format === 'wufu-local-overrides-v1' && j.enabled !== false) return normalizeOverrides(j);
   const items = readExtra();
-  if (!items.length) return 0;
-  const key = 'wufuQPatch_v1';
-  if (typeof state.localStorage[key] !== 'string') {
-    console.log('· 收到回传名单，但本次没有 ETF 补丁，暂不合并（下次同步自动带上）。');
-    return 0;
-  }
-  let p;
-  try { p = JSON.parse(state.localStorage[key]); } catch (e) { return 0; }
-  const cur = Array.isArray(p.custom) ? p.custom.slice() : [];
-  const have = new Set(cur.map(x => x && x.code).filter(Boolean));
+  if (items.length) return normalizeOverrides({ format:'wufu-local-overrides-v1', enabled:true,
+    fixes:{}, etfExtra:{ format:'wufu-etf-extra-v1', count:items.length, items }, legacy:true });
+  return null;
+}
+function countFixOne(fix, fields) {
   let n = 0;
-  items.forEach(it => {
-    const c = typeof it === 'string' ? it : (it && it.code);
-    if (c && !have.has(c)) { cur.push(typeof it === 'string' ? { code: c } : it); have.add(c); n++; }
+  fields.forEach(f => {
+    const v = fix[f];
+    if (Array.isArray(v)) n += v.length;
+    else if (v && typeof v === 'object') n += Object.keys(v).length;
   });
-  if (!n) return 0;
-  p.custom = cur;
-  state.localStorage[key] = JSON.stringify(p);
   return n;
+}
+function countFixAll(ov) {
+  return (ov.fixes && ov.fixes.etf ? countFixOne(ov.fixes.etf, FIX_ETF) : 0)
+       + (ov.fixes && ov.fixes.cb ? countFixOne(ov.fixes.cb, FIX_CB) : 0);
+}
+/* 合并进补丁本身：state.json 自包含，离线包 / 旧版页面也能吃到修复与新增标的 */
+function mergeOverrides(ls, ov) {
+  let fixPoints = 0, custom = 0;
+  const jobs = [
+    ['wufuQPatch_v1', FIX_ETF, ov.fixes && ov.fixes.etf, ov.etfExtra && ov.etfExtra.items],
+    ['wufuCbQPatch_v1', FIX_CB, ov.fixes && ov.fixes.cb, null]
+  ];
+  jobs.forEach(([k, fields, fix, items]) => {
+    if (!fix && !items) return;
+    if (typeof ls[k] !== 'string') { console.log(`· 覆盖层：仓库里暂无 ${k} 补丁，该侧跳过（下次同步自动带上）。`); return; }
+    let p; try { p = JSON.parse(ls[k]); } catch (e) { return; }
+    if (!p || typeof p !== 'object') return;
+    if (fix) { fields.forEach(f => { const v = fix[f]; p[f] = (v !== undefined && v !== null) ? v : emptyVal(f); }); fixPoints += countFixOne(fix, fields); }
+    if (items) { p.custom = items; custom = items.length; }
+    ls[k] = JSON.stringify(p);
+  });
+  return { fixPoints, custom };
+}
+/* 内容比较：exportedAt 不参与，避免「没变化也换时间戳 → 每周白提交」 */
+function stateCore(o) {
+  return JSON.stringify([o.localStorage, o.overrides || null, o.dataAsOf, o.note, o.origin]);
+}
+function writeIfChanged(file, obj) {
+  const txt = JSON.stringify(obj, null, 2) + '\n';
+  let cur = '';
+  try { cur = fs.readFileSync(file, 'utf8'); } catch (e) { }
+  if (cur === txt) return false;
+  fs.writeFileSync(file, txt, 'utf8');
+  return true;
 }
 
 function countNewSeries(raw) {
@@ -234,8 +330,10 @@ function countNewSeries(raw) {
 
 (async () => {
   const goal = recentTradingDay();
-  const extraCount = readExtra().length;
-  console.log(`本次目标交易日：${goal}；回传名单：${extraCount} 项`);
+  const ov = readOverrides();
+  const ovFixN = ov ? countFixAll(ov) : 0;
+  const ovExtraN = ov ? ((ov.etfExtra && ov.etfExtra.items) || []).length : 0;
+  console.log(`本次目标交易日：${goal}；本机覆盖层：${ov ? (ovFixN + ' 个修复点 / ' + ovExtraN + ' 只新增标的') : '未启用（空模板）'}`);
   const CHROME_PATH = String(process.env.CHROME_PATH || '').trim();
   const browser = await chromium.launch(Object.assign(
     { headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] },
@@ -288,47 +386,40 @@ function countNewSeries(raw) {
   const keys = Object.keys(out);
   const dataAsOf = keys.reduce((m, k) => { const d = lastDate(out[k]); return d > m ? d : m; }, '');
   const oldAsOf = keys.reduce((m, k) => { const d = lastDate(oldLS[k]); return d > m ? d : m; }, '');
-
-  if (!changed) {
-    /* 没有新行情，也可能刚回传了新增标的名单：照样合并，
-       否则名单要等到下一个有行情的周五才生效。 */
-    const baseState = old || {
-      format: 'wufu-offline-state-v2', exportedAt: new Date().toISOString(),
-      origin: PUBLIC_SITE || SITE, dataAsOf: '', note: '', localStorage: {}
-    };
-    const st = Object.assign({}, baseState, { localStorage: Object.assign({}, baseState.localStorage, out) });
-    const m = mergeExtra(st);
-    if (m) {
-      st.note = 'GitHub Actions 自动生成；页面打开时由 hub-core.js 自动补回本机并重放。' + notes.join('；') + `；ETF 回传名单合并 ${m} 只新标的`;
-      fs.writeFileSync(STATE, JSON.stringify(st) + '\n', 'utf8');
-      fs.writeFileSync(STATUS, JSON.stringify({ goal, dataAsOf: st.dataAsOf || '', targets: notes, cbNewSeries: cbNew, etfExtraMerged: m, etfExtra: extraCount, site: SITE }, null, 2) + '\n', 'utf8');
-      console.log(`\n✓ 无新行情，但合并了 ${m} 只回传新标的，state.json 已更新。`);
-      notes.forEach(n => console.log('  · ' + n));
-      return;
-    }
-    console.log('\n本次没有任何一侧取到更晚的行情，state.json 保持原样，不提交行情。');
-    notes.forEach(n => console.log('  · ' + n));
-    fs.writeFileSync(STATUS, JSON.stringify({ goal, dataAsOf: '', targets: notes, cbNewSeries: cbNew, etfExtra: extraCount, site: SITE }, null, 2) + '\n', 'utf8');
-    return;
-  }
+  if (!changed) console.log('\n本次没有取到更晚行情：保留原值；覆盖层照样每次合并。');
   if (dataAsOf && oldAsOf && dataAsOf < oldAsOf) {
     die('合并后数据止 ' + dataAsOf + ' 早于仓库原有 ' + oldAsOf + '，拒绝写入（防倒退）。');
   }
 
+  /* 以仓库旧状态为底，叠加本次取到的新补丁（没有新行情时就是原值） */
+  const ls = Object.assign({}, oldLS);
+  keys.forEach(k => { if (out[k] != null) ls[k] = out[k]; });
+  const applied = ov ? mergeOverrides(ls, ov) : { fixPoints: 0, custom: 0 };
+  if (ov) notes.push(`覆盖层每次合并：修复点 ${applied.fixPoints} 处 / ETF 新增标的 ${applied.custom} 只`);
+  else notes.push('覆盖层未启用（空模板），不改动本机修复');
+
+  const finalAsOf = keys.reduce((m, k) => { const d = lastDate(ls[k]); return d > m ? d : m; }, '') || (old && old.dataAsOf) || '';
   const state = {
     format: 'wufu-offline-state-v2',
-    exportedAt: new Date().toISOString(),
+    exportedAt: (old && old.exportedAt) || new Date().toISOString(),
     origin: PUBLIC_SITE || SITE,
-    dataAsOf,
+    dataAsOf: finalAsOf,
     note: 'GitHub Actions 自动生成；页面打开时由 hub-core.js 自动补回本机并重放。' + notes.join('；'),
-    localStorage: out
+    localStorage: ls
   };
-  const merged = mergeExtra(state);
-  if (merged) notes.push(`ETF 回传名单合并 ${merged} 只新标的`);
-  state.note = 'GitHub Actions 自动生成；页面打开时由 hub-core.js 自动补回本机并重放。' + notes.join('；');
-  fs.writeFileSync(STATE, JSON.stringify(state) + '\n', 'utf8');
-  fs.writeFileSync(STATUS, JSON.stringify({ goal, dataAsOf, targets: notes, cbNewSeries: cbNew, etfExtraMerged: merged, etfExtra: extraCount, site: SITE }, null, 2) + '\n', 'utf8');
-  console.log(`\n✓ 已写 state.json：数据止 ${dataAsOf || '基线'}，${keys.length} 个补丁键，${(fs.statSync(STATE).size / 1024).toFixed(1)} KB`);
-  console.log(`  CB 新上市标的 newSeries：${cbNew} 只；回传名单合并：${merged} 只`);
+  if (ov) state.overrides = ov;
+
+  /* 内容没变就不写、不提交、不触发构建（exportedAt 不参与比较） */
+  if (old && stateCore(old) === stateCore(state)) {
+    console.log('· state.json 内容未变化，沿用原文件（不提交、不触发构建）。');
+  } else {
+    state.exportedAt = new Date().toISOString();
+    fs.writeFileSync(STATE, JSON.stringify(state) + '\n', 'utf8');
+    console.log(`\n✓ 已写 state.json：数据止 ${finalAsOf || '基线'}，${keys.length} 个补丁键，${(fs.statSync(STATE).size / 1024).toFixed(1)} KB`);
+  }
+  const statusObj = { goal, dataAsOf: finalAsOf, targets: notes, cbNewSeries: cbNew,
+    overrideFixPoints: applied.fixPoints, etfExtra: ovExtraN, site: SITE };
+  const stChanged = writeIfChanged(STATUS, statusObj);
+  console.log(`  CB 新上市标的 newSeries：${cbNew} 只；覆盖层修复点：${applied.fixPoints}；新增标的：${applied.custom} 只；status 变更：${stChanged ? '是' : '否'}`);
   notes.forEach(n => console.log('  · ' + n));
 })().catch(e => die(String(e && e.stack || e)));
