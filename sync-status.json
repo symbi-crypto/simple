@@ -1,8 +1,8 @@
 {
-  "dataAsOf": "2026-11-13",
+  "dataAsOf": "",
   "targets": [
-    "可转债：本次未取到更晚行情（page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('#wufuUpdRun')\n），保留原值",
-    "ETF：更新到 2026-11-13"
+    "可转债：本次未取到更晚行情（page.waitForFunction: Timeout 1200000ms exceeded.），保留原值",
+    "ETF：本次未取到更晚行情（page.waitForFunction: Timeout 1200000ms exceeded.），保留原值"
   ],
   "site": "http://127.0.0.1:8787"
 }
