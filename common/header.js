@@ -15,7 +15,7 @@
   var m = new URL(s.src, location.href).pathname.match(/^(.*)\/common\/header\.js$/i);
   var rootPath = m ? m[1] + "/" : "/";
   var rootURL = new URL(rootPath, location.href).href;   // 带尾斜杠的站点根
-  var CACHE = "wufu-all-v48";
+  var CACHE = "wufu-all-v52";
 
   var inFrame = (function () { try { return window.top !== window; } catch (e) { return false; } })();
   var healthMode = /[?&]view=health(?:[&#]|$)/.test(location.search);
