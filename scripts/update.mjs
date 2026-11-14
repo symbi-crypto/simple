@@ -1,9 +1,10 @@
 /* ============================================================
    GitHub Actions · 每周行情同步（v50）
 
-   思路：不重写取数逻辑。用无头浏览器打开已经部署在 Netlify 的主站，
-   点两套系统原有的「一键更新行情」，等它把新交易日真正写进本机，
-   再把两个行情补丁读出来，生成仓库根目录的 state.json。
+   思路：不重写取数逻辑。用 actions/checkout 拿到的仓库文件在 Actions 本机
+   起一个静态站点（127.0.0.1），无头浏览器打开它，点两套系统原有的
+   「一键更新行情」，等新交易日真正写进本机，再读出补丁生成 state.json。
+   不走公网：花生壳 / 部分主机按来源 IP 放行，云机房会被 403 挡在门外。
 
    每周一次为什么够：两套系统的 netUpdate 都是「从当前末日的下一天，
    一直抓到今天」，一次点击会把整周（甚至漏跑几周）的交易日一次补齐，
@@ -30,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = path.join(ROOT, 'state.json');
 const SITE = String(process.env.SITE_URL || '').trim().replace(/\/+$/, '');
+const PUBLIC_SITE = String(process.env.PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
 /* 每周一次要拉 5 个交易日，请求量约是每日版的 5 倍，默认给到 20 分钟/侧。
    仓库变量 STEP_TIMEOUT_MS 可覆盖（毫秒）；workflow 的 job 上限同步放到 60 分钟。 */
 const STEP_TIMEOUT_MS = Number(process.env.STEP_TIMEOUT_MS || 20 * 60 * 1000);
@@ -42,7 +44,7 @@ const TARGETS = [
 ];
 
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
-if (!SITE) die('未设置 SITE_URL。请在 GitHub 仓库 Settings → Secrets and variables → Actions → Variables 里填 Netlify 站点地址（https://xxx.netlify.app）。');
+if (!SITE) die('未设置 SITE_URL：workflow 里应指向 http://127.0.0.1:8787 的本地静态站点。');
 if (!/^https?:\/\//.test(SITE)) die('SITE_URL 必须是完整 http(s) 地址，当前为：' + SITE);
 
 /* 与 hub-core.js / export.js 同一口径：days 末日 与 scale.asof 取较大者 */
@@ -204,7 +206,7 @@ async function syncOne(ctx, t) {
   const state = {
     format: 'wufu-offline-state-v2',
     exportedAt: new Date().toISOString(),
-    origin: SITE,
+    origin: PUBLIC_SITE || SITE,
     dataAsOf,
     note: 'GitHub Actions 自动生成；页面打开时由 hub-core.js 自动补回本机并重放。' + notes.join('；'),
     localStorage: out
