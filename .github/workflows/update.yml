@@ -50,14 +50,15 @@ jobs:
           STEP_TIMEOUT_MS: ${{ vars.STEP_TIMEOUT_MS }}
         run: node scripts/update.mjs
 
-      - name: 数据日期变新才提交（没变化不触发 Netlify 构建）
+      - name: 有变化才提交（没变化不触发 Netlify 构建）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -z "$(git status --porcelain -- state.json)" ]; then
-            echo "本周没有更新到更晚的行情，不提交、不触发构建。"
+          if [ -z "$(git status --porcelain -- state.json sync-status.json)" ]; then
+            echo "本周没有任何变化，不提交、不触发构建。"
             exit 0
           fi
-          git add state.json
-          git commit -m "chore: 周度行情增量 $(date -u +%F)"
+          git add sync-status.json
+          if [ -f state.json ]; then git add state.json; fi
+          git commit -m "chore: 周度同步 $(date -u +%F)"
           git push
