@@ -1,8 +1,12 @@
 {
-  "dataAsOf": "",
+  "goal": "2026-11-13",
+  "dataAsOf": "2026-11-13",
   "targets": [
-    "可转债：本次未取到更晚行情（page.waitForFunction: Timeout 1200000ms exceeded.），保留原值",
-    "ETF：本次未取到更晚行情（page.waitForFunction: Timeout 1200000ms exceeded.），保留原值"
+    "可转债：更新到 2026-11-13",
+    "ETF：已是 2026-11-13，无需更新"
   ],
+  "cbNewSeries": 81,
+  "etfExtraMerged": 0,
+  "etfExtra": 0,
   "site": "http://127.0.0.1:8787"
 }
