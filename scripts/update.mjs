@@ -83,7 +83,10 @@ async function waitReady(page) {
     d = d || window.__WUFU_D || window.D || null;
     return !!(d && d.calendar && d.calendar.length && d.series);
   }, null, { timeout: 180000 });
-  await page.waitForSelector('#wufuUpdRun', { state: 'attached', timeout: 60000 });
+  /* CB 体检页按钮是 qckUpdate，ETF 是 wufuUpdRun（也带 qckUpdate），两个都认 */
+  await page.waitForFunction(() => !!(
+    document.getElementById('wufuUpdRun') || document.getElementById('qckUpdate')
+  ), null, { timeout: 60000 });
 }
 
 /* 打开一个系统页 → 点更新 → 等补丁里出现更晚的日期。失败抛错，由调用方记下并保留旧值。 */
@@ -104,7 +107,7 @@ async function syncOne(ctx, t) {
     console.log(`[${t.name}] 更新前数据止：${d0 || '基线'}`);
 
     await page.evaluate(() => {
-      const b = document.getElementById('wufuUpdRun');
+      const b = document.getElementById('wufuUpdRun') || document.getElementById('qckUpdate');
       if (!b) throw new Error('找不到一键更新按钮');
       b.click();
     });
