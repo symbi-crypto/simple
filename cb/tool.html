@@ -11,6 +11,9 @@
 .hubEarlyHealth #viewCorr,.hubEarlyHealth #viewIc,.hubEarlyHealth #viewCorrelation,
 .hubEarlyHealth #viewStrategies,.hubEarlyHealth #viewCombo{display:none!important}
 .hubEarlyHealth #viewHealth{display:block!important}
+
+/* v0.54：明细内层表格滚到顶后继续带动外层，手势可拉回标题 */
+#qckDetailPane .tblwrap{overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch}
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>可转债量化回测系统</title>
@@ -653,6 +656,8 @@ document.addEventListener("DOMContentLoaded",function(){
 </header>
 <div id="dataLoadTip" style="display:none;align-items:center;gap:8px;margin:10px auto 0;max-width:1680px;padding:8px 14px;font-size:12.5px;color:#9FB0C3;background:rgba(14,116,144,.16);border:1px solid rgba(79,195,247,.3);border-radius:8px"><span class="dlt-ic spin" style="display:inline-block;width:12px;height:12px;border:2px solid #4FC3F7;border-top-color:transparent;border-radius:50%;flex:0 0 12px"></span><span class="dlt-tx">正在加载行情数据…</span></div>
 <div class="nav">
+  <button type="button" id="tabDashboard" onclick="location.href='dashboard.html'">综合看板</button>
+  
   <button type="button" id="tabIc">因子IC</button>
   <button type="button" id="tabHealth">数据体检</button>
   <button type="button" id="tabRotation" class="on">轮动回测</button>
@@ -1608,8 +1613,9 @@ document.addEventListener("DOMContentLoaded",function(){
     </details>
 
     <div id="qckDetailPane" style="display:none">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 10px">
+      <div id="qckDetailBar" style="position:sticky;top:0;z-index:6;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 10px;padding:9px 10px;background:#16202E;border:1px solid #2A3A4E;border-radius:6px">
         <b style="font-size:12px;color:#4FC3F7">完整明细</b>
+        <button id="qckToTop" type="button" class="corr-mini">↑ 回到标题</button>
         <button id="qckHideDetail" type="button" class="corr-mini">收起明细</button>
         <span class="qckLine">以下仅排障用，日常不用看</span>
       </div>
@@ -14376,6 +14382,42 @@ function showStrategyDetail(name) {
     setTimeout(function(){clearInterval(iv);},30000);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+
+
+<script id="qckPaneJs">
+(function(){
+  function pane(){ return document.getElementById('qckDetailPane'); }
+  /* 四路回顶：所有可滚动容器 + 首屏卡片 + iframe 外层，避免手势被内层表格吃掉 */
+  function toTop(){
+    try{ var se=document.scrollingElement||document.documentElement; if(se) se.scrollTop=0; }catch(e){}
+    try{ document.documentElement.scrollTop=0; document.body.scrollTop=0; }catch(e){}
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ try{ window.scrollTo(0,0); }catch(e2){} }
+    var ids=['viewHealth','qckCard','whHeader'];
+    ids.forEach(function(id){ try{ var c=document.getElementById(id); if(c&&c.scrollIntoView) c.scrollIntoView({block:'start'}); }catch(e){} });
+    try{ document.querySelectorAll('#qckDetailPane, #qckDetailPane *').forEach(function(n){
+      if(n.scrollTop && (getComputedStyle(n).overflowY==='auto'||getComputedStyle(n).overflowY==='scroll')) n.scrollTop=0;
+    }); }catch(e){}
+    try{ if(window.parent!==window) window.parent.postMessage({type:'wufu:scrollTop'},'*'); }catch(e){}
+  }
+  function openPane(){
+    var p=pane(); if(!p) return;
+    p.style.display='';
+    if(!p.getAttribute('data-opened')){
+      var ds=p.querySelectorAll('details'); for(var i=0;i<ds.length;i++) ds[i].open=true;
+      p.setAttribute('data-opened','1');
+    }
+    try{ var a=document.getElementById('advSettings'); if(a) a.open=false; }catch(e){}
+  }
+  function closePane(){ var p=pane(); if(p) p.style.display='none'; toTop(); }
+  document.addEventListener('click',function(e){
+    var t=e.target,id=t&&t.id;
+    if(!id&&t&&t.closest){ var b=t.closest('button,[id]'); id=b?b.id:''; }
+    if(id==='qckShowDetail'||id==='qckDetail') openPane();
+    else if(id==='qckHideDetail') closePane();
+    else if(id==='qckToTop') toTop();
+  },true);
 })();
 </script>
 

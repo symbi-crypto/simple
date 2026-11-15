@@ -8,7 +8,7 @@
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
    改任何页面或数据文件后请把 CACHE 末段 +1（v0.53 → v0.54）；1.0 之前一律用 v0.x。
    ============================================================ */
-var CACHE = "wufu-all-v0.53";
+var CACHE = "wufu-all-v0.54";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
@@ -17,13 +17,13 @@ var LIST = [
   "common/storage.js", "common/echarts.min.js", "common/inflate.js",
   "common/index-unify.js", "common/index.gz", "common/holiday-cn.json", "common/icon.svg",
   "common/patch-etf.js", "common/patch-cb.js", "common/combo-system.css", "common/hub-combo.js",
-  "common/export.js",
-  "etf/index.html", "etf/tool.html", "etf/manage.html", "etf/icon.svg", "etf/manifest.webmanifest",
+  "common/export.js", "common/dashboard.css", "common/dashboard.js",
+  "etf/index.html", "etf/tool.html", "etf/dashboard.html", "etf/manage.html", "etf/icon.svg", "etf/manifest.webmanifest",
   "etf/data/etf-data.gz", "etf/data/etf-data-vol.gz", "etf/data/etf-index.gz", "etf/data/holiday-cn.json",
-  "cb/index.html", "cb/tool.html", "cb/icon.svg", "cb/manifest.webmanifest",
+  "cb/index.html", "cb/tool.html", "cb/dashboard.html", "cb/icon.svg", "cb/manifest.webmanifest",
   "cb/data/cb-data.gz", "cb/data/cb-vol.gz", "cb/data/cb-extra.gz", "cb/data/holiday-cn.json",
   "cb/data/cb-scale-daily.json",
-  "combos/index.html",
+  "combos/index.html", "cb-daily.json", "index-daily.json",
   "health/index.html", "health/etf/index.html", "health/cb/index.html"
 ];
 

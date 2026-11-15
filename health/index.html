@@ -102,6 +102,14 @@
   var b=document.getElementById("btnExport");
   if(b && window.WufuExport) b.addEventListener("click",function(){ window.WufuExport.download(); });
 })();
+
+/* v0.54：iframe 里点「↑ 回到标题」时，外层也滚回顶栏标题 */
+window.addEventListener("message",function(e){
+  if(!e.data||e.data.type!=="wufu:scrollTop") return;
+  try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(err){ try{ window.scrollTo(0,0); }catch(e2){} }
+  try{ var h=document.getElementById("whHeader")||document.getElementById("htabs");
+       if(h&&h.scrollIntoView) h.scrollIntoView({block:"start"}); }catch(err){}
+});
 </script>
 </body>
 </html>
