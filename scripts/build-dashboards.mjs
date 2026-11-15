@@ -1,7 +1,6 @@
 /* build-dashboards.mjs — 周五同步后刷新两个综合看板快照
    1) cb-daily.json：把 state.json 里最新的可转债增量日追加成当日截面（六卡/分位/结构分布）
-   2) index-daily.json：尝试抓 31 个申万一级行业日线，补齐行业宽度、雷达、热力图；
-      抓不到就保持「—」，绝不写假值。
+   2) index-daily.json：由内嵌 index.gz 的真实日线重算 15 条指数分位与双线，不引外部数据源。
    原始 .gz 不进页面，只写算好的小 JSON。 */
 import fs from 'node:fs';
 
@@ -54,36 +53,30 @@ if (state && cb) {
   } else console.log('cb-daily.json 已是最新，不重写');
 }
 
-/* ---------- 指数：行业日线补齐（抓不到就留 —） ---------- */
-const ix = read('index-daily.json');
-if (ix) {
-  const SW = [['801010','农林牧渔'],['801030','基础化工'],['801040','钢铁'],['801050','有色金属'],['801080','电子'],['801110','汽车'],['801120','家用电器'],['801130','食品饮料'],['801140','纺织服饰'],['801150','轻工制造'],['801160','医药生物'],['801170','公用事业'],['801180','交通运输'],['801200','房地产'],['801210','商贸零售'],['801230','社会服务'],['801250','综合'],['801710','建筑材料'],['801720','建筑装饰'],['801730','电力设备'],['801740','国防军工'],['801750','计算机'],['801760','传媒'],['801770','通信'],['801780','银行'],['801790','非银金融'],['801950','煤炭'],['801960','石油石化'],['801970','环保'],['801980','美容护理'],['801890','机械设备']];
-  const ua = { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://gu.qq.com/' } };
-  const rows = [];
-  for (const [code, name] of SW) {
-    try {
-      const u = 'https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get?param=sw' + code + ',day,,,8,qfq';
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
-      const r = await fetch(u, { ...ua, signal: ctl.signal }); clearTimeout(t);
-      const j = await r.json(); const k = Object.keys(j.data || {})[0];
-      const arr = (j.data[k] || {}).day || (j.data[k] || {}).qfqday || [];
-      if (arr.length >= 2) {
-        const closes = arr.map(x => +x[2]); const dates = arr.map(x => x[0].slice(5));
-        const ma = closes.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, closes.length);
-        rows.push({ name, dates, chg: +((closes.at(-1) / closes.at(-2) - 1) * 100).toFixed(2), above: closes.at(-1) > ma, bias: +((closes.at(-1) / ma - 1) * 100).toFixed(2) });
-      }
-    } catch { /* 单个行业抓不到就标 — */ }
+/* ---------- 指数：从本地 index.gz 真算，不做任何外部抓取 ---------- */
+import zlib from 'node:zlib';
+const IXP = 'common/index.gz';
+if (fs.existsSync(IXP)) {
+  const gd = JSON.parse(zlib.gunzipSync(fs.readFileSync(IXP)).toString('utf8'));
+  const cal = gd.calendar || [], idxm = gd.index || {};
+  const GROUPS = {
+    A: [['000001.SH','上证指数'],['000300.SH','沪深300'],['000510.SH','中证A500'],['000906.SH','中证800'],['000905.SH','中证500'],['399006.SZ','创业板指'],['000680.SH','科创综指'],['000852.SH','中证1000'],['399303.SZ','国证2000']],
+    H: [['HSI.HI','恒生指数'],['HSTECH.HI','恒生科技'],['930915.CSI','港股通高股息']],
+    U: [['SPX.GI','标普500'],['NDX.GI','纳斯达克100'],['DJI.GI','道琼斯工业']]
+  };
+  const gp = c => { const a = idxm[c] || []; const o = []; for (let i=0;i<a.length;i++) if (typeof a[i]==='number' && a[i]>0) o.push([i,a[i]]); return o; };
+  const pctl = (g, years) => { if (!g.length) return null; const i=g[g.length-1][0], v=g[g.length-1][1]; const cut=new Date(Date.parse(cal[i])-365*years*86400000); const w=g.filter(([j])=>Date.parse(cal[j])>=cut.getTime()).map(x=>x[1]); return w.length?Math.round(100*w.filter(x=>x<=v).length/w.length):null; };
+  const line = (c, years, n) => { const g=gp(c); if(g.length<2) return [[],[]]; const end=g[g.length-1][0]; const cut=Date.parse(cal[end])-365*years*86400000; const w=g.filter(([j])=>Date.parse(cal[j])>=cut); if(w.length<2) return [[],[]]; const step=(w.length-1)/(n-1), pick=[]; for(let k=0;k<n;k++) pick.push(w[Math.min(w.length-1,Math.round(k*step))]); const b=pick[0][1]; return [pick.map(x=>+(100*x[1]/b).toFixed(2)), pick.map(x=>cal[x[0]].slice(0,7))]; };
+  const out = { format:'wufu-dash-idx-v2', dataAsOf: cal[cal.length-1] || null,
+    sampleNote:'指数基线 '+(cal[0]||'—')+' 起，共 '+cal.length+' 交易日；分位与曲线由本地真实日线计算',
+    idx:{}, idxTrend:{}, trendNote:{}, note:'15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线计算；不含外部抓取与占位值。' };
+  for (const [g,lst] of Object.entries(GROUPS)) {
+    out.idx[g] = lst.map(([c,n])=>{ const q=gp(c); if(q.length<2) return [n,null,null,null]; const v=q[q.length-1][1], p=q[q.length-2][1]; return [n,+((v/p-1)*100).toFixed(2),pctl(q,5),pctl(q,10)]; });
   }
-  if (rows.length >= 20) {
-    const dates = rows[0].dates.slice(-6);
-    ix.heat = { dates, industries: SW.map(x => x[1]),
-      values: SW.map(([, n]) => { const r = rows.find(z => z.name === n); return r ? dates.map(() => r.chg) : dates.map(() => null); }),
-      bias: SW.map(([, n]) => { const r = rows.find(z => z.name === n); return r ? dates.map(() => r.bias) : dates.map(() => null); }),
-      note: '行业日线由周五工作流抓取；抓不到的格子标 —' };
-    const above = rows.filter(r => r.above).length;
-    ix.metrics[0].val = Math.round(100 * above / rows.length);
-    ix.note = '15 条指数与 5/10 年分位由内嵌数据真算；行业宽度由周五抓取的行业日线生成。';
-    save('index-daily.json', ix);
-    console.log('index-daily.json 行业日线补齐', rows.length, '个行业');
-  } else console.log('行业日线未取全（' + rows.length + '/31），保持 —，不写假值');
-}
+  for (const [y,n] of [[5,61],[10,121]]) { const [hs,labels]=line('000300.SH',y,n); const [gz]=line('399303.SZ',y,n); out.idxTrend[String(y)]={labels,hs300:hs,gz2000:gz}; }
+  const gzg = gp('399303.SZ');
+  const gnote = gzg.length ? '国证2000 样本 '+gzg.length+' 交易日（约 '+(gzg.length/250).toFixed(1)+' 年），末有效日 '+cal[gzg[gzg.length-1][0]] : '国证2000 无有效序列';
+  out.trendNote['5']='样本 5 年 · '+gnote; out.trendNote['10']='样本 10 年（沪深300）· '+gnote;
+  save('index-daily.json', out);
+  console.log('index-daily.json 已由本地真实日线重算');
+} else console.log('未找到 common/index.gz，index-daily.json 保持原值');
