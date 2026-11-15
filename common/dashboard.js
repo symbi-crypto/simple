@@ -1,12 +1,12 @@
-/* dashboard.js — 综合看板渲染器（v0.54）
-   数据只来自同目录的 cb-daily.json / index-daily.json，缺数一律显示「—」，不写示意值。 */
+/* dashboard.js — 综合看板渲染器（v0.56）
+   数据只来自同目录的 cb-daily.json / index-daily.json，指数侧全部由本地真实日线计算，缺数一律显示「—」，不写示意值。 */
 (function () {
   'use strict';
   var wrap = document.getElementById('dashWrap');
   if (!wrap) return;
   var kind = wrap.getAttribute('data-kind') || 'cb';
   var url = wrap.getAttribute('data-json') || '../cb-daily.json';
-  var D = null, years = 5, metric = 0, hmode = 'chg', distKey = '价格';
+  var D = null, years = 5, distKey = '价格';
   var NS = 'http://www.w3.org/2000/svg';
   function $(id) { return document.getElementById(id); }
   function T(v) { return (v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) ? '—' : String(v); }
@@ -119,22 +119,20 @@
   /* ===================== 指数看板 ===================== */
   function renderIDX() {
     var d = D || {};
-    var hd = document.querySelector('#c2 .hd span'); if (hd) hd.textContent = '指数基线 ' + T(d.dataAsOf);
-    var sl = document.querySelector('#c2 .sumline');
-    var tv = (d.turnover || {}).value;
+    var hd = document.querySelector('#c2 .hd span');
+    if (hd) hd.textContent = '指数基线 ' + T(d.dataAsOf);
     function findChg(name) {
       var A = (d.idx || {}).A || [];
       for (var i = 0; i < A.length; i++) if (A[i][0] === name) return A[i][1];
       return null;
     }
-    var c3 = findChg('沪深300'), c2 = findChg('国证2000');
     function ch(v) { return typeof v === 'number' ? '<span class="' + cls(v) + '">' + (v > 0 ? '+' : '') + v.toFixed(2) + '%</span>' : '—'; }
-    if (sl) sl.innerHTML = '两市成交额 <b>' + T(tv) + '</b><i>·</i>' + T((d.turnover || {}).note || '') +
-      '<div class="sumsub">沪深300 ' + ch(c3) + ' · 国证2000 ' + ch(c2) + '（起点归一曲线见下方 A股行业宽度全景）</div>';
+    var sl = $('idxSum');
+    if (sl) sl.innerHTML = '沪深300 ' + ch(findChg('沪深300')) + '<i>·</i>国证2000 ' + ch(findChg('国证2000'));
     renderIdxRows(d);
-    renderCards(d);
-    drawRadar(d); drawArea(d); drawIdxChart(d); drawHeatbar(d); drawTable(d);
-    var sn = $('sampleNote'); if (sn) sn.textContent = d.sampleNote || '样本 —';
+    drawIdxChart(d);
+    var sn = $('idxSampleNote');
+    if (sn) sn.textContent = ((d.trendNote || {})[String(years)]) || d.sampleNote || '样本 —';
   }
   function renderIdxRows(d) {
     var groups = [['A', 'idxA'], ['H', 'idxH'], ['U', 'idxU']];
@@ -158,87 +156,28 @@
     if (gh[2]) gh[2].textContent = nh + ' 条 · 指数基线 ' + T(d.dataAsOf);
     if (gh[3]) gh[3].textContent = nu + ' 条 · 指数基线 ' + T(d.dataAsOf);
   }
-  function renderCards(d) {
-    var g = CLR('mgrid');
-    (d.metrics || []).forEach(function (m, i) {
-      var e = document.createElement('div'); e.className = 'mcard' + (i === metric ? ' on' : '');
-      e.innerHTML = '<div class="mn">' + T(m.name) + '</div><div class="mv">' + (m.val === null ? '—' : m.val) + '</div>';
-      e.onclick = function () { metric = i; renderCards(d); drawArea(d); };
-      g.appendChild(e);
-    });
-    var ph = document.createElement('div'); ph.className = 'mcard ph'; ph.textContent = '点卡片切换上方折线'; g.appendChild(ph);
-  }
-  function drawRadar(d) {
-    var svg = $('radar'); if (!svg) return; svg.innerHTML = '';
-    var cx = 180, cy = 104, R = 68, N = 7;
-    var pt = function (i, f) { var a = -Math.PI / 2 + i * 2 * Math.PI / N; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; };
-    [0.25, 0.5, 0.75, 1].forEach(function (f) {
-      var p = []; for (var i = 0; i < N; i++) p.push(pt(i, f).join(','));
-      svg.appendChild(E('polygon', { points: p.join(' '), fill: 'none', stroke: '#2C3B4E', 'stroke-width': '1' }));
-    });
-    for (var i = 0; i < N; i++) svg.appendChild(E('line', { x1: cx, y1: cy, x2: pt(i, 1)[0], y2: pt(i, 1)[1], stroke: '#2C3B4E' }));
-    var ms = d.metrics || [];
-    ms.forEach(function (m, i) {
-      var a = -Math.PI / 2 + i * 2 * Math.PI / N;
-      svg.appendChild(TX(cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14) + 3, m.short || '', 9, '#7C8DA1', 'middle'));
-    });
-    svg.appendChild(TX(180, 198, ms.length && ms[0].val === null ? '行业日线暂缺 · 七项显示 —' : '', 10, '#7C8DA1', 'middle'));
-  }
-  function drawArea(d) {
-    var m = (d.metrics || [])[metric] || {};
-    var at = $('areaTitle'); if (at) at.textContent = T(m.name) + (m.val === null ? ' · —' : ' · 当前 ' + m.val);
-    var a = ((d.area || {})[String(years)] || {})[m.short || ''] || null;
-    if (!a) { emptyChart('areaChart', '暂无行业日线快照'); return; }
-    multi($('areaChart'), [{ data: a, color: '#4FC3F7' }], null);
-  }
   function drawIdxChart(d) {
     var t = ((d.idxTrend || {})[String(years)] || {});
     var svg = $('idxChart'); if (!svg) return; svg.innerHTML = '';
     var s1 = t.hs300 || [], s2 = t.gz2000 || [], n = Math.max(s1.length, s2.length);
     if (!n) { emptyChart('idxChart', '暂无指数曲线'); return; }
-    var Y = function (v) { return 12 + (150 - Math.max(55, Math.min(148, v))) / 90 * 124; };
-    grid(svg, [60, 100, 140], Y, 34, 344);
-    [60, 100, 140].forEach(function (v) { svg.appendChild(TX(2, Y(v) + 3, String(v), 9)); });
+    var all = s1.concat(s2).filter(function (x) { return isFinite(x); });
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    if (!isFinite(lo) || !isFinite(hi) || hi === lo) { lo = 60; hi = 140; }
+    var pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    var Y = function (v) { return 12 + (hi - v) / (hi - lo) * 120; };
+    grid(svg, [lo + (hi - lo) * 0.25, lo + (hi - lo) * 0.5, lo + (hi - lo) * 0.75], Y, 34, 344);
     [[s1, '#4FC3F7'], [s2, '#F87171']].forEach(function (p) {
       var pts = [];
-      p[0].forEach(function (v, i) { if (v !== null && isFinite(v)) pts.push((34 + i * (310 / Math.max(1, p[0].length - 1))) + ',' + Y(v)); });
+      p[0].forEach(function (v, i) { if (isFinite(v)) pts.push((34 + i * (310 / Math.max(1, p[0].length - 1))) + ',' + Y(v)); });
       if (pts.length > 1) svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: p[1], 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
     });
-    (t.labels || []).forEach(function (L, i) {
-      var x = 34 + i * (310 / Math.max(1, t.labels.length - 1));
-      svg.appendChild(TX(x, 146, L, 9, '#7C8DA1', i === 0 ? 'start' : (i === t.labels.length - 1 ? 'end' : 'middle')));
-    });
-    svg.appendChild(TX(344, 20, '两市成交额柱暂缺', 8.5, '#7C8DA1', 'end'));
-  }
-  function drawHeatbar(d) {
-    var hb = CLR('heatbar'); if (!hb) return;
-    var ms = d.metrics || [];
-    ms.forEach(function (m) {
-      var lab = document.createElement('div'); lab.className = 'hl'; lab.textContent = m.short || ''; hb.appendChild(lab);
-      for (var i = 0; i < 24; i++) {
-        var c = document.createElement('div'); c.className = 'hc';
-        c.style.background = 'rgba(124,141,161,.18)'; c.title = '暂无快照';
-        hb.appendChild(c);
-      }
-    });
-  }
-  function drawTable(d) {
-    var t = $('indTable'); if (!t) return; t.innerHTML = '';
-    var h = d.heat || {}, dates = h.dates || [], names = h.industries || [];
-    if (!names.length) names = ['农林牧渔','基础化工','钢铁','有色金属','电子','汽车','家用电器','食品饮料','纺织服饰','轻工制造','医药生物','公用事业','交通运输','房地产','商贸零售','社会服务','综合','建筑材料','建筑装饰','电力设备','国防军工','计算机','传媒','通信','银行','非银金融','煤炭','石油石化','环保','美容护理','机械设备'];
-    if (!dates.length) dates = ['—','—','—','—','—','—'];
-    var thead = document.createElement('thead'), tr = document.createElement('tr');
-    var h0 = document.createElement('th'); h0.className = 'hdcell'; h0.textContent = '行业/日期'; tr.appendChild(h0);
-    dates.forEach(function (x) { var th = document.createElement('th'); th.className = 'dt'; th.textContent = x; tr.appendChild(th); });
-    thead.appendChild(tr); t.appendChild(thead);
-    var tb = document.createElement('tbody');
-    names.forEach(function (nm) {
-      var r = document.createElement('tr'), td0 = document.createElement('td');
-      td0.className = 'iname'; td0.textContent = nm; r.appendChild(td0);
-      dates.forEach(function () { var td = document.createElement('td'); td.className = 'cell'; td.textContent = '—'; r.appendChild(td); });
-      tb.appendChild(r);
-    });
-    t.appendChild(tb);
+    var LB = t.labels || [], LN = 6;
+    if (LB.length) for (var q = 0; q < LN; q++) {
+      var k = Math.round(q * (LB.length - 1) / (LN - 1));
+      svg.appendChild(TX(34 + q * (310 / (LN - 1)), 146, LB[k], 9, '#7C8DA1',
+        q === 0 ? 'start' : (q === LN - 1 ? 'end' : 'middle')));
+    }
   }
 
   /* ===================== 交互 ===================== */
@@ -251,24 +190,17 @@
       if (fill) fill.style.width = (p === '' || p === null ? 0 : p) + '%';
       if (dot) dot.style.left = (p === '' || p === null ? 0 : p) + '%';
     });
-    if (D) { if (kind === 'cb') drawCbTrend(D); else { renderIdxRows(D); drawArea(D); drawIdxChart(D); } }
+    if (D) { if (kind === 'cb') drawCbTrend(D); else { renderIdxRows(D); drawIdxChart(D); var sn = $('idxSampleNote'); if (sn) sn.textContent = ((D.trendNote || {})[String(years)]) || D.sampleNote || '样本 —'; } }
   }
   document.querySelectorAll('[data-seg] span[data-y]').forEach(function (s) {
     s.onclick = function () { years = +s.getAttribute('data-y'); applyYears(); };
-  });
-  document.querySelectorAll('#hseg span[data-m]').forEach(function (s) {
-    s.onclick = function () {
-      hmode = s.getAttribute('data-m');
-      document.querySelectorAll('#hseg span[data-m]').forEach(function (z) { z.classList.toggle('on', z === s); });
-      if (D) drawTable(D);
-    };
   });
   function boot() {
     if (D) { if (kind === 'cb') renderCB(); else renderIDX(); }
     applyYears();
   }
   function fail() {
-    var strip = document.querySelector('#c1 .strip') || document.querySelector('#c2 .sumline');
+    var strip = document.querySelector('#c1 .strip') || $('idxSum');
     if (strip) strip.innerHTML = '暂无快照 · 数据文件尚未生成（周五同步后自动出现）';
     boot();
   }
