@@ -36,7 +36,7 @@ jobs:
           print('样例板块:',i['sample_boards'])
           print('--- 误判源坐实 ---')
           for c in d['clarifications']:
-              print(c['id'],c['status'],c['bytes'],(c.get('extract') or c['sample'])[:160])
+              print(c['id'],c['status'],c['bytes'],str(c.get('extract') or c.get('sample') or '')[:160])
           print('--- FRED ---')
           for x in d['fred']: print(x['id'],x['status'],x['bytes'],x['sample'][:90])
           print('--- SPDR ---')
