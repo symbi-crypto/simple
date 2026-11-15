@@ -12,7 +12,7 @@
   · 口径写进 JSON：东财「行业板块」是细分板块，不是申万一级行业。
 """
 import json, ssl, gzip, time, os, sys, datetime, urllib.request, urllib.error, traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 CTX = ssl._create_unverified_context()
@@ -20,8 +20,9 @@ ROOT = os.getcwd()
 WARN = []
 
 
-def get(url, timeout=30, tries=3):
-    """带重试的 GET；返回 (status, text) 或 (None, 错误串)。"""
+def get(url, timeout=12, tries=2):
+    """带重试的 GET；返回 (status, text) 或 (None, 错误串)。
+    超时刻意压短：宁可少一个板块，也不让无人值守任务卡几十分钟。"""
     last = ""
     for k in range(tries):
         try:
@@ -39,7 +40,7 @@ def get(url, timeout=30, tries=3):
             last = "HTTP %s" % e.code
         except Exception as e:
             last = "%s: %s" % (type(e).__name__, str(e)[:120])
-        time.sleep(0.6 * (k + 1))
+        time.sleep(0.35 * (k + 1))
     return None, last
 
 
@@ -104,7 +105,7 @@ EM_KL = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=90.%s&klt=
 def get_boards():
     out, total = [], None
     for pn in range(1, 7):
-        st, txt = get(EM_LIST % pn, timeout=25)
+        st, txt = get(EM_LIST % pn, timeout=12)
         d = (jload(txt).get("data") or {})
         diff = d.get("diff") or []
         if isinstance(diff, dict):
@@ -128,7 +129,7 @@ def get_boards():
 
 def one_board(b):
     code, name = b["f12"], b["f14"]
-    st, txt = get(EM_KL % code, timeout=30, tries=3)
+    st, txt = get(EM_KL % code, timeout=9, tries=2)
     o = jload(txt)
     kl = (o.get("data") or {}).get("klines") or []
     series = {}
@@ -149,21 +150,26 @@ def build_industry():
     if not boards:
         raise RuntimeError("东财板块清单为空，无法生成行业宽度")
     res = []
-    # 低并发 + 每请求自带 3 次重试，避开东财限流
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        futs = {ex.submit(one_board, b): b for b in boards}
-        for f in as_completed(futs):
-            try:
-                res.append(f.result())
-            except Exception as e:
-                WARN.append("板块任务异常: %s" % str(e)[:100])
+    # 最多取前 120 个板块（热力图全铺这些），整体 180 秒硬截止，超时用已成功的继续
+    todo = boards[:120]
+    ex = ThreadPoolExecutor(max_workers=6)
+    futs = [ex.submit(one_board, b) for b in todo]
+    done, not_done = wait(futs, timeout=180)
+    for f in done:
+        try:
+            res.append(f.result())
+        except Exception as e:
+            WARN.append("板块任务异常: %s" % str(e)[:100])
+    if not_done:
+        WARN.append("板块抓取 180 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
+    ex.shutdown(wait=False, cancel_futures=True)
     ok = [r for r in res if r["ok"]]
     ok.sort(key=lambda x: x["code"])
-    print("板块日线成功", len(ok), "/", len(boards))
+    print("板块日线成功", len(ok), "/", len(todo))
     if len(ok) < 31:
         raise RuntimeError("仅 %d 个板块拿到 >=220 根日线，不足 31，拒绝生成空壳" % len(ok))
-    if len(ok) < len(boards):
-        WARN.append("板块日线成功 %d/%d，热力图按实际成功数全铺" % (len(ok), len(boards)))
+    if len(ok) < len(todo):
+        WARN.append("板块日线成功 %d/%d，热力图按实际成功数全铺" % (len(ok), len(todo)))
 
     # 全局交易日 = 所有成功板块日期的并集
     all_days = sorted(set().union(*[set(r["series"]) for r in ok]))
@@ -292,10 +298,10 @@ def build_industry():
         "dataAsOf": last,
         "source": "东财行业板块（m:90+t:2，细分板块，非申万一级行业）",
         "boardCount": len(ok),
-        "boardTotal": len(boards),
+        "boardTotal": len(todo),
         "sampleDays": len(days),
         "sampleFrom": days[0] if days else None,
-        "sampleNote": "样本 %d 个交易日（%s 起）· %d/%d 个板块成功" % (len(days), days[0] if days else "—", len(ok), len(boards)),
+        "sampleNote": "样本 %d 个交易日（%s 起）· 清单前 %d 个板块中 %d 个成功" % (len(days), days[0] if days else "—", len(todo), len(ok)),
         "keys": keys,
         "indicators": [{"key": k, "name": k, "value": today[j]} for j, k in enumerate(keys)],
         "radar": {"today": today, "lastWeek": lastweek},
@@ -320,7 +326,7 @@ AU = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=118.AU9999&kl
 
 
 def yahoo(sym):
-    st, txt = get(YAHOO % sym, timeout=30, tries=3)
+    st, txt = get(YAHOO % sym, timeout=18, tries=2)
     if st != 200:
         WARN.append("Yahoo %s 失败: %s" % (sym, txt[:80]))
         return {}
@@ -342,7 +348,7 @@ def yahoo(sym):
 
 
 def gvz_series():
-    st, txt = get(GVZ, timeout=30, tries=3)
+    st, txt = get(GVZ, timeout=18, tries=2)
     if st != 200:
         WARN.append("GVZ 失败: %s" % txt[:80])
         return {}
@@ -360,7 +366,7 @@ def gvz_series():
 
 
 def au_series():
-    st, txt = get(AU, timeout=30, tries=3)
+    st, txt = get(AU, timeout=18, tries=2)
     if st != 200:
         WARN.append("上海金 Au99.99 失败: %s" % txt[:80])
         return {}
