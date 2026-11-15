@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>综合看板 · 指数</title>
+<title>ETF量化回测系统</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="../common/header.css">
 <link rel="stylesheet" href="../common/dashboard.css">
@@ -9,104 +9,48 @@
 :root{--bg:#1B2634;--card:#202E3F;--line:#243244;--edge:#3E4E63;--ink:#F1F5F9;--mut:#9FB0C3;--gray:#7C8DA1;--acc:#4FC3F7;--acc2:#22D3EE;--up:#F87171;--down:#34D399;--purple:#A78BFA;--amber:#FBBF24;--radius:10px}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-
 .nav{display:flex;gap:5px;padding:10px 16px 0;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
 .nav button,.nav a{font-size:11.5px;padding:6px 8px;flex:0 0 auto;white-space:nowrap;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:none;background:var(--card);color:var(--mut);cursor:pointer;text-decoration:none;display:inline-block}
 .nav button.on,.nav a.on{background:var(--acc);color:#fff;font-weight:600}
 </style>
 </head><body>
-<script src="../common/header.js" data-t1="综合看板" data-t2="" data-badge="none"></script>
-<div class="nav"><button type="button" class="on">综合看板</button><button type="button" onclick="location.href='index.html'">相关性</button><button type="button" onclick="location.href='index.html'">轮动回测</button><button type="button" onclick="location.href='tool.html?view=health'">数据体检</button></div>
+<script src="../common/header.js" data-t1="ETF量化" data-t2="回测系统" data-badge="none" data-page="etf"></script>
+<div class="nav">
+  <button type="button" class="on">综合看板</button>
+  <a href="index.html#/correlation">相关性</a>
+  <a href="index.html#/ic">因子IC</a>
+  <a href="index.html#/rotation">轮动回测</a>
+  <a href="index.html#/rebalance">再平衡回测</a>
+  <a href="index.html#/dca">定投回测</a>
+  <a href="index.html#/strategies">我的策略</a>
+</div>
 <div class="wrap" id="dashWrap" data-kind="idx" data-json="../index-daily.json">
-<!-- 指数看板 -->
   <div class="card" id="c2">
     <div class="hd"><b>指数看板</b><span>—</span></div>
-
-    <div class="sumline">
-      两市成交额 <b>—</b><i>·</i>较上日 <span class="u">+8.2%</span>
-      <div class="sumsub">沪深300 <span class="u">+0.52%</span> · 国证2000 <span class="u">+1.46%</span>（起点归一曲线见下方 A股行业宽度全景）</div>
-    </div>
-
-    <div class="ghead" style="margin-top:11px"><b>指数统计<span class="gname">—</span></b><span>右列区间分位</span></div>
+    <div class="sumline" id="idxSum">加载中…</div>
+    <div class="ghead" style="margin-top:11px"><b>指数统计<span class="gname">—</span></b>
+      <span class="seg" data-seg><span class="on" data-y="5">5年</span><span data-y="10">10年</span></span></div>
     <div class="ghead" style="margin-top:8px"><b><span style="color:#4FC3F7">A股</span><span class="gname">—</span></b></div>
     <div class="idx" id="idxA"></div>
     <div class="ghead" style="margin-top:10px"><b><span style="color:#A78BFA">港股</span><span class="gname">—</span></b><span>各自交易日</span></div>
     <div class="idx" id="idxH"></div>
     <div class="ghead" style="margin-top:10px"><b><span style="color:#9FB0C3">美股</span><span class="gname">—</span></b><span>各自交易日</span></div>
     <div class="idx" id="idxU"></div>
-    <div class="subnote" style="margin:8px 0 0">清单固定，不按涨跌竞赛、不做成榜单；右列分位随 5年 / 10年 一起切换。各组样本只覆盖清单内指数，不冒充全市场涨跌统计。</div>
-
-    <div class="more" onclick="tg('c2')"><span>A股行业宽度全景 · 行业热力图</span><span class="arw">▾</span></div>
+    <div class="more" onclick="tg('c2')"><span>沪深300 / 国证2000 · 历史对比</span><span class="arw">▾</span></div>
     <div class="detail">
-
-      <div class="subnote" style="margin-bottom:12px">A股行业宽度图<b>只覆盖 31 个申万一级行业指数</b>；港美股清单在上方并列，各自交易日、各算各的，不混进宽度图。</div>
-
-      <!-- 参考图1 -->
-      <div class="ref1" id="ref1">
-        <div class="refhd"><b>A股行业宽度全景图</b><span class="seg" data-seg><span class="on" data-y="5">5年</span><span data-y="10">10年</span></span></div>
-        <div class="subnote" style="margin:0 0 8px">基于 31 个申万一级行业指数 · 综合展示七个市场指标 · <span id="sampleNote">—</span></div>
-
-        <div class="desc">
-          <div class="li"><i style="background:#4FC3F7"></i><span><b>A股行业宽度</b>：行业指数高于 20 日均线的占比（0–100）</span></div>
-          <div class="li"><i style="background:#A78BFA"></i><span><b>MA20 / MA60 / MA200 占比</b>：站上对应均线的行业占比</span></div>
-          <div class="li"><i style="background:#F87171"></i><span><b>上涨行业占比</b>：当日收涨的行业数 / 31</span></div>
-          <div class="li"><i style="background:#FBBF24"></i><span><b>中位动量分位 / 成交额分位</b>：当前值在所选区间的百分位</span></div>
-          <div class="pillrow">
-            <span class="pill cold">低于 20% 过冷区间</span>
-            <span class="pill hot">高于 80% 过热区间</span>
-          </div>
-          <div class="note">使用说明：点指标卡片切换折线图；切 5 年 / 10 年看历史。<br>口径差：分母是 <b>31 条行业指数</b>，比个股口径平滑，数值不与参考站直接对照；PB温度、恐贪指数需另接全市场估值与多因子源，<b>不摆、不编</b>。</div>
-        </div>
-
-        <div class="radarbox">
-          <svg viewBox="0 0 360 210" id="radar" role="img" aria-label="七指标雷达图"></svg>
-          <div class="legend" style="justify-content:center">
-            <span><i style="background:#4FC3F7"></i>今日</span>
-            <span><i style="background:#FBBF24"></i>上周</span>
-          </div>
-        </div>
-
-        <div class="mgrid" id="mgrid"></div>
-
-        <div class="chartbox">
-          <div class="chartcap"><b id="areaTitle">A股行业宽度</b><span>0–100% · 20/80 虚线</span></div>
-          <svg viewBox="0 0 360 150" id="areaChart" role="img" aria-label="指标面积图"></svg>
-        </div>
-
-        <div class="chartbox" style="margin-top:10px">
-          <div class="chartcap"><b>沪深300 / 国证2000 + 两市成交额</b><span>起点归一 = 100</span></div>
-          <svg viewBox="0 0 360 150" id="idxChart" role="img" aria-label="沪深300与国证2000及两市成交额"></svg>
-          <div class="legend">
-            <span><i style="background:#4FC3F7"></i>沪深300（大盘）</span>
-            <span><i style="background:#F87171"></i>国证2000（小盘）</span>
-            <span><i style="background:#7C8DA1"></i>两市成交额</span>
-          </div>
-          <div class="subnote" style="margin:5px 0 0">大盘 / 小盘同图比形状位置，不复权点位混算；成交额柱共用时间轴。</div>
-        </div>
-
-        <div class="heatbar">
-          <div class="chartcap"><b>七指标温度条</b><span>每格一周 · 红=过热 蓝=过冷</span></div>
-          <div class="hb" id="heatbar"></div>
-          <div class="hblegend">对应参考站底部色带，行指标已换成我们真有的七项；不出现恐贪指数、PB温度。</div>
+      <div class="chartbox">
+        <div class="chartcap"><b>沪深300 / 国证2000</b><span>起点归一 = 100</span></div>
+        <svg viewBox="0 0 360 150" id="idxChart" role="img" aria-label="沪深300与国证2000历史对比"></svg>
+        <div class="legend">
+          <span><i style="background:#4FC3F7"></i>沪深300（大盘）</span>
+          <span><i style="background:#F87171"></i>国证2000（小盘）</span>
         </div>
       </div>
-
-      <!-- 参考图2 -->
-      <div class="ref2" id="ref2">
-        <div class="refhd"><b>行业热力图</b><span class="seg" id="hseg"><span class="on" data-m="chg">当日涨跌</span><span data-m="bias">距MA20乖离</span></span></div>
-        <div class="subnote" style="margin:0 0 8px">31 个申万一级行业<b>全铺、不折叠不分页</b> · 列 = 最近 6 个交易日（手机全显） · 格子填行业指数数值，红深领涨、绿深领跌</div>
-        <div class="tblscroll" id="tblscroll">
-          <table id="indTable"></table>
-        </div>
-        <div class="slidehint">当前 6 列全显 · 落版可扩交易日 · 行业名单固定</div>
-        <div class="subnote" style="margin:8px 0 0">口径：东财「行业板块」与严格申万一级不是一套代码，落版需做一次映射并标清来源；抓不到的格子标「—」，不补假值。</div>
-      </div>
-
+      <div class="subnote" id="idxSampleNote" style="margin:8px 0 0">—</div>
+      <div class="subnote" style="margin:6px 0 0">两条线各自归一 = 100，只比形状位置，不混算数值；右列分位为当前点位在所选窗口历史点位中的百分位。</div>
     </div>
   </div>
-
-  
 </div>
 <script src="../common/dashboard.js"></script>
 </body></html>
