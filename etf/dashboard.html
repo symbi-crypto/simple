@@ -18,6 +18,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 <script src="../common/header.js" data-t1="ETF量化" data-t2="回测系统" data-badge="none" data-page="etf"></script>
 <div class="nav">
   <button type="button" class="on">综合看板</button>
+  <a href="gold.html">黄金看板</a>
   <a href="index.html#/correlation">相关性</a>
   <a href="index.html#/ic">因子IC</a>
   <a href="index.html#/rotation">轮动回测</a>
@@ -49,8 +50,35 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
       </div>
       <div class="subnote" id="idxSampleNote" style="margin:8px 0 0">—</div>
       <div class="subnote" style="margin:6px 0 0">两条线各自归一 = 100，只比形状位置，不混算数值；右列分位为当前点位在所选窗口历史点位中的百分位。</div>
+
+      <div class="blk" style="margin-top:18px;border-top:1px dashed var(--edge);padding-top:14px">
+        <div class="sec"><b>A股行业宽度全景图</b><span id="indSample">—</span></div>
+        <div class="subnote" id="indSource" style="margin:0 0 9px">加载中…</div>
+        <div class="pillrow"><span class="pill cold">低于 20% 过冷</span><span class="pill hot">高于 80% 过热</span></div>
+        <div class="radarbox">
+          <svg viewBox="0 0 360 210" id="indRadar" role="img" aria-label="七指标雷达图"></svg>
+          <div class="legend" style="justify-content:center"><span><i style="background:#4FC3F7"></i>今日</span><span><i style="background:#FBBF24"></i>上周</span></div>
+        </div>
+        <div class="mgrid" id="indCards"></div>
+        <div class="chartbox">
+          <div class="chartcap"><b id="indAreaTitle">行业宽度</b><span>0–100% · 20/80 虚线</span></div>
+          <svg viewBox="0 0 360 150" id="indArea" role="img" aria-label="行业宽度面积图"></svg>
+        </div>
+        <div class="heatbar">
+          <div class="chartcap"><b>七指标温度条</b><span>每格一周 · 红=过热 蓝=过冷</span></div>
+          <div class="hb" id="indHeatbar"></div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <div class="sec"><b>行业热力图</b>
+          <span class="seg" id="indMode"><span class="on" data-m="chg">当日涨跌</span><span data-m="bias">距MA20乖离</span></span></div>
+        <div class="subnote" id="indHeatNote" style="margin:0 0 8px">—</div>
+        <div class="tblscroll"><table id="indTable"></table></div>
+      </div>
     </div>
   </div>
 </div>
 <script src="../common/dashboard.js"></script>
+<script src="../common/industry.js"></script>
 </body></html>

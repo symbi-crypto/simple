@@ -50,18 +50,21 @@ jobs:
           STEP_TIMEOUT_MS: ${{ vars.STEP_TIMEOUT_MS }}
         run: node scripts/update.mjs
 
-      - name: 生成两个综合看板快照
+      - name: 生成本地看板快照（可转债 / 指数）
         run: node scripts/build-dashboards.mjs
+
+      - name: 抓取并计算行业宽度 + 黄金快照
+        run: python3 scripts/build-external.py
 
       - name: 有变化才提交（没变化不触发 Netlify 构建）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -z "$(git status --porcelain -- state.json sync-status.json cb-daily.json index-daily.json)" ]; then
+          if [ -z "$(git status --porcelain -- state.json sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json)" ]; then
             echo "本周没有任何变化，不提交、不触发构建。"
             exit 0
           fi
-          git add sync-status.json cb-daily.json index-daily.json
+          git add sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json external-warnings.json
           if [ -f state.json ]; then git add state.json; fi
           git commit -m "chore: 周度同步 $(date -u +%F)"
           git push

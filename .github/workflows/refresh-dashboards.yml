@@ -1,0 +1,66 @@
+name: 刷新综合看板快照
+
+# 手动补数：不等周五，直接在 Actions 出口抓行业板块与国际金价，算好写回仓库。
+# 抓不到会明确失败（不再 continue-on-error 绿灯），部分板块缺失会写进 warnings 并标注实际数量。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wufu-dashboard-refresh
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 生成本地看板快照（可转债 / 指数）
+        run: node scripts/build-dashboards.mjs
+
+      - name: 抓取并计算行业宽度 + 黄金快照
+        run: python3 scripts/build-external.py
+
+      - name: 打印摘要
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, os
+          for f in ['industry-daily.json','gold-daily.json']:
+              if not os.path.exists(f):
+                  print(f, '未生成'); continue
+              d=json.load(open(f,encoding='utf-8'))
+              print('===', f, '字节', os.path.getsize(f), '===')
+              print('dataAsOf', d.get('dataAsOf'), '| source', d.get('source'))
+              print('sampleNote', d.get('sampleNote'))
+              print('warnings', d.get('warnings'))
+              if f.startswith('industry'):
+                  print('板块数', d.get('boardCount'), '/', d.get('boardTotal'),
+                        '| 热力图', len(d['heat']['names']), '行 ×', len(d['heat']['dates']), '列')
+                  print('七指标', [(x['name'], x['value']) for x in d['indicators']])
+              else:
+                  print('六卡', [(x['label'], x['value'], x['chg']) for x in d['kpi']])
+                  print('比价', d.get('ratios'))
+          PY
+
+      - name: 写回仓库
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cb-daily.json index-daily.json industry-daily.json gold-daily.json external-warnings.json
+          if git diff --cached --quiet; then
+            echo "快照无变化，不提交"
+          else
+            git commit -m "chore: 刷新综合看板快照 $(date -u +%F)"
+            git push
+          fi
