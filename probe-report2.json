@@ -1,0 +1,5 @@
+{
+  "run_at": "2026-11-15T14:41:11Z",
+  "runner": "GitHub Actions / ubuntu-latest (round2)",
+  "error": "Traceback (most recent call last):\n  File \"/home/runner/work/simple/simple/scripts/probe_round2.py\", line 164, in <module>\n    print(c[\"id\"], c[\"status\"], c[\"bytes\"], (c.get(\"extract\") or c[\"sample\"])[:180])\n                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\nTypeError: unhashable type: 'slice'\n"
+}
