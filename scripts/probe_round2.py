@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """第二轮细核：行业板块全量可取性 + 疑似误判源坐实。"""
-import json, ssl, gzip, time, urllib.request, urllib.error, os, re, datetime
+import json, ssl, gzip, time, urllib.request, urllib.error, os, re, datetime, sys, traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def _fatal(exc_type, exc, tb):
+    detail = "".join(traceback.format_exception(exc_type, exc, tb))
+    try:
+        with open(OUT, "w", encoding="utf-8") as f:
+            json.dump(dict(run_at=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                           runner="GitHub Actions / ubuntu-latest (round2)",
+                           error=detail[-6000:]), f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    print("FATAL\n" + detail[-3000:])
+sys.excepthook = _fatal
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,29 +49,40 @@ for pn in range(1, 10):
     st, txt, _ = get("https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3" % pn)
     o = jload(txt); d = o.get("data") or {}
     diff = d.get("diff") or []
+    if isinstance(diff, dict):
+        diff = list(diff.values())
     total = d.get("total")
     pages += 1
-    if isinstance(diff, list): boards.extend(diff)
+    if isinstance(diff, list):
+        boards.extend([x for x in diff if isinstance(x, dict)])
     if not diff or (total and len(boards) >= total): break
     time.sleep(0.3)
 
 # ---------- B. 全部板块并发拉全历史日线 ----------
 def one(b):
-    code = b.get("f12"); name = b.get("f14")
-    url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=90.%s&klt=101&fqt=1"
-           "&beg=20100101&end=20500101&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56,f57,f58" % code)
-    st, txt, _ = get(url, timeout=30)
-    o = jload(txt); kl = (o.get("data") or {}).get("klines") or []
-    return dict(code=code, name=name, status=st, rows=len(kl),
-                first=kl[0].split(",")[0] if kl else None,
-                last=kl[-1].split(",")[0] if kl else None,
-                sample=kl[0] if kl else txt[:100])
+    try:
+        code = b.get("f12"); name = b.get("f14")
+        url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=90.%s&klt=101&fqt=1"
+               "&beg=20100101&end=20500101&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56,f57,f58" % code)
+        st, txt, _ = get(url, timeout=30)
+        o = jload(txt); kl = (o.get("data") or {}).get("klines") or []
+        if not isinstance(kl, list): kl = []
+        return dict(code=code, name=name, status=st, rows=len(kl),
+                    first=kl[0].split(",")[0] if kl else None,
+                    last=kl[-1].split(",")[0] if kl else None,
+                    sample=kl[0] if kl else txt[:100])
+    except Exception as e:
+        return dict(code=str(b)[:40], name="?", status=None, rows=0,
+                    first=None, last=None, sample=type(e).__name__ + ":" + str(e)[:120])
 
 kl_results = []
 with ThreadPoolExecutor(max_workers=6) as ex:
-    futs = [ex.submit(one, b) for b in boards[:120]]
+    futs = [ex.submit(one, b) for b in boards[:60]]
     for f in as_completed(futs):
-        kl_results.append(f.result())
+        try: kl_results.append(f.result())
+        except Exception as e:
+            kl_results.append(dict(code="?", name="?", status=None, rows=0,
+                                   first=None, last=None, sample="future:" + str(e)[:120]))
 
 ok_kl = [r for r in kl_results if r["rows"] > 0]
 rows_list = [r["rows"] for r in ok_kl]
