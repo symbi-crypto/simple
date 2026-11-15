@@ -1,0 +1,137 @@
+{
+  "run_at": "2026-11-15T15:21:57.229184Z",
+  "sources": [
+    {
+      "symbol": "GC=F",
+      "label": "COMEX 黄金期货",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 239965,
+      "ok": true,
+      "rows": 2515,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_close": 3886.3,
+      "currency": "USD"
+    },
+    {
+      "symbol": "SI=F",
+      "label": "COMEX 白银期货",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/SI=F?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 265914,
+      "ok": true,
+      "rows": 2514,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_close": 49.121,
+      "currency": "USD"
+    },
+    {
+      "symbol": "CL=F",
+      "label": "WTI 原油期货",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/CL=F?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 266917,
+      "ok": true,
+      "rows": 2515,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_close": 88.56,
+      "currency": "USD"
+    },
+    {
+      "symbol": "BZ=F",
+      "label": "布伦特原油期货",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 263741,
+      "ok": true,
+      "rows": 2516,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_close": 95.84,
+      "currency": "USD"
+    },
+    {
+      "symbol": "HG=F",
+      "label": "COMEX 铜期货",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/HG=F?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 268351,
+      "ok": true,
+      "rows": 2515,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_close": 6.0905,
+      "currency": "USD"
+    },
+    {
+      "symbol": "BTC-USD",
+      "label": "比特币",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=10y&interval=1d",
+      "status": 200,
+      "bytes": 355020,
+      "ok": true,
+      "rows": 3653,
+      "first": "2016-11-15",
+      "last": "2026-11-15",
+      "last_close": 64695.0781,
+      "currency": "USD"
+    },
+    {
+      "symbol": "XAUUSD=X",
+      "label": "伦敦金现",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/XAUUSD=X?range=10y&interval=1d",
+      "status": null,
+      "bytes": 0,
+      "ok": false,
+      "err": "HTTPError: HTTP Error 404: Not Found"
+    },
+    {
+      "symbol": "XAGUSD=X",
+      "label": "伦敦银现",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/XAGUSD=X?range=10y&interval=1d",
+      "status": null,
+      "bytes": 0,
+      "ok": false,
+      "err": "HTTPError: HTTP Error 404: Not Found"
+    }
+  ],
+  "ratios": {
+    "金银比": {
+      "ok": true,
+      "aligned_days": 2514,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_value": 79.1169
+    },
+    "金油比": {
+      "ok": true,
+      "aligned_days": 2514,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_value": 43.8832
+    },
+    "金铜比": {
+      "ok": true,
+      "aligned_days": 2515,
+      "first": "2016-11-15",
+      "last": "2026-11-13",
+      "last_value": 638.0921
+    },
+    "金银比_现货": {
+      "ok": false,
+      "reason": "缺序列"
+    }
+  },
+  "normalized_curve_days": 2514,
+  "gvz": {
+    "ok": true,
+    "status": 200,
+    "bytes": 90543,
+    "rows": 4314,
+    "first": "09/18/2009",
+    "last": "11/13/2026"
+  }
+}
