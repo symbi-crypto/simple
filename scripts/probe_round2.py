@@ -161,7 +161,7 @@ print("KLINE attempted=%s ok=%s rows=%s..%s last_dates=%s" % (
 print("CAN_DO_31_ROW_HEATMAP =", industry["can_do_31_row_heatmap"])
 print("--- clarifications ---")
 for c in clar:
-    print(c["id"], c["status"], c["bytes"], (c.get("extract") or c["sample"])[:180])
+    print(c["id"], c["status"], c["bytes"], str(c.get("extract") or c.get("sample") or "")[:180])
 print("--- fred ---")
 for x in fred: print(x["id"], x["status"], x["bytes"], x["sample"][:90])
 print("--- spdr ---")
