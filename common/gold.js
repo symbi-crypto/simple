@@ -41,7 +41,9 @@
       'WTI <b>' + v('WTI原油') + '</b><i>·</i>铜 <b>' + v('COMEX铜') + '</b><i>·</i>BTC <b>' + v('比特币') + '</b><br>' +
       '<span class="sm">金银比 <b>' + (r['金银比'] == null ? '—' : r['金银比']) + '</b><i>·</i>金油比 <b>' + (r['金油比'] == null ? '—' : r['金油比']) +
       '</b><i>·</i>金铜比 <b>' + (r['金铜比'] == null ? '—' : r['金铜比']) + '</b><i>·</i>GVZ <b>' + v('黄金波动 GVZ') + '</b></span><br>' +
-      '<span class="sm">上海金 <b>' + (sh.value == null ? '—' : fmt(sh.value, 2)) + '</b> 元/克 ' + chgHtml(sh.chg) + ' · 人民币对照</span>';
+      '<span class="sm">' + (sh.value == null
+        ? '上海金 暂无数据 · 不参与比价</span>'
+        : '上海金 <b>' + fmt(sh.value, 2) + '</b> 元/克 ' + chgHtml(sh.chg) + ' · 人民币对照</span>');
     var hd = document.querySelector('#g1 .hd span');
     if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf);
   }
