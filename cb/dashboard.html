@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>综合看板 · 可转债</title>
+<title>可转债量化回测系统</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="../common/header.css">
 <link rel="stylesheet" href="../common/dashboard.css">
@@ -16,8 +16,17 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 .nav button.on,.nav a.on{background:var(--acc);color:#fff;font-weight:600}
 </style>
 </head><body>
-<script src="../common/header.js" data-t1="综合看板" data-t2="" data-badge="none"></script>
-<div class="nav"><button type="button" class="on">综合看板</button><button type="button" onclick="location.href='index.html'">轮动回测</button><button type="button" onclick="location.href='index.html'">因子IC</button><button type="button" onclick="location.href='tool.html?view=health'">数据体检</button></div>
+<script src="../common/header.js" data-t1="可转债量化" data-t2="回测系统" data-badge="none" data-page="cb"></script>
+<div class="nav">
+  <button type="button" class="on">综合看板</button>
+  
+  <a href="index.html#/ic">因子IC</a>
+    <a href="index.html#/rotation">轮动回测</a>
+  <a href="index.html#/strategies">我的策略</a>
+    <a href="index.html#/correlation" style="display:none">相关性</a>
+  <a href="index.html#/rebalance" style="display:none">再平衡回测</a>
+  <a href="index.html#/dca" style="display:none">定投回测</a>
+    </div>
 <div class="wrap" id="dashWrap" data-kind="cb" data-json="../cb-daily.json">
 <!-- 可转债看板 · v6 按A档 -->
   <div class="card" id="c1">
@@ -31,8 +40,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <div class="blk">
           <div class="sec"><span>当日概览 · 全市场截面</span></div>
           <div class="kpi" id="kpi"></div>
-          <div class="subnote" style="margin:0">「百元 / 110元溢价率」按价格附近分组的溢价率均值自算，<b>非禄得同值口径</b>；TOP10 双榜、策略信号不摆，避免与「我的策略」重复。</div>
-        </div>
+          </div>
 
         <div class="blk">
           <div class="sec"><span>历史趋势 · 起点归一 = 100</span>
