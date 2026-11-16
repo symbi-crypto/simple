@@ -669,8 +669,8 @@ document.addEventListener("DOMContentLoaded",function(){
 <div class="nav">
   <button type="button" id="tabHealth">数据体检</button>
   <button type="button" id="tabManagePre">其他功能</button>
-  <button type="button" id="tabDashboard" onclick="location.href='dashboard.html'">综合看板</button>
-  <button type="button" id="tabGold" onclick="location.href='gold.html'">黄金看板</button>
+  <button type="button" id="tabDashboard">综合看板</button>
+  <button type="button" id="tabGold">黄金看板</button>
   
   <button type="button" id="tabCorr">相关性</button>
   <button type="button" id="tabIc">因子IC</button>
@@ -681,6 +681,12 @@ document.addEventListener("DOMContentLoaded",function(){
   <button type="button" id="tabCombo">策略组合</button>
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
+<div id="viewDashboard" style="display:none">
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+</div>
+<div id="viewGold" style="display:none">
+  <iframe data-dash id="goldFrame" title="黄金看板" src="about:blank" data-src="gold.html?embed=1" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+</div>
 <div id="viewRotation" style="display:none">
 <div id="step1">
 <div class="s1card">
@@ -10174,6 +10180,8 @@ function showStrategyDetail(name) {
     $("viewCombo").style.display = vEff === "combo" ? "" : "none";
     $("viewIc").style.display = vEff === "ic" ? "" : "none";
     $("viewHealth").style.display = vEff === "health" ? "" : "none";
+    $("viewDashboard").style.display = v === "dashboard" ? "" : "none";
+    $("viewGold").style.display = v === "gold" ? "" : "none";
     $("tabRotation").className = vEff === "rotation" ? "on" : "";
     $("tabRebalance").className = vEff === "rebalance" ? "on" : "";
     $("tabDCA").className = vEff === "dca" ? "on" : "";
@@ -10182,8 +10190,10 @@ function showStrategyDetail(name) {
     $("tabCombo").className = vEff === "combo" ? "on" : "";
     $("tabIc").className = vEff === "ic" ? "on" : "";
     $("tabHealth").className = v === "health" ? "on" : "";   /* v0.60：manage 时不高亮体检 */
+    $("tabDashboard").className = v === "dashboard" ? "on" : "";
+    $("tabGold").className = v === "gold" ? "on" : "";
     $("tabManagePre").className = v === "manage" ? "on" : "";
-    var svMap = { rotation: "tabRotation", rebalance: "tabRebalance", dca: "tabDCA", strategies: "tabStrategies", correlation: "tabCorr", combo: "tabCombo", ic: "tabIc", health: "tabHealth" };
+    var svMap = { rotation: "tabRotation", rebalance: "tabRebalance", dca: "tabDCA", strategies: "tabStrategies", correlation: "tabCorr", combo: "tabCombo", ic: "tabIc", health: "tabHealth", dashboard: "tabDashboard", gold: "tabGold" };
     var svTab = (v === "manage") ? $("tabManagePre") : (svMap[vEff] ? $(svMap[vEff]) : null);
     if (svTab && svTab.scrollIntoView) { try { svTab.scrollIntoView({ block: "nearest", inline: "center" }); } catch (e) { svTab.scrollIntoView(); } }
     if (vEff === "rotation" || vEff === "rebalance" || vEff === "dca") switchView(vEff);
@@ -10192,6 +10202,8 @@ function showStrategyDetail(name) {
     if (vEff === "combo") renderComboSetup();
     if (vEff === "ic" && window.ICView) ICView.render();
     if (vEff === "health" && window.HealthView) HealthView.render();
+    if (v === "dashboard" && window.WufuDash) WufuDash.mount("dbFrame");
+    if (v === "gold" && window.WufuDash) WufuDash.mount("goldFrame");
     if (typeof scheduleDateRange === "function") scheduleDateRange();
   }
   function hashView() {
@@ -10199,6 +10211,8 @@ function showStrategyDetail(name) {
     if (/#\/manage/.test(location.hash)) return "manage";
     if (/[?&]view=manage(?:[&#]|$)/.test(location.search)) return "manage";
     var h = location.hash || "";
+    if (h.indexOf("dashboard") >= 0 || h.indexOf("综合看板") >= 0) return "dashboard";
+    if (h.indexOf("gold") >= 0 || h.indexOf("黄金") >= 0) return "gold";
     if (h.indexOf("dca") >= 0 || h.indexOf("定投") >= 0) return "dca";
     if (h.indexOf("rotation") >= 0) return "rotation";
     if (h.indexOf("rebalance") >= 0 || h.indexOf("backtest") >= 0) return "rebalance";
@@ -10207,7 +10221,7 @@ function showStrategyDetail(name) {
     if (h.indexOf("combo") >= 0) return "combo";
     if (h.indexOf("ic") >= 0 || h.indexOf("factor") >= 0) return "ic";
     if (h.indexOf("health") >= 0) return "health";
-    return "rotation";
+    return "dashboard";
   }
   $("tabRotation").addEventListener("click", function () { location.hash = "#/rotation"; showView("rotation"); });
   $("tabRebalance").addEventListener("click", function () { location.hash = "#/rebalance"; showView("rebalance"); });
@@ -10218,6 +10232,8 @@ function showStrategyDetail(name) {
   $("tabIc").addEventListener("click", function () { location.hash = "#/ic"; showView("ic"); });
   $("tabHealth").addEventListener("click", function () { location.hash = "#/health"; showView("health"); });
   $("tabManagePre").addEventListener("click", function () { location.hash = "#/manage"; showView("manage"); });
+  $("tabDashboard").addEventListener("click", function () { location.hash = "#/dashboard"; showView("dashboard"); });
+  $("tabGold").addEventListener("click", function () { location.hash = "#/gold"; showView("gold"); });
   window.addEventListener("hashchange", function () { showView(hashView()); });
   window.addEventListener("load", function () { showView(hashView()); });   // 初始视图同步：浏览器/历史恢复 hash 晚于脚本执行时兜底（恢复不触发 hashchange）
 
@@ -11895,8 +11911,12 @@ function showStrategyDetail(name) {
     // [修复] 原为 showView(hashView())：hash 若非 #/dca（如应用策略后 hash 被写成 #/rotation），
     // 会把 activeView 强切回 rotation 并 stepTo(1)，表现为「在定投页点下一步却跳到轮动第一页」。
     // 改为沿用当前视图，并把 hash 同步为当前视图（刷新恢复场景由 window load 的 showView(hashView()) 兜底）。
-    showView(activeView);
-    try { history.replaceState(null, "", "#/" + (activeView === "rebalance" ? "rebalance" : (activeView === "dca" ? "dca" : "rotation"))); } catch (e) { }
+    /* v0.62：落在综合看板/黄金看板时，boot() 不强切回轮动回测，也不改写 hash */
+    var _hv = (typeof hashView === "function") ? hashView() : "";
+    if (_hv !== "dashboard" && _hv !== "gold") {
+      showView(activeView);
+      try { history.replaceState(null, "", "#/" + (activeView === "rebalance" ? "rebalance" : (activeView === "dca" ? "dca" : "rotation"))); } catch (e) { }
+    }
     setTimeout(run, 60);          // 显示后执行默认回测
   }
 
@@ -12077,6 +12097,7 @@ function showStrategyDetail(name) {
         ".hubToolView div.nav{display:none!important}"+
         ".hubToolView a[href='../index.html']{display:none!important}"+
         ".hubToolView .homestrip{display:none!important}"+
+        ".hubToolView #viewDashboard,.hubToolView #viewGold,"+
         ".hubToolView #viewRotation,.hubToolView #viewRebalance,.hubToolView #viewDCA,"+
         ".hubToolView #viewCorr,.hubToolView #viewIc,.hubToolView #viewHealth,"+
         ".hubToolView #viewStrategies,.hubToolView #viewCombo{display:none!important}"+
@@ -16056,6 +16077,45 @@ function showStrategyDetail(name) {
     setTimeout(function(){clearInterval(iv);},30000);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+
+
+<script>
+/* v0.62 · 综合看板成为主文档内的页签：iframe 只承载看板自身样式与小 JSON，
+   6 个行情 gz 由本文档统一加载一次；高度用 postMessage 同步，避免 iOS 内嵌滚动。 */
+window.WufuDash = (function () {
+  var loaded = {};
+  function frames() { return document.querySelectorAll('iframe[data-dash]'); }
+  function ask(f) { try { f.contentWindow.postMessage({ wufuDashQuery: 1 }, '*'); } catch (e) { } }
+  /* 同源 iframe：直接读内容高度，比 postMessage 更及时可靠 */
+  function sync(f) {
+    try {
+      var d = f.contentDocument;
+      if (d && d.body) {
+        var h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight);
+        if (h > 0) f.style.height = Math.ceil(h) + 'px';
+      }
+    } catch (e) { }
+  }
+  function mount(id) {
+    var f = document.getElementById(id); if (!f) return;
+    if (!loaded[id]) {
+      loaded[id] = 1;
+      f.addEventListener('load', function () { sync(f); setTimeout(function () { sync(f); }, 400); });
+      f.src = f.getAttribute('data-src');
+    }
+    setTimeout(function () { ask(f); sync(f); }, 500);
+    setTimeout(function () { ask(f); sync(f); }, 1600);
+  }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || typeof d.wufuDashHeight !== 'number' || !(d.wufuDashHeight > 0)) return;
+    frames().forEach(function (f) {
+      if (f.contentWindow === e.source) f.style.height = Math.ceil(d.wufuDashHeight) + 'px';
+    });
+  });
+  return { mount: mount };
 })();
 </script>
 

@@ -935,3 +935,14 @@ JS 错误 0）、数据文件 md5 与改前一致。回测引擎、策略参数�
 - 15 条指数的当日涨跌、5/10 年分位与沪深300 / 国证2000 双线，全部由内嵌 `common/index.gz` 的真实日线重算；此前 `index-daily.json` 里的占位分位已清除。
 - `scripts/build-dashboards.mjs` 不再发起任何行业日线网络请求，周五任务不再做无效尝试。
 - 缓存名 `wufu-all-v0.56`（sw.js 与 common/header.js 两处同步）。
+
+
+---
+
+## v0.62 · 看板并入系统主文档（2026-11-16）
+
+- 首页卡片改为进入 `cb/tool.html#/dashboard` / `etf/tool.html#/dashboard`，进系统即由主文档加载 6 个行情 gz：右上角日期徽章与「正在加载行情数据…」提示都在，看板停留期间主表在后台建好，再点回测页不再重复加载。
+- 综合看板（ETF 另有黄金看板）成为主文档内的 `#/dashboard` / `#/gold` 页签视图；看板本体放在 iframe 内，自带样式与渲染脚本，主文档回测界面不受影响。iframe 只读几十 KB 的 `*-daily.json`，不碰行情 gz，不构成重复加载。
+- 旧地址 `cb/dashboard.html`、`etf/dashboard.html`、`etf/gold.html` 直接打开时自动跳到主文档对应页签；带 `?embed=1` 时作为内嵌视图渲染。iframe 高度由 postMessage 同步，避免 iOS 内部滚动。
+- `cb/index.html`、`etf/index.html` 的看板导航改指主文档页签。
+- Service Worker 与顶栏缓存版本统一 `wufu-all-v0.62`。

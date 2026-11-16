@@ -657,7 +657,7 @@ document.addEventListener("DOMContentLoaded",function(){
 <div id="dataLoadTip" style="display:none;align-items:center;gap:8px;margin:10px auto 0;max-width:1680px;padding:8px 14px;font-size:12.5px;color:#9FB0C3;background:rgba(14,116,144,.16);border:1px solid rgba(79,195,247,.3);border-radius:8px"><span class="dlt-ic spin" style="display:inline-block;width:12px;height:12px;border:2px solid #4FC3F7;border-top-color:transparent;border-radius:50%;flex:0 0 12px"></span><span class="dlt-tx">正在加载行情数据…</span></div>
 <div class="nav">
   <button type="button" id="tabHealth">数据体检</button>
-  <button type="button" id="tabDashboard" onclick="location.href='dashboard.html'">综合看板</button>
+  <button type="button" id="tabDashboard">综合看板</button>
   
   <button type="button" id="tabIc">因子IC</button>
     <button type="button" id="tabRotation" class="on">轮动回测</button>
@@ -668,6 +668,9 @@ document.addEventListener("DOMContentLoaded",function(){
   <button type="button" id="tabDCA" style="display:none">定投回测</button>
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
+<div id="viewDashboard" style="display:none">
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+</div>
 <div id="viewRotation" style="display:none">
 <div id="step1">
 <div class="s1card">
@@ -9766,6 +9769,7 @@ function showStrategyDetail(name) {
     $("viewCombo").style.display = v === "combo" ? "" : "none";
     $("viewIc").style.display = v === "ic" ? "" : "none";
     $("viewHealth").style.display = v === "health" ? "" : "none";
+    $("viewDashboard").style.display = v === "dashboard" ? "" : "none";
     $("tabRotation").className = v === "rotation" ? "on" : "";
     $("tabRebalance").className = v === "rebalance" ? "on" : "";
     $("tabDCA").className = v === "dca" ? "on" : "";
@@ -9774,7 +9778,8 @@ function showStrategyDetail(name) {
     $("tabCombo").className = v === "combo" ? "on" : "";
     $("tabIc").className = v === "ic" ? "on" : "";
     $("tabHealth").className = v === "health" ? "on" : "";
-    var svMap = { rotation: "tabRotation", rebalance: "tabRebalance", dca: "tabDCA", strategies: "tabStrategies", correlation: "tabCorr", combo: "tabCombo", ic: "tabIc", health: "tabHealth" };
+    $("tabDashboard").className = v === "dashboard" ? "on" : "";
+    var svMap = { rotation: "tabRotation", rebalance: "tabRebalance", dca: "tabDCA", strategies: "tabStrategies", correlation: "tabCorr", combo: "tabCombo", ic: "tabIc", health: "tabHealth", dashboard: "tabDashboard" };
     var svTab = svMap[v] ? $(svMap[v]) : null;
     if (svTab && svTab.scrollIntoView) { try { svTab.scrollIntoView({ block: "nearest", inline: "center" }); } catch (e) { svTab.scrollIntoView(); } }
     if (v === "rotation" || v === "rebalance" || v === "dca") switchView(v);
@@ -9783,9 +9788,11 @@ function showStrategyDetail(name) {
     if (v === "combo") renderComboSetup();
     if (v === "ic" && window.ICView) ICView.render();
     if (v === "health" && window.HealthView) HealthView.render();
+    if (v === "dashboard" && window.WufuDash) WufuDash.mount("dbFrame");
   }
   function hashView() {
     var h = location.hash || "";
+    if (h.indexOf("dashboard") >= 0 || h.indexOf("综合看板") >= 0) return "dashboard";
     if (h.indexOf("dca") >= 0 || h.indexOf("定投") >= 0) return "dca";
     if (h.indexOf("rotation") >= 0) return "rotation";
     if (h.indexOf("rebalance") >= 0 || h.indexOf("backtest") >= 0) return "rebalance";
@@ -9794,7 +9801,7 @@ function showStrategyDetail(name) {
     if (h.indexOf("combo") >= 0) return "combo";
     if (h.indexOf("ic") >= 0 || h.indexOf("factor") >= 0) return "ic";
     if (h.indexOf("health") >= 0) return "health";
-    return "rotation";
+    return "dashboard";
   }
   $("tabRotation").addEventListener("click", function () { location.hash = "#/rotation"; showView("rotation"); });
   $("tabRebalance").addEventListener("click", function () { location.hash = "#/rebalance"; showView("rebalance"); });
@@ -9804,6 +9811,7 @@ function showStrategyDetail(name) {
   $("tabCombo").addEventListener("click", function () { location.hash = "#/combo"; showView("combo"); });
   $("tabIc").addEventListener("click", function () { location.hash = "#/ic"; showView("ic"); });
   $("tabHealth").addEventListener("click", function () { location.hash = "#/health"; showView("health"); });
+  $("tabDashboard").addEventListener("click", function () { location.hash = "#/dashboard"; showView("dashboard"); });
   window.addEventListener("hashchange", function () { showView(hashView()); });
   window.addEventListener("load", function () { showView(hashView()); });   // 初始视图同步：浏览器/历史恢复 hash 晚于脚本执行时兜底（恢复不触发 hashchange）
 
@@ -11234,8 +11242,12 @@ function showStrategyDetail(name) {
     // [修复] 原为 showView(hashView())：hash 若非 #/dca（如应用策略后 hash 被写成 #/rotation），
     // 会把 activeView 强切回 rotation 并 stepTo(1)，表现为「在定投页点下一步却跳到轮动第一页」。
     // 改为沿用当前视图，并把 hash 同步为当前视图（刷新恢复场景由 window load 的 showView(hashView()) 兜底）。
-    showView(activeView);
-    try { history.replaceState(null, "", "#/" + (activeView === "rebalance" ? "rebalance" : (activeView === "dca" ? "dca" : "rotation"))); } catch (e) { }
+    /* v0.62：落在综合看板/黄金看板时，boot() 不强切回轮动回测，也不改写 hash */
+    var _hv = (typeof hashView === "function") ? hashView() : "";
+    if (_hv !== "dashboard" && _hv !== "gold") {
+      showView(activeView);
+      try { history.replaceState(null, "", "#/" + (activeView === "rebalance" ? "rebalance" : (activeView === "dca" ? "dca" : "rotation"))); } catch (e) { }
+    }
     setTimeout(run, 60);          // 显示后执行默认回测
   }
 
@@ -11411,6 +11423,7 @@ function showStrategyDetail(name) {
         ".hubToolView div.nav{display:none!important}"+
         ".hubToolView a[href='../index.html']{display:none!important}"+
         ".hubToolView .homestrip{display:none!important}"+
+        ".hubToolView #viewDashboard,.hubToolView #viewGold,"+
         ".hubToolView #viewRotation,.hubToolView #viewRebalance,.hubToolView #viewDCA,"+
         ".hubToolView #viewCorr,.hubToolView #viewIc,.hubToolView #viewHealth,"+
         ".hubToolView #viewStrategies,.hubToolView #viewCombo{display:none!important}"+
@@ -14409,6 +14422,45 @@ function showStrategyDetail(name) {
     else if(id==='qckHideDetail') closePane();
     else if(id==='qckToTop') toTop();
   },true);
+})();
+</script>
+
+
+<script>
+/* v0.62 · 综合看板成为主文档内的页签：iframe 只承载看板自身样式与小 JSON，
+   6 个行情 gz 由本文档统一加载一次；高度用 postMessage 同步，避免 iOS 内嵌滚动。 */
+window.WufuDash = (function () {
+  var loaded = {};
+  function frames() { return document.querySelectorAll('iframe[data-dash]'); }
+  function ask(f) { try { f.contentWindow.postMessage({ wufuDashQuery: 1 }, '*'); } catch (e) { } }
+  /* 同源 iframe：直接读内容高度，比 postMessage 更及时可靠 */
+  function sync(f) {
+    try {
+      var d = f.contentDocument;
+      if (d && d.body) {
+        var h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight);
+        if (h > 0) f.style.height = Math.ceil(h) + 'px';
+      }
+    } catch (e) { }
+  }
+  function mount(id) {
+    var f = document.getElementById(id); if (!f) return;
+    if (!loaded[id]) {
+      loaded[id] = 1;
+      f.addEventListener('load', function () { sync(f); setTimeout(function () { sync(f); }, 400); });
+      f.src = f.getAttribute('data-src');
+    }
+    setTimeout(function () { ask(f); sync(f); }, 500);
+    setTimeout(function () { ask(f); sync(f); }, 1600);
+  }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || typeof d.wufuDashHeight !== 'number' || !(d.wufuDashHeight > 0)) return;
+    frames().forEach(function (f) {
+      if (f.contentWindow === e.source) f.style.height = Math.ceil(d.wufuDashHeight) + 'px';
+    });
+  });
+  return { mount: mount };
 })();
 </script>
 

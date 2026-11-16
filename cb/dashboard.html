@@ -1,6 +1,23 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
+<script>
+/* v0.62 · 看板已并入系统主文档。直接打开旧地址时跳到主文档的「综合看板」页签；
+   ?embed=1 时作为主文档内嵌视图，只渲染看板本体（顶栏由 header.js 自动省略）。 */
+(function(){
+  if (!/[?&]embed=1(?:&|$)/.test(location.search)) {
+    location.replace('tool.html#/dashboard');
+  } else {
+    document.documentElement.classList.add('db-embed');
+  }
+})();
+</script>
+<style>
+html.db-embed .nav{display:none!important}
+html.db-embed body{margin:0;padding:0;background:#1B2634}
+html.db-embed .wrap{padding-top:10px;padding-bottom:14px}
+</style>
 <title>可转债量化回测系统</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="../common/header.css">
@@ -91,4 +108,28 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 </div>
 <script src="../common/range.js"></script>
 <script src="../common/dashboard.js"></script>
+
+<script>
+(function(){
+  if (!document.documentElement.classList.contains('db-embed')) return;
+  var t = null;
+  function post(){
+    try{
+      var h = Math.max(document.documentElement.scrollHeight,
+                       document.body ? document.body.scrollHeight : 0);
+      if (h > 0) parent.postMessage({ wufuDashHeight: h }, '*');
+    }catch(e){}
+  }
+  function soon(){ clearTimeout(t); t = setTimeout(post, 60); setTimeout(post, 260); setTimeout(post, 700); }
+  window.addEventListener('load', post);
+  window.addEventListener('resize', soon);
+  window.addEventListener('orientationchange', soon);
+  window.addEventListener('message', function(e){ if (e && e.data && e.data.wufuDashQuery) post(); });
+  document.addEventListener('click', function(){ setTimeout(post, 80); setTimeout(post, 360); }, true);
+  try{ new MutationObserver(soon).observe(document.body, {attributes:true,childList:true,subtree:true,characterData:true}); }catch(e){}
+  try{ if (window.ResizeObserver) new ResizeObserver(soon).observe(document.body); }catch(e){}
+  var n = 0, iv = setInterval(function(){ post(); if (++n > 14) clearInterval(iv); }, 700);
+  post(); soon();
+})();
+</script>
 </body></html>
