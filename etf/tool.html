@@ -8394,6 +8394,7 @@ function buildChips() {
       series: series
     };
     if (opts.yMax != null) { o.yAxis.max = opts.yMax; o.yAxis.scale = false; }
+    if (opts.gridTop != null) o.grid.top = opts.gridTop;
     if (opts.graphic && opts.graphic.length) o.graphic = opts.graphic;
     return o;
   }
@@ -8498,7 +8499,7 @@ function buildChips() {
           tooltip: { valueFormatter: PCT }, data: ddAfter, markLine: mkLine });
       }
       return { legend: legend, series: series,
-        yFmt: function (v) { return (v * 100).toFixed(0) + "%"; }, yMax: 0,
+        yFmt: function (v) { return (v * 100).toFixed(0) + "%"; }, yMax: 0, gridTop: 60,
         tip: ddAfter ? "红=全段回撤（创建日后沿用原峰值）　蓝=创建日重新起算的回撤" : "按回测起点计算的全段回撤" };
     }
 
@@ -8551,7 +8552,7 @@ function buildChips() {
       active = view === "nav" ? navView() : ddView();
       baseSeries = active.series.map(function (s) { return s.data; });
       var opt = lineTimeOption(active.legend, active.series,
-        { yFmt: active.yFmt, yMax: active.yMax, graphic: active.tip ? gfx(active.tip) : null });
+        { yFmt: active.yFmt, yMax: active.yMax, gridTop: active.gridTop, graphic: active.tip ? gfx(active.tip) : null });
       opt.dataZoom[0].start = vz[0]; opt.dataZoom[0].end = vz[1];
       opt.dataZoom[1].start = vz[0]; opt.dataZoom[1].end = vz[1];
       var ch = initChart(id);
