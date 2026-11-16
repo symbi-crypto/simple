@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/runner/work/simple/simple/scripts/build-external.py", line 569, in <module>
+    main()
+  File "/home/runner/work/simple/simple/scripts/build-external.py", line 560, in main
+    build_industry()
+  File "/home/runner/work/simple/simple/scripts/build-external.py", line 170, in build_industry
+    raise RuntimeError("仅 %d 个板块拿到 >=220 根日线，不足 31，拒绝生成空壳" % len(ok))
+RuntimeError: 仅 1 个板块拿到 >=220 根日线，不足 31，拒绝生成空壳
+=== 两市成交额 ===
+两市成交额 共同交易日 4094 末日 2026-11-13 亿元 16556.7
+写回 market-amount.json 3559 bytes
+=== 行业宽度 ===
+板块清单 200 total 496
+板块日线成功 1 / 120
+EXIT_CODE=1
+--- 生成的文件 ---
+-rw-r--r-- 1 runner runner 14704 Nov 16 01:04 gold-daily.json
+-rw-r--r-- 1 runner runner 12456 Nov 16 01:04 industry-daily.json
+-rw-r--r-- 1 runner runner  3559 Nov 16 01:05 market-amount.json
