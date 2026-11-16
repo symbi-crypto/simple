@@ -1,0 +1,32 @@
+name: 探针-文章行业抓取方法
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 出口 IP
+        run: curl -s --max-time 10 https://api.ipify.org || true
+      - name: 安装依赖
+        run: pip install -q akshare==1.18.88 pandas
+      - name: 实测文章接口
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python scripts/probe_sw.py
+      - name: 回写结果
+        if: always()
+        run: |
+          git config user.name "probe-bot"
+          git config user.email "probe-bot@users.noreply.github.com"
+          git add -f probe-sw-result.json
+          git diff --cached --quiet || (git commit -m "chore: 文章行业抓取方法探针" && git push)
