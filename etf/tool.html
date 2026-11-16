@@ -8517,7 +8517,7 @@ function buildChips() {
         tip: ddAfter ? "红=全段回撤（创建日后沿用原峰值）　蓝=创建日重新起算的回撤" : "按回测起点计算的全段回撤" };
     }
 
-    // ---- 切换键：净值 / 回撤 / 全部（v0.65）----
+    // ---- 切换键：净值 / 回撤（v0.66）----
     var view = "nav", active = null, baseSeries = null;
     var BTN = function (v, txt, on) {
       return '<button type="button" data-v="' + v + '" style="cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;' +
@@ -8535,7 +8535,6 @@ function buildChips() {
       d.id = "__navMode_" + id;
       d.setAttribute("style", "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px");
       d.innerHTML = '<span style="font-size:11px;color:#7C8DA1">曲线</span>' + BTN("nav", "净值", true) + BTN("dd", "回撤", false) +
-        BTN("all", "全部", false) +
         '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
       el.parentNode.insertBefore(d, el);
       return d;
@@ -8546,7 +8545,6 @@ function buildChips() {
       var bs = box.getElementsByTagName("button"), j;
       for (j = 0; j < bs.length; j++) {
         var v = bs[j].getAttribute("data-v");
-        if (v === "all") { (function (bb) { bb.onclick = function () { setFull(); }; })(bs[j]); continue; }
         var on = v === view;
         bs[j].setAttribute("style", "cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;" +
           (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
@@ -8557,7 +8555,7 @@ function buildChips() {
       if (hint) hint.textContent = view === "dd" ? "全段 / 创建后重算 / 基准" : "创建日后为加粗线";
     }
 
-    // ---- 统一白色透明时间条：默认最近 1 年，点「全部」或拉到最左看全段 ----
+    // ---- 统一白色透明时间条：选区初始定位在最近 1 年，与手动拖条同一套逻辑（v0.66）----
     var oneYearA = 0;
     (function () {
       if (N < 2) return;
@@ -8566,7 +8564,7 @@ function buildChips() {
       oneYearA = i0 / (N - 1);
       if (!isFinite(oneYearA) || oneYearA < 0) oneYearA = 0;
     })();
-    var curSel = [oneYearA, 1], userPicked = false, navRng = null;
+    var curSel = [oneYearA, 1], navRng = null;
     function syncZoom(x) {
       var ch = charts[id];
       if (ch && typeof ch.dispatchAction === "function")
@@ -8583,8 +8581,8 @@ function buildChips() {
       if (!navRng) {
         navRng = WufuRange.mount(rid, {
           value: curSel,
-          tip: "拖动下方白色条选时间段 · 双击还原 · 点「全部」看全段",
-          onChange: function (x) { curSel = x; userPicked = true; syncZoom(x); apply(); paintInfo(); }
+          tip: "拖动下方白色条选时间段 · 双击还原全段",
+          onChange: function (x) { curSel = x; syncZoom(x); apply(); paintInfo(); }
         });
         if (navRng) navRng.setLabels(r.calendar || []);
       }
@@ -8594,10 +8592,7 @@ function buildChips() {
       if (!el || !window.WufuRange) return;
       var inf = WufuRange.info(r.calendar || [], curSel);
       var full = WufuRange.isFull(curSel);
-      if (!userPicked && !full) {
-        el.innerHTML = '<b>最近 1 年</b> · ' + inf.from + ' → ' + inf.to +
-          ' · 曲线为原始净值（未按区间重定基）、指标卡为全段口径 · 点「全部」或把白条拉到最左看全段';
-      } else if (full) {
+      if (full) {
         el.innerHTML = '<b>全段</b> · ' + inf.from + ' → ' + inf.to + ' · 原始净值 · 指标卡为全段口径' +
           (view === "dd" ? ' · 回撤只裁显示、不重定基' : '');
       } else {
@@ -8609,12 +8604,6 @@ function buildChips() {
           (view === "dd" ? '回撤只裁显示、不重定基' : '指标卡切区间口径');
       }
     }
-    function setFull() {
-      userPicked = true; curSel = [0, 1];
-      if (navRng) navRng.set([0, 1], true);
-      syncZoom([0, 1]); apply(); paintInfo();
-    }
-
     function zoomPct() { return [curSel[0] * 100, curSel[1] * 100]; }
     function draw(keepZoom) {
       var vz = zoomPct();
@@ -8694,8 +8683,8 @@ function rangeKpi(i0, i1) {
         if (!ch || typeof ch.setOption !== "function") return;
         var z = idxFromZoom(), i0 = z[0], i1 = z[1];
         var full = window.WufuRange ? WufuRange.isFull(curSel) : (i0 <= 0 && i1 >= N - 1);
-        if (view === "dd" || full || !userPicked) {
-          /* 默认最近 1 年只裁显示窗口：净值仍是原值，创建前后连续，不触发重定基 */
+        if (view === "dd" || full) {
+          /* 全段 / 回撤：用原始数值与固定口径，不按区间重定基 */
           ch.setOption({ series: baseSeries.map(function (d) { return { data: d }; }) });
         } else {
           var b = null;
@@ -8711,7 +8700,7 @@ function rangeKpi(i0, i1) {
           }) });
         }
         if (id === "cNav") {
-          if (full || !userPicked) { if (typeof renderKpis === "function") renderKpis(r); }
+          if (full) { if (typeof renderKpis === "function") renderKpis(r); }
           else rangeKpi(i0, i1);
         }
       } catch (e) { }
