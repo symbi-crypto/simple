@@ -1,4 +1,4 @@
-/* dashboard.js — 综合看板渲染器（v0.58）
+/* dashboard.js — 综合看板渲染器（v0.59）
    数据只来自同目录的 cb-daily.json / index-daily.json，指数侧全部由本地真实日线计算，缺数一律显示「—」，不写示意值。 */
 (function () {
   'use strict';

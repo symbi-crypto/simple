@@ -157,7 +157,7 @@ td.cell{height:23px;border-bottom:1px solid var(--line);font-size:9px;font-weigh
   .wrap{padding:12px 10px 26px}
 }
 
-/* v0.58 · 历史曲线下方的白色透明时间段选择条 */
+/* v0.59 · 历史曲线下方的白色透明时间段选择条 */
 .wr-host{margin:6px 2px 4px}
 .wr{position:relative;height:46px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
 .wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}

@@ -15,7 +15,7 @@
   var m = new URL(s.src, location.href).pathname.match(/^(.*)\/common\/header\.js$/i);
   var rootPath = m ? m[1] + "/" : "/";
   var rootURL = new URL(rootPath, location.href).href;   // 带尾斜杠的站点根
-  var CACHE = "wufu-all-v0.58";
+  var CACHE = "wufu-all-v0.59";
 
   var inFrame = (function () { try { return window.top !== window; } catch (e) { return false; } })();
   var healthMode = /[?&]view=health(?:[&#]|$)/.test(location.search);
@@ -60,10 +60,15 @@
       }));
     }).then(function (rs) { return rs.every(Boolean); }).catch(function () { return false; });
   }
+  /* 按六个大 gz 是否齐备判断，而不是数缓存条数：
+     看板页停留期间就把回测所需的重文件后台备齐，点页签时只剩解压建表。 */
   function allCached() {
     if (!("caches" in window)) return Promise.resolve(false);
-    return caches.open(CACHE).then(function (c) { return c.keys(); })
-      .then(function (ks) { return ks.length >= 37; }).catch(function () { return false; });
+    return caches.open(CACHE).then(function (c) {
+      return Promise.all(BIG.map(function (p) {
+        return c.match(new URL(p, rootURL).href, { ignoreVary: true });
+      }));
+    }).then(function (rs) { return rs.every(Boolean); }).catch(function () { return false; });
   }
   function poll(cb, n) {
     readyCheck().then(function (ok) {
