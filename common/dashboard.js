@@ -111,13 +111,28 @@
   function drawCbTrend(d) {
     var t = (d.trend || {})[String(years)] || {};
     var LB = SL(t.labels || [], selCB);
-    multi($('cbTrend'), [
-      { data: SL(t.eq, selCB), color: '#F87171' }, { data: SL(t.price, selCB), color: '#4FC3F7' },
-      { data: SL(t.prem, selCB), color: '#A78BFA' }, { data: SL(t.amount, selCB), color: '#9FB0C3' }
-    ], LB);
+    var specs = [
+      { data: t.eq, color: '#F87171', name: '等权' }, { data: t.price, color: '#4FC3F7', name: '中位价' },
+      { data: t.prem, color: '#A78BFA', name: '中位溢价率' }, { data: t.amount, color: '#9FB0C3', name: '成交额倍数' }
+    ];
+    var txt = [];
+    specs.forEach(function (s) {
+      var rb = window.WufuRange ? WufuRange.rebase(s.data || [], selCB) : { data: SL(s.data || [], selCB), ret: null };
+      s.data = rb.data;
+      if (rb.ret !== null) txt.push(s.name + ' ' + (rb.ret >= 0 ? '+' : '') + rb.ret.toFixed(1) + '%');
+    });
+    multi($('cbTrend'), specs, LB);
+    var ri = $('cbRangeInfo');
+    if (ri && window.WufuRange) {
+      var inf = WufuRange.info(t.labels || [], selCB);
+      ri.textContent = WufuRange.isFull(selCB)
+        ? '拖动下方时间条，以所选区间开头为起点重算收益 · 各线各自归一 100 · 周频'
+        : '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=100 · ' + txt.join(' / ') +
+          '<br>成交额线是「相对首日倍数」，不是收益率；分位刻度仍是全历史口径。';
+    }
     if (rngCB) rngCB.setLabels(t.labels || []);
     var sn = $('cbSampleNote');
-    if (sn) sn.textContent = years === 5 ? '样本 5 年' : (d.sampleNote || '样本 —');
+    if (sn) sn.textContent = years === 5 ? '样本 5 年 · 周频' : ((d.sampleNote || '样本 —') + ' · 周频');
   }
 
   /* ===================== 指数看板 ===================== */
@@ -170,7 +185,9 @@
   function drawIdxChart(d) {
     var t = ((d.idxTrend || {})[String(years)] || {});
     var svg = $('idxChart'); if (!svg) return; svg.innerHTML = '';
-    var s1 = SL(t.hs300 || [], selIDX), s2 = SL(t.gz2000 || [], selIDX), LB = SL(t.labels || [], selIDX);
+    var rb1 = window.WufuRange ? WufuRange.rebase(t.hs300 || [], selIDX) : { data: SL(t.hs300 || [], selIDX), ret: null };
+    var rb2 = window.WufuRange ? WufuRange.rebase(t.gz2000 || [], selIDX) : { data: SL(t.gz2000 || [], selIDX), ret: null };
+    var s1 = rb1.data, s2 = rb2.data, LB = SL(t.labels || [], selIDX);
     var n = Math.max(s1.length, s2.length);
     if (!n) { emptyChart('idxChart', '暂无指数曲线'); return; }
     var all = s1.concat(s2).filter(function (x) { return isFinite(x); });
@@ -209,6 +226,16 @@
       svg.appendChild(TX(x, 170, k.text, 9, '#7C8DA1', anchor));
     });
     if (rngIDX) rngIDX.setLabels(t.labels || []);
+    var ri = $('idxRangeInfo');
+    if (ri && window.WufuRange) {
+      var inf = WufuRange.info(t.labels || [], selIDX);
+      ri.textContent = WufuRange.isFull(selIDX)
+        ? '拖动下方时间条，以所选区间开头为起点重算收益 · 双线各自归一 100 · 周频'
+        : '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=100 · 沪深300 ' +
+          (rb1.ret === null ? '—' : (rb1.ret >= 0 ? '+' : '') + rb1.ret.toFixed(1) + '%') +
+          ' / 国证2000 ' + (rb2.ret === null ? '—' : (rb2.ret >= 0 ? '+' : '') + rb2.ret.toFixed(1) + '%') +
+          '<br>成交额柱是绝对金额，只裁区间、不重定基。';
+    }
     var note = $('idxAmtNote');
     if (note) note.textContent = am.length > 1
       ? '两市成交额 = 上证指数 + 深证成指 K 线成交额之和（亿元，近似口径），柱形单独归一，不与指数点位混读。'

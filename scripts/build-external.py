@@ -77,6 +77,20 @@ def sample(arr, n):
     return [arr[min(len(arr) - 1, round(k * step))] for k in range(n)]
 
 
+def week_pick(days):
+    """返回每周最后一个交易日在 days 中的下标（ISO 周，跨年用 isocalendar 不串）。"""
+    out = []
+    last = None
+    for i, d in enumerate(days):
+        w = datetime.date.fromisoformat(d).isocalendar()[:2]
+        if w != last:
+            out.append(i)
+            last = w
+        else:
+            out[-1] = i
+    return out
+
+
 def window(days, years):
     """按自然年截取日期列表。"""
     if not days:
@@ -249,14 +263,12 @@ def build_industry():
     lastweek = [v(seqs[k], 5) for k in keys]
 
     area = {}
-    for Y, N in [(5, 61), (10, 121)]:
+    for Y in (5, 10):
         wset = set(window(days, Y))
-        wd = [i for i, d in enumerate(days) if d in wset]
-        labels = [days[i][:7] for i in wd]
-        series = {}
-        for k in keys:
-            series[k] = sample([seqs[k][i] for i in wd], N)
-        area[str(Y)] = {"labels": sample(labels, N), "series": series}
+        wd = [i for i in week_pick(days) if days[i] in wset]
+        labels = [days[i] for i in wd]
+        series = {k: [seqs[k][i] for i in wd] for k in keys}
+        area[str(Y)] = {"labels": labels, "series": series, "points": len(wd)}
 
     # 热力图：最近 6 个交易日，每个板块当日涨跌 与 距 MA20 乖离
     hd = days[-6:]
@@ -450,19 +462,30 @@ def build_gold():
     rcolors = ["#4FC3F7", "#FBBF24", "#A78BFA"]
 
     trend, pos = {}, []
-    for Y, N in [(5, 61), (10, 121)]:
-        wd = window(days, Y)
-        lb = sample([d[:7] for d in wd], N)
-        price, ratio, gline = {}, {}, []
+    for Y in (5, 10):
+        wset = set(window(days, Y))
+        wd = [days[i] for i in week_pick(days) if days[i] in wset]
+        lb = list(wd)
+        price, ratio = {}, {}
         for s in syms:
-            price[s] = sample([round(100 * S[s][d] / S[s][wd[0]], 2) if S[s].get(d) and S[s].get(wd[0]) else None for d in wd], N) if S[s].get(wd[0]) else []
+            base = S[s].get(wd[0]) if wd else None
+            price[s] = [round(100 * S[s][d] / base, 2) if base and S[s].get(d) else None for d in wd]
         for rk in rkeys:
             rs = ratios.get(rk, {}).get("series") or {}
-            rd = [d for d in wd if d in rs]
-            ratio[rk] = sample([round(100 * rs[d] / rs[rd[0]], 2) for d in rd], N) if rd else []
-        gd = [d for d in wd if d in G]
-        gline = sample([round(G[d], 2) for d in gd], N)
-        trend[str(Y)] = {"labels": lb, "price": price, "ratio": ratio, "gvz": gline}
+            lastv, vals = None, []
+            for d in wd:
+                if d in rs:
+                    lastv = rs[d]
+                vals.append(lastv)
+            base = next((v for v in vals if v), None)
+            ratio[rk] = [round(100 * v / base, 2) if v and base else None for v in vals]
+        lastg, gvals = None, []
+        for d in wd:
+            if d in G:
+                lastg = G[d]
+            gvals.append(lastg)
+        gline = [round(v, 2) if v is not None else None for v in gvals]
+        trend[str(Y)] = {"labels": lb, "price": price, "ratio": ratio, "gvz": gline, "points": len(wd)}
 
     for rk in rkeys:
         rs = ratios.get(rk, {}).get("series") or {}
@@ -541,15 +564,13 @@ def build_amount():
     }
     if ok:
         vals = [round((sh[d] + sz[d]) / 1e8, 1) for d in days]   # 亿元
-        for Y, N in [(5, 61), (10, 121)]:
-            wd = window(days, Y)
-            if not wd:
+        for Y in (5, 10):
+            wset = set(window(days, Y))
+            pick = [i for i in week_pick(days) if days[i] in wset]
+            if not pick:
                 continue
-            idx = [days.index(d) for d in wd]
-            step = (len(idx) - 1) / (N - 1)
-            pick = [idx[min(len(idx) - 1, round(k * step))] for k in range(N)]
-            out[str(Y)] = {"labels": [days[i][:7] for i in pick],
-                           "amount": [vals[i] for i in pick]}
+            out[str(Y)] = {"labels": [days[i] for i in pick],
+                           "amount": [vals[i] for i in pick], "points": len(pick)}
         print("两市成交额 共同交易日", len(days), "末日", days[-1], "亿元", vals[-1])
     save("market-amount.json", out)
 

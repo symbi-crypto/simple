@@ -62,6 +62,68 @@ if (state && cb) {
 
 /* ---------- 指数：从本地 index.gz 真算，不做任何外部抓取 ---------- */
 import zlib from 'node:zlib';
+
+/* ---------- 可转债全历史趋势：按自然周取点（含 state 增量日） ---------- */
+const CBD = 'cb/data/cb-data.gz', CBV = 'cb/data/cb-vol.gz';
+if (fs.existsSync(CBD) && fs.existsSync(CBV) && cb) {
+  const cd = JSON.parse(zlib.gunzipSync(fs.readFileSync(CBD)).toString('utf8'));
+  const vd = JSON.parse(zlib.gunzipSync(fs.readFileSync(CBV)).toString('utf8'));
+  const calC = cd.calendar || [], S = cd.series || {}, V = vd.series || {}, EQ = (cd.index || {}).index_CBALL || [];
+  const codes = Object.keys(S), rows = [];
+  for (let i = 0; i < calC.length; i++) {
+    const cl = [], pr = []; let am = 0;
+    for (const c of codes) {
+      const v = (S[c].close || [])[i];
+      if (typeof v !== 'number' || !(v > 0)) continue;
+      cl.push(v);
+      const p = (S[c].premium || [])[i]; if (typeof p === 'number' && isFinite(p)) pr.push(p);
+      const a = ((V[c] || {}).amount || [])[i]; if (typeof a === 'number' && isFinite(a)) am += a;
+    }
+    rows.push({ date: calC[i], eq: (typeof EQ[i] === 'number' ? EQ[i] : null),
+                price: med(cl), prem: med(pr), amount: am || null });
+  }
+  /* 增量交易日：state.json 的 wufuCbQPatch_v1 */
+  const patchM = JSON.parse(((state && state.localStorage) || {}).wufuCbQPatch_v1 || '{}');
+  const pdays = patchM.days || [];
+  let prevEq = rows.length ? (rows[rows.length - 1].eq || 1000) : 1000;
+  const basePrev = {};
+  const bi = calC.length - 1;
+  for (const c of codes) { const v = (S[c].close || [])[bi]; if (typeof v === 'number' && v > 0) basePrev[c] = v; }
+  pdays.forEach((day, di) => {
+    const ss = day.series || {}, pm = di > 0 ? (pdays[di - 1].series || {}) : basePrev;
+    const cl = [], pr = [], ch = []; let am = 0;
+    for (const [c, v] of Object.entries(ss)) {
+      if (!v || typeof v.close !== 'number' || !(v.close > 0)) continue;
+      cl.push(v.close);
+      if (typeof v.premium === 'number' && isFinite(v.premium)) pr.push(v.premium);
+      if (typeof v.amount === 'number' && isFinite(v.amount)) am += v.amount;
+      const pv0 = pm[c], pv = (pv0 && typeof pv0 === 'object') ? pv0.close : pv0;
+      if (typeof pv === 'number' && pv > 0) ch.push((v.close / pv - 1) * 100);
+    }
+    const r = avg(ch); prevEq = prevEq * (1 + (r || 0) / 100);
+    rows.push({ date: day.date, eq: +prevEq.toFixed(2), price: med(cl), prem: med(pr), amount: am || null });
+  });
+  const wk = d => { const t = Date.parse(d + 'T00:00:00Z'); const day = new Date(t).getUTCDay() || 7; return new Date(t - (day - 1) * 86400000).toISOString().slice(0, 10); };
+  const weeklyCb = []; let lastW = null;
+  rows.forEach(x => { const w = wk(x.date); if (w !== lastW) { weeklyCb.push(x); lastW = w; } else weeklyCb[weeklyCb.length - 1] = x; });
+  const tail = weeklyCb.length ? Date.parse(weeklyCb[weeklyCb.length - 1].date + 'T00:00:00Z') : 0;
+  cb.trend = cb.trend || {};
+  for (const y of [5, 10]) {
+    const w = weeklyCb.filter(x => Date.parse(x.date + 'T00:00:00Z') >= tail - 365.25 * y * 86400000);
+    const o = { labels: w.map(x => x.date), sample: +(w.length / 52).toFixed(1), points: w.length };
+    for (const k of ['eq', 'price', 'prem', 'amount']) {
+      const vals = w.map(x => x[k]).filter(v => typeof v === 'number' && isFinite(v) && v > 0);
+      const b = vals[0] || null;
+      o[k] = b ? w.map(x => (typeof x[k] === 'number' && x[k] > 0) ? +(100 * x[k] / b).toFixed(2) : null) : [];
+    }
+    cb.trend[String(y)] = o;
+  }
+  cb.trendNote = '曲线按自然周取点（每周最后一个交易日），含退市债；由内嵌全历史逐日截面真算，未引外部数据源。';
+  save('cb-daily.json', cb);
+  console.log('cb-daily.json 趋势已改周频', cb.trend['5'].points, '/', cb.trend['10'].points, '点');
+}
+
+
 const IXP = 'common/index.gz';
 if (fs.existsSync(IXP)) {
   const gd = JSON.parse(zlib.gunzipSync(fs.readFileSync(IXP)).toString('utf8'));
@@ -73,14 +135,32 @@ if (fs.existsSync(IXP)) {
   };
   const gp = c => { const a = idxm[c] || []; const o = []; for (let i=0;i<a.length;i++) if (typeof a[i]==='number' && a[i]>0) o.push([i,a[i]]); return o; };
   const pctl = (g, years) => { if (!g.length) return null; const i=g[g.length-1][0], v=g[g.length-1][1]; const cut=new Date(Date.parse(cal[i])-365*years*86400000); const w=g.filter(([j])=>Date.parse(cal[j])>=cut.getTime()).map(x=>x[1]); return w.length?Math.round(100*w.filter(x=>x<=v).length/w.length):null; };
-  const line = (c, years, n) => { const g=gp(c); if(g.length<2) return [[],[]]; const end=g[g.length-1][0]; const cut=Date.parse(cal[end])-365*years*86400000; const w=g.filter(([j])=>Date.parse(cal[j])>=cut); if(w.length<2) return [[],[]]; const step=(w.length-1)/(n-1), pick=[]; for(let k=0;k<n;k++) pick.push(w[Math.min(w.length-1,Math.round(k*step))]); const b=pick[0][1]; return [pick.map(x=>+(100*x[1]/b).toFixed(2)), pick.map(x=>cal[x[0]].slice(0,7))]; };
+  /* v0.63 · 按自然周取点：每周最后一个交易日；labels 与点数同长 */
+  const weekKey = d => { const t = Date.parse(d + 'T00:00:00Z'); const day = new Date(t).getUTCDay() || 7; return new Date(t - (day - 1) * 86400000).toISOString().slice(0, 10); };
+  const weekly = arr => { const out = []; let last = null; arr.forEach(x => { const w = weekKey(x.date || x.d); if (w !== last) { out.push(x); last = w; } else out[out.length - 1] = x; }); return out; };
+  const line = (c, years) => {
+    const g = gp(c); if (g.length < 2) return [[], []];
+    const end = g[g.length - 1][0], cut = Date.parse(cal[end]) - 365.25 * years * 86400000;
+    const w = weekly(g.filter(([j]) => Date.parse(cal[j]) >= cut).map(([j, v]) => ({ date: cal[j], v })));
+    if (w.length < 2) return [[], []];
+    const b = w[0].v;
+    return [w.map(x => +(100 * x.v / b).toFixed(2)), w.map(x => x.date)];
+  };
+  /* 用主线的周点日期对齐另一条指数：该周无数据则沿用上一个有效值，保证两条线同长 */
+  const lineOn = (c, dates) => {
+    const g = gp(c), m = new Map(g.map(([j, v]) => [cal[j], v]));
+    let last = null;
+    const vals = dates.map(d => { const v = m.get(d); if (typeof v === 'number' && v > 0) last = v; return last; });
+    const b = vals.find(v => v != null) || null;
+    return b ? vals.map(v => v == null ? null : +(100 * v / b).toFixed(2)) : [];
+  };
   const out = { format:'wufu-dash-idx-v2', dataAsOf: cal[cal.length-1] || null,
     sampleNote:'指数基线 '+(cal[0]||'—')+' 起，共 '+cal.length+' 交易日；分位与曲线由本地真实日线计算',
     idx:{}, idxTrend:{}, trendNote:{}, note:'15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线计算；不含外部抓取与占位值。' };
   for (const [g,lst] of Object.entries(GROUPS)) {
     out.idx[g] = lst.map(([c,n])=>{ const q=gp(c); if(q.length<2) return [n,null,null,null]; const v=q[q.length-1][1], p=q[q.length-2][1]; return [n,+((v/p-1)*100).toFixed(2),pctl(q,5),pctl(q,10)]; });
   }
-  for (const [y,n] of [[5,61],[10,121]]) { const [hs,labels]=line('000300.SH',y,n); const [gz]=line('399303.SZ',y,n); out.idxTrend[String(y)]={labels,hs300:hs,gz2000:gz}; }
+  for (const y of [5,10]) { const [hs,labels]=line('000300.SH',y); const gz=lineOn('399303.SZ',labels); out.idxTrend[String(y)]={labels,hs300:hs,gz2000:gz,points:labels.length}; }
   const gzg = gp('399303.SZ');
   const gnote = gzg.length ? '国证2000 样本 '+gzg.length+' 交易日（约 '+(gzg.length/250).toFixed(1)+' 年），末有效日 '+cal[gzg[gzg.length-1][0]] : '国证2000 无有效序列';
   out.trendNote['5']='样本 5 年 · '+gnote; out.trendNote['10']='样本 10 年（沪深300）· '+gnote;

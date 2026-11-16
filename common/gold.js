@@ -67,14 +67,16 @@
 
   /* ---------- 多线共用画布 ---------- */
   function drawMulti(id, specs, labels) {
-    var svg = $(id); if (!svg) return; svg.innerHTML = '';
-    var arr = [], n = 0;
+    var svg = $(id); if (!svg) return []; svg.innerHTML = '';
+    var arr = [], n = 0, rets = [];
     specs.forEach(function (s) {
-      var a = SL(s.data || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
+      var rb = window.WufuRange ? WufuRange.rebase(s.data || [], gsel) : { data: SL(s.data || []), ret: null };
+      rets.push({ name: s.name || '', ret: rb.ret });
+      var a = rb.data.filter(function (x) { return typeof x === 'number' && isFinite(x); });
       arr.push(a); if (a.length > n) n = a.length;
     });
     var LB = SL(labels || []);
-    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
+    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return rets; }
     var all = []; arr.forEach(function (a) { all = all.concat(a); });
     var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
     if (!isFinite(lo) || !isFinite(hi) || hi === lo) { lo = 90; hi = 110; }
@@ -102,6 +104,23 @@
       var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
       svg.appendChild(TX(x, 148, k.text, 9, '#7C8DA1', anchor));
     });
+    return rets;
+  }
+
+  function writeRangeInfo(rets) {
+    var ri = $('gRangeInfo');
+    if (!ri || !window.WufuRange) return;
+    var t = (D && (D.trend || {})[String(years)]) || {};
+    var inf = WufuRange.info(t.labels || [], gsel);
+    if (WufuRange.isFull(gsel)) {
+      ri.textContent = '拖动下方时间条，以所选区间开头为起点重算收益 · 各线各自归一 100 · 周频';
+      return;
+    }
+    var bits = rets.filter(function (x) { return x.ret !== null; }).map(function (x) {
+      return x.name + ' ' + (x.ret >= 0 ? '+' : '') + x.ret.toFixed(1) + '%';
+    });
+    ri.innerHTML = '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=100 · ' + bits.join(' / ') +
+      '<br>GVZ 是指数点位，只裁区间、不重定基；分位仍是全历史口径。';
   }
 
   function renderMain(d) {
@@ -113,16 +132,18 @@
       var specs = [];
       order.forEach(function (s) {
         var k = (d.kpi || []).filter(function (x) { return x.label === names[s]; })[0];
-        specs.push({ data: (t.price || {})[s] || [], color: k ? k.color : '#9FB0C3' });
+        specs.push({ data: (t.price || {})[s] || [], color: k ? k.color : '#9FB0C3', name: names[s] });
         lg += '<span><i style="background:' + (k ? k.color : '#9FB0C3') + '"></i>' + names[s] + '</span>';
       });
-      drawMulti('gMain', specs, t.labels || []);
+      var rets = drawMulti('gMain', specs, t.labels || []);
       $('gTitle').textContent = '五资产价格';
+      writeRangeInfo(rets);
     } else {
       var rk = ['金银比', '金油比', '金铜比'], cs = d.ratioColors || {}, sp = [];
-      rk.forEach(function (r) { sp.push({ data: (t.ratio || {})[r] || [], color: cs[r] || '#4FC3F7' }); lg += '<span><i style="background:' + (cs[r] || '#4FC3F7') + '"></i>' + r + '</span>'; });
-      drawMulti('gMain', sp, t.labels || []);
+      rk.forEach(function (r) { sp.push({ data: (t.ratio || {})[r] || [], color: cs[r] || '#4FC3F7', name: r }); lg += '<span><i style="background:' + (cs[r] || '#4FC3F7') + '"></i>' + r + '</span>'; });
+      var rets = drawMulti('gMain', sp, t.labels || []);
       $('gTitle').textContent = '三项比价';
+      writeRangeInfo(rets);
     }
     $('gLegend').innerHTML = lg;
     $('gSample').textContent = (mode === 'price' ? '五资产起点归一 100' : '三项比价起点归一 100') + ' · ' + years + '年 · ' + (d.sampleNote || '');

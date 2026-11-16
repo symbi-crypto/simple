@@ -65,6 +65,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <svg viewBox="0 0 360 176" id="idxChart" role="img" aria-label="沪深300与国证2000及两市成交额"></svg>
         <div class="wr-tip">拖动下方白色条选时间段 · 双击还原</div>
         <div id="idxRange" class="wr-host"></div>
+        <div class="wr-info" id="idxRangeInfo">拖动下方时间条，以所选区间开头为起点重算收益</div>
         <div class="legend">
           <span><i style="background:#4FC3F7"></i>沪深300（大盘）</span>
           <span><i style="background:#F87171"></i>国证2000（小盘）</span>
@@ -88,6 +89,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
           <div class="chartcap"><b id="indAreaTitle">行业宽度</b><span>0–100% · 20/80 虚线</span></div>
           <svg viewBox="0 0 360 150" id="indArea" role="img" aria-label="行业宽度面积图"></svg>
           <div id="indRange" class="wr-host"></div>
+          <div class="wr-info" id="indRangeInfo">拖动下方时间条查看区间</div>
         </div>
         <div class="heatbar">
           <div class="chartcap"><b>七指标温度条</b><span>每格一周 · 红=过热 蓝=过冷</span></div>

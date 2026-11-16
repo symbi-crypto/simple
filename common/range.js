@@ -58,12 +58,18 @@
       var h = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-h');
       if (h === 'l') drag = 'l';
       else if (h === 'r') drag = 'r';
-      else if (ev.target === selEl) drag = 'move';
       else {
         var x = pos(ev);
-        drag = (Math.abs(x - a) < Math.abs(x - b)) ? 'l' : 'r';
-        if (drag === 'l') a = Math.min(x, b - 0.02); else b = Math.max(x, a + 0.02);
-        paint(); fire();
+        if (b - a >= 0.98) {
+          /* v0.63 · 全段时按下点即区间起点，拖到哪算到哪 */
+          a = Math.max(0, Math.min(x, 0.96)); b = Math.min(1, a + 0.02); drag = 'r';
+          paint(); fire();
+        } else if (ev.target === selEl) drag = 'move';
+        else {
+          drag = (Math.abs(x - a) < Math.abs(x - b)) ? 'l' : 'r';
+          if (drag === 'l') a = Math.min(x, b - 0.02); else b = Math.max(x, a + 0.02);
+          paint(); fire();
+        }
       }
       try { box.setPointerCapture(ev.pointerId); } catch (e) {}
       ev.preventDefault();
@@ -110,6 +116,32 @@
     if (i1 - i0 < 1) { i0 = 0; i1 = n - 1; }
     return arr.slice(i0, i1 + 1);
   };
+
+  /* v0.63 · 区间重定基：以选中段第一个有效值为 100，各条线各归各的。
+     数据本身已是周频（每周一个点），slice 的 round 就是吸附到周点。 */
+  R.rebase = function (arr, sel) {
+    var s = R.slice(arr, sel), base = null, last = null;
+    for (var i = 0; i < s.length; i++) {
+      if (typeof s[i] === 'number' && isFinite(s[i]) && s[i] > 0) {
+        if (base === null) base = s[i];
+        last = s[i];
+      }
+    }
+    if (base === null) return { data: s, base: null, ret: null };
+    var data = s.map(function (v) {
+      return (typeof v === 'number' && isFinite(v) && v > 0) ? +(100 * v / base).toFixed(2) : null;
+    });
+    return { data: data, base: base, ret: last == null ? null : +((last / base - 1) * 100).toFixed(2) };
+  };
+  /* 选中区间的起止日期（与 slice 用同一取法） */
+  R.info = function (labels, sel) {
+    if (!labels || !labels.length) return { from: '', to: '', i0: 0, i1: 0 };
+    var n = labels.length, a = sel ? sel[0] : 0, b = sel ? sel[1] : 1;
+    var i0 = Math.round(a * (n - 1)), i1 = Math.round(b * (n - 1));
+    if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+    return { from: String(labels[i0] || ''), to: String(labels[i1] || ''), i0: i0, i1: i1 };
+  };
+  R.isFull = function (sel) { return !sel || (sel[0] <= 0.0001 && sel[1] >= 0.9999); };
 
   /* 年份刻度：labels 形如 YYYY-MM / YYYY-MM-DD，每年只保留第一次出现的那个 */
   R.yearTicks = function (labels) {

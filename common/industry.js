@@ -116,6 +116,15 @@
       svg.appendChild(TX(x, 142, k.text, 9, '#7C8DA1', anchor));
     });
     if (rngI) rngI.setLabels(rawL);
+    var ri = $('indRangeInfo');
+    if (ri && window.WufuRange) {
+      var inf = WufuRange.info(rawL, isel);
+      var vals = vals.filter(function (x) { return typeof x === 'number' && isFinite(x); });
+      var mv = vals.length ? (vals.reduce(function (x, y) { return x + y; }, 0) / vals.length).toFixed(1) : '—';
+      ri.innerHTML = WufuRange.isFull(isel)
+        ? '拖动下方时间条查看区间 · 占比类曲线保持 0–100 原值，不重定基 · 周频'
+        : '<b>' + inf.from + ' → ' + inf.to + '</b> · 区间均值 ' + mv + '% · 占比类曲线保持原值，不重定基';
+    }
     var t = $('indAreaTitle'); if (t) t.textContent = (d.keys || [])[active] || '行业宽度';
   }
 

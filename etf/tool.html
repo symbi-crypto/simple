@@ -8475,6 +8475,92 @@ function buildChips() {
     if (tip) _exOpt.graphic = gfx(tip);
     initChart(id).setOption(lineTimeOption(legend, series, _exOpt), true);
     if (charts[id]) charts[id].resize();
+
+    /* v0.63 · 拖下方白色透明时间条 → 以区间首日为起点重算收益（净值归到 1.000）；
+       主回测页的指标卡同步切成「区间口径」。不改回测结果对象、不改回测引擎。 */
+    (function () {
+      var ch = charts[id];
+      if (!ch || typeof ch.on !== 'function') return;
+      var N = dates.length, busy = false;
+      var baseSeries = series.map(function (s) { return s.data; });
+      function idxFromZoom() {
+        var opt = ch.getOption() || {}, dz = (opt.dataZoom || [])[0] || {};
+        var i0, i1, k;
+        if (typeof dz.startValue === 'number' && typeof dz.endValue === 'number' &&
+            isFinite(dz.startValue) && isFinite(dz.endValue)) {
+          i0 = 0; i1 = N - 1;
+          for (k = 0; k < N; k++) { if (dates[k] >= dz.startValue) { i0 = k; break; } }
+          for (k = N - 1; k >= 0; k--) { if (dates[k] <= dz.endValue) { i1 = k; break; } }
+        } else {
+          var st = typeof dz.start === 'number' ? dz.start : 0;
+          var en = typeof dz.end === 'number' ? dz.end : 100;
+          i0 = Math.round(st / 100 * (N - 1)); i1 = Math.round(en / 100 * (N - 1));
+        }
+        if (i1 <= i0) { i0 = 0; i1 = N - 1; }
+        return [i0, i1];
+      }
+      function rescale(dataArr, i0) {
+        var b = null, k, v;
+        for (k = i0; k < dataArr.length; k++) {
+          v = dataArr[k] && dataArr[k][1];
+          if (typeof v === 'number' && isFinite(v) && v > 0) { b = v; break; }
+        }
+        if (b == null) return dataArr.map(function (p) { return [p && p[0], null]; });
+        return dataArr.map(function (p) {
+          v = p && p[1];
+          return (typeof v === 'number' && isFinite(v) && v > 0) ? [p[0], +(v / b).toFixed(5)] : [p[0], null];
+        });
+      }
+      function rangeKpi(i0, i1) {
+        var navS = [], benchS = [], rets = [], k, nv, bv;
+        for (k = i0; k <= i1; k++) {
+          nv = r.nav[k]; bv = r.bench_nav ? r.bench_nav[k] : null;
+          if (typeof nv === 'number' && isFinite(nv) && nv > 0) navS.push(nv);
+          if (typeof bv === 'number' && isFinite(bv) && bv > 0) benchS.push(bv);
+          if (k > i0 && typeof r.nav[k - 1] === 'number' && r.nav[k - 1] > 0 && nv > 0) rets.push(nv / r.nav[k - 1] - 1);
+        }
+        if (navS.length < 2) return;
+        var total = navS[navS.length - 1] / navS[0] - 1;
+        var days = ((dates[i1] - dates[i0]) / 86400000) || 1;
+        var cagr = Math.pow(navS[navS.length - 1] / navS[0], 365 / days) - 1;
+        var peak = navS[0], mdd = 0;
+        navS.forEach(function (v) { if (v > peak) peak = v; var d = v / peak - 1; if (d < mdd) mdd = d; });
+        var mean = rets.reduce(function (a, b) { return a + b; }, 0) / Math.max(1, rets.length);
+        var sd = Math.sqrt(rets.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / Math.max(1, rets.length));
+        var vol = sd * Math.sqrt(252);
+        var sharpe = vol > 0 ? (cagr - 0.02) / vol : 0;
+        var calmar = mdd < 0 ? cagr / Math.abs(mdd) : 0;
+        var btotal = benchS.length > 1 ? benchS[benchS.length - 1] / benchS[0] - 1 : null;
+        var sub = r.calendar[i0] + ' → ' + r.calendar[i1] + ' · 区间口径';
+        var html =
+          kcard('区间·累计收益', FMT.pct(total), sub, total >= 0 ? 'up' : 'down') +
+          kcard('区间·年化', FMT.pct(cagr), '按自然日 365 折算', cagr >= 0 ? 'up' : 'down') +
+          kcard('区间·最大回撤', FMT.pct(mdd), '区间内净值峰值至谷值', 'down') +
+          kcard('区间·夏普', sharpe.toFixed(2), '无风险 2% · 区间日收益', sharpe >= 0 ? 'up' : 'down') +
+          kcard('区间·卡玛', isFinite(calmar) ? calmar.toFixed(2) : '—', '年化 / 回撤', '') +
+          kcard('区间·年化波动', FMT.pct(vol), '日收益标准差 ×√252', '') +
+          (btotal == null ? '' : kcard('区间·基准', FMT.pct(btotal), '同期基准累计', btotal >= 0 ? 'up' : 'down'));
+        var box = $('kpis'); if (box) box.innerHTML = html;
+      }
+      function apply() {
+        if (busy) return; busy = true;
+        try {
+          var z = idxFromZoom(), i0 = z[0], i1 = z[1];
+          var full = (i0 <= 0 && i1 >= N - 1);
+          ch.setOption({ series: series.map(function (s, j) {
+            return { data: full ? baseSeries[j] : rescale(baseSeries[j], i0) };
+          }) });
+          if (id === 'cNav') {
+            if (full) { if (typeof renderKpis === 'function') renderKpis(r); }
+            else rangeKpi(i0, i1);
+          }
+        } catch (e) { }
+        busy = false;
+      }
+      if (ch.__v063Dz) ch.off('datazoom', ch.__v063Dz);
+      ch.__v063Dz = apply;
+      ch.on('datazoom', apply);
+    })();
   }
 
   // [统一] 定投市值曲线（定投市值/累计投入/一次性买入）—— 回测页与详情页共用
