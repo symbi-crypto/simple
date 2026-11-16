@@ -1,0 +1,34 @@
+name: 诊断-快照生成
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 跑快照生成并留完整日志
+        run: |
+          set +e
+          python3 scripts/build-external.py > diag.log 2>&1
+          echo "EXIT_CODE=$?" >> diag.log
+          echo "--- 生成的文件 ---" >> diag.log
+          ls -l market-amount.json industry-daily.json gold-daily.json >> diag.log 2>&1
+      - name: 打印日志
+        if: always()
+        run: cat diag.log
+      - name: 回写日志与快照
+        if: always()
+        run: |
+          git config user.name "probe-bot"
+          git config user.email "probe-bot@users.noreply.github.com"
+          git add -f diag.log market-amount.json industry-daily.json gold-daily.json external-warnings.json
+          git diff --cached --quiet || (git commit -m "chore: 快照生成诊断 $(date -u +%Y-%m-%dT%H:%MZ)" && git push)
