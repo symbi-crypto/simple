@@ -1,0 +1,42 @@
+name: 探针-两市成交额数据源
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 出口 IP
+        run: curl -s --max-time 10 https://api.ipify.org || true
+      - name: 实测两市成交额
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python3 scripts/probe_amount.py
+      - name: 打印结论
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('probe-amount.json',encoding='utf-8'))
+          for x in d['sources']:
+              print('%-10s %-12s ok=%-5s rows=%-6s %s -> %s last_yi=%s %s'%(
+                  x['secid'],x['name'],x['ok'],x['rows'],x.get('first'),x.get('last'),
+                  x.get('last_amount_yi'),x.get('err','')[:60]))
+          print('=== 两市合计 ===', d['sum'])
+          PY
+      - name: 回写报告
+        if: always()
+        run: |
+          git config user.name "probe-bot"
+          git config user.email "probe-bot@users.noreply.github.com"
+          git add -f probe-amount.json
+          git diff --cached --quiet || (git commit -m "chore: 两市成交额探针 $(date -u +%Y-%m-%dT%H:%MZ)" && git push)
