@@ -8605,6 +8605,8 @@ function buildChips() {
           return view === "dd" ? (v * 100).toFixed(2) + "%" : (+v).toFixed(3);
         });
       };
+      /* v0.67: notMerge 重绘会冲掉初始化时的 transparent，dark 主题会刷成 #100C2A 紫底 */
+      opt.backgroundColor = "transparent";
       var ch = initChart(id);
       ch.setOption(opt, true);
       if (charts[id]) charts[id].resize();
