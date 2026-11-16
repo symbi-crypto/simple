@@ -6,9 +6,9 @@
      兼容「服务器自动二次压缩」与「原样返回」两种托管行为
    · 导航请求离线时才回首页；静态资源失败原样抛错，不把 gz 伪装成 HTML
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
-   改任何页面或数据文件后请把 CACHE 末段 +1（v0.56 → v0.57）；1.0 之前一律用 v0.x。
+   改任何页面或数据文件后请把 CACHE 末段 +1（v0.57 → v0.58）；1.0 之前一律用 v0.x。
    ============================================================ */
-var CACHE = "wufu-all-v0.57";
+var CACHE = "wufu-all-v0.58";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
@@ -24,7 +24,7 @@ var LIST = [
   "cb/index.html", "cb/tool.html", "cb/dashboard.html", "cb/icon.svg", "cb/manifest.webmanifest",
   "cb/data/cb-data.gz", "cb/data/cb-vol.gz", "cb/data/cb-extra.gz", "cb/data/holiday-cn.json",
   "cb/data/cb-scale-daily.json",
-  "combos/index.html", "cb-daily.json", "index-daily.json", "gold-daily.json", "industry-daily.json",
+  "combos/index.html", "cb-daily.json", "index-daily.json", "gold-daily.json", "industry-daily.json", "market-amount.json",
   "health/index.html", "health/etf/index.html", "health/cb/index.html"
 ];
 
@@ -98,7 +98,7 @@ self.addEventListener("fetch", function (e) {
        ignoreSearch 让「首次只开首页就断网」也能打开体检页，不必先联网进过一次。 */
     /* 日频剩余规模快照：整包可能只换数据、不升 CACHE 版本，
        必须 network-first，否则 cache-first 会让按钮永远读到旧快照 */
-    if (/\/(cb-scale-daily|cb-daily|index-daily|gold-daily|industry-daily)\.json$/.test(u.pathname)) {
+    if (/\/(cb-scale-daily|cb-daily|index-daily|gold-daily|industry-daily|market-amount)\.json$/.test(u.pathname)) {
       try {
         var fresh = await fetch(req);
         if (fresh && fresh.ok) {

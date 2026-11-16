@@ -494,7 +494,68 @@ def build_gold():
     print("三项比价", out["ratios"])
 
 
+# =====================================================================
+# 三、两市成交额（指数看板叠柱用）
+# 探针实测（GitHub Actions 出口）：东财 1.000001 / 0.399001 K 线 f57
+# 均 4094 根、2010-01-04 起，末日 2026-11-13，合计约 16556.7 亿元。
+# 口径是「上证指数 + 深证成指成交额之和」，是两市成交额的近似，
+# 不是全A逐股加总；只写算好的小 JSON，原始日线不进仓库。
+# =====================================================================
+AMT_KL = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s&klt=101&fqt=1"
+          "&beg=20100101&end=20500101&fields1=f1,f2,f3"
+          "&fields2=f51,f52,f53,f54,f55,f56,f57,f58")
+
+
+def amt_index(secid):
+    st, txt = get(AMT_KL % secid, timeout=15, tries=2)
+    if st != 200:
+        return {}
+    out = {}
+    for line in (jload(txt).get("data") or {}).get("klines") or []:
+        p = line.split(",")
+        if len(p) >= 7:
+            try:
+                out[p[0]] = float(p[6])   # f57 成交额（元）
+            except Exception:
+                pass
+    return out
+
+
+def build_amount():
+    sh = amt_index("1.000001")
+    sz = amt_index("0.399001")
+    ok = len(sh) > 200 and len(sz) > 200
+    if not ok:
+        WARN.append("两市成交额：上证 %d 根 / 深证 %d 根，不足，本次不叠柱" % (len(sh), len(sz)))
+    days = sorted(set(sh) & set(sz)) if ok else []
+    out = {
+        "format": "wufu-dash-amount-v1",
+        "dataAsOf": days[-1] if days else None,
+        "ok": ok,
+        "source": "东财指数 K 线成交额 f57：上证指数(1.000001) + 深证成指(0.399001)",
+        "note": "两市成交额 ≈ 上证指数 + 深证成指成交额之和（亿元），非全A逐股加总；柱形单独归一，不与指数点位混算。",
+        "5": {"labels": [], "amount": []},
+        "10": {"labels": [], "amount": []},
+        "warnings": list(WARN),
+    }
+    if ok:
+        vals = [round((sh[d] + sz[d]) / 1e8, 1) for d in days]   # 亿元
+        for Y, N in [(5, 61), (10, 121)]:
+            wd = window(days, Y)
+            if not wd:
+                continue
+            idx = [days.index(d) for d in wd]
+            step = (len(idx) - 1) / (N - 1)
+            pick = [idx[min(len(idx) - 1, round(k * step))] for k in range(N)]
+            out[str(Y)] = {"labels": [days[i][:7] for i in pick],
+                           "amount": [vals[i] for i in pick]}
+        print("两市成交额 共同交易日", len(days), "末日", days[-1], "亿元", vals[-1])
+    save("market-amount.json", out)
+
+
 def main():
+    print("=== 两市成交额 ===")
+    build_amount()
     print("=== 行业宽度 ===")
     build_industry()
     print("=== 黄金看板 ===")

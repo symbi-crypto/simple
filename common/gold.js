@@ -1,4 +1,4 @@
-/* gold.js — 黄金看板渲染器（v0.57）
+/* gold.js — 黄金看板渲染器（v0.58）
    只读 ../gold-daily.json（Actions 算好的快照），缺数显示「—」，绝不写示意值。
    本版按用户要求不含「相对强弱 / 20 日动量」区块。 */
 (function () {
@@ -7,6 +7,8 @@
   if (!wrap) return;
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, mode = 'price';
+  var gsel = [0, 1], rngG = null;
+  function SL(a) { return window.WufuRange ? WufuRange.slice(a, gsel) : a; }
 
   function $(id) { return document.getElementById(id); }
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
@@ -68,9 +70,10 @@
     var svg = $(id); if (!svg) return; svg.innerHTML = '';
     var arr = [], n = 0;
     specs.forEach(function (s) {
-      var a = (s.data || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
+      var a = SL(s.data || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
       arr.push(a); if (a.length > n) n = a.length;
     });
+    var LB = SL(labels || []);
     if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
     var all = []; arr.forEach(function (a) { all = all.concat(a); });
     var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
@@ -83,7 +86,6 @@
       svg.appendChild(E('line', { x1: 34, y1: Y(gv), x2: 344, y2: Y(gv), stroke: '#2C3B4E', 'stroke-width': '1' }));
       svg.appendChild(TX(31, Y(gv) + 3, Math.round(gv), 9, '#7C8DA1', 'end'));
     });
-    /* 20 / 80 参考线只对 0-100 量纲有意义，这里画 100 基准线 */
     if (lo <= 100 && hi >= 100) {
       svg.appendChild(E('line', { x1: 34, y1: Y(100), x2: 344, y2: Y(100), stroke: '#4FC3F7', 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.45' }));
     }
@@ -93,9 +95,12 @@
       for (var i = 0; i < a.length; i++) pts.push(X(i, a.length).toFixed(1) + ',' + Y(a[i]).toFixed(1));
       svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: s.color, 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
     });
-    (labels || []).forEach(function (L, i) {
-      var x = 34 + i * (310 / Math.max(1, labels.length - 1));
-      svg.appendChild(TX(x, 148, L, 9, '#7C8DA1', i === 0 ? 'start' : (i === labels.length - 1 ? 'end' : 'middle')));
+    /* 每年只显示一个年份，避免 61/121 个月标签叠在一起 */
+    var ticks = window.WufuRange ? WufuRange.yearTicks(LB) : [];
+    ticks.forEach(function (k) {
+      var x = 34 + k.i * (310 / Math.max(1, LB.length - 1));
+      var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
+      svg.appendChild(TX(x, 148, k.text, 9, '#7C8DA1', anchor));
     });
   }
 
@@ -121,11 +126,12 @@
     }
     $('gLegend').innerHTML = lg;
     $('gSample').textContent = (mode === 'price' ? '五资产起点归一 100' : '三项比价起点归一 100') + ' · ' + years + '年 · ' + (d.sampleNote || '');
+    if (rngG) rngG.setLabels(t.labels || []);
   }
 
   function renderGvz(d) {
     var svg = $('gGvz'); if (!svg) return; svg.innerHTML = '';
-    var a = (((d.trend || {})[String(years)] || {}).gvz || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
+    var a = SL(((d.trend || {})[String(years)] || {}).gvz || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
     if (a.length < 2) { svg.appendChild(TX(180, 50, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
     var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a), pad = (hi - lo) * 0.12 || 1;
     lo -= pad; hi += pad;
@@ -160,7 +166,14 @@
     $('gPosNote').textContent = '近 ' + years + ' 年';
   }
 
-  function renderAll() { if (!D) return; renderSum(D); renderKpi(D); renderMain(D); renderGvz(D); renderPos(D); }
+  function renderAll() {
+    if (!D) return;
+    renderSum(D); renderKpi(D); renderMain(D); renderGvz(D); renderPos(D);
+    if (window.WufuRange && !rngG) {
+      rngG = WufuRange.mount('gRange', { onChange: function (x) { gsel = x; if (D) { renderMain(D); renderGvz(D); } } });
+      rngG.setLabels((((D.trend || {})[String(years)] || {}).labels) || []);
+    }
+  }
   function fail() {
     $('gSum').innerHTML = '暂无快照 · 周五同步后自动出现';
     ['gKpi', 'gPos'].forEach(function (id) { var e = $(id); if (e) e.innerHTML = '<div class="gempty">暂无快照</div>'; });
@@ -170,14 +183,14 @@
 
   document.querySelectorAll('[data-gseg] span[data-y]').forEach(function (s) {
     s.onclick = function () {
-      years = +s.getAttribute('data-y');
+      years = +s.getAttribute('data-y'); gsel = [0, 1]; if (rngG) rngG.reset();
       document.querySelectorAll('[data-gseg] span[data-y]').forEach(function (x) { x.classList.toggle('on', +x.getAttribute('data-y') === years); });
       renderAll();
     };
   });
   document.querySelectorAll('[data-mseg] span[data-m]').forEach(function (s) {
     s.onclick = function () {
-      mode = s.getAttribute('data-m');
+      mode = s.getAttribute('data-m'); gsel = [0, 1]; if (rngG) rngG.reset();
       document.querySelectorAll('[data-mseg] span[data-m]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-m') === mode); });
       if (D) renderMain(D);
     };

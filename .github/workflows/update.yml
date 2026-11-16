@@ -64,7 +64,7 @@ jobs:
             echo "本周没有任何变化，不提交、不触发构建。"
             exit 0
           fi
-          git add sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json external-warnings.json
+          git add sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json external-warnings.json
           if [ -f state.json ]; then git add state.json; fi
           git commit -m "chore: 周度同步 $(date -u +%F)"
           git push

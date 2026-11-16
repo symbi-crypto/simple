@@ -36,7 +36,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os
-          for f in ['industry-daily.json','gold-daily.json']:
+          for f in ['industry-daily.json','gold-daily.json','market-amount.json']:
               if not os.path.exists(f):
                   print(f, '未生成'); continue
               d=json.load(open(f,encoding='utf-8'))
@@ -44,7 +44,10 @@ jobs:
               print('dataAsOf', d.get('dataAsOf'), '| source', d.get('source'))
               print('sampleNote', d.get('sampleNote'))
               print('warnings', d.get('warnings'))
-              if f.startswith('industry'):
+              if f == 'market-amount.json':
+                  print('两市成交额 ok=', d.get('ok'), '| 末日', d.get('dataAsOf'),
+                        '| 5年点数', len(d.get('5',{}).get('amount',[])))
+              elif f.startswith('industry'):
                   print('板块数', d.get('boardCount'), '/', d.get('boardTotal'),
                         '| 热力图', len(d['heat']['names']), '行 ×', len(d['heat']['dates']), '列')
                   print('七指标', [(x['name'], x['value']) for x in d['indicators']])
@@ -57,7 +60,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add cb-daily.json index-daily.json industry-daily.json gold-daily.json external-warnings.json
+          git add cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json external-warnings.json
           if git diff --cached --quiet; then
             echo "快照无变化，不提交"
           else

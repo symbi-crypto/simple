@@ -1,10 +1,12 @@
-/* industry.js — A股行业宽度全景（v0.57）
+/* industry.js — A股行业宽度全景（v0.58）
    数据只读 ../industry-daily.json，且仅在指数看板展开后才拉，不进首屏。
    口径由数据文件自带：东财行业板块（细分板块），不是申万 31 个一级行业。 */
 (function () {
   'use strict';
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, active = 0, hmode = 'chg', loaded = false;
+  var isel = [0, 1], rngI = null;
+  function SL(a) { return window.WufuRange ? WufuRange.slice(a, isel) : a; }
   function $(id) { return document.getElementById(id); }
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
   function TX(x, y, s, size, color, anchor) {
@@ -73,7 +75,7 @@
       var e = document.createElement('div');
       e.className = 'mcard' + (i === active ? ' on' : '');
       e.innerHTML = '<div class="mn">' + esc(it.name) + '</div><div class="mv">' + (it.value == null ? '—' : Math.round(it.value) + '<span style="font-size:10px;color:#9FB0C3">%</span>') + '</div>';
-      e.onclick = function () { active = i; renderCards(d); renderArea(d); };
+      e.onclick = function () { active = i; isel = [0, 1]; if (rngI) rngI.reset(); renderCards(d); renderArea(d); };
       box.appendChild(e);
     });
   }
@@ -81,8 +83,9 @@
   /* ---------- 0-100 面积图 ---------- */
   function renderArea(d) {
     var svg = clear('indArea'); if (!svg) return;
-    var a = (((d.area || {})[String(years)] || {}).series || {})[(d.keys || [])[active]] || [];
-    var labels = ((d.area || {})[String(years)] || {}).labels || [];
+    var rawA = (((d.area || {})[String(years)] || {}).series || {})[(d.keys || [])[active]] || [];
+    var rawL = ((d.area || {})[String(years)] || {}).labels || [];
+    var a = SL(rawA), labels = SL(rawL);
     var vals = a.filter(function (x) { return typeof x === 'number' && isFinite(x); });
     if (!vals.length) { svg.appendChild(TX(180, 78, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
     var X = function (i) { return 34 + i * (310 / Math.max(1, a.length - 1)); };
@@ -106,11 +109,13 @@
     defs.appendChild(lg); svg.appendChild(defs);
     svg.appendChild(E('path', { d: area, fill: 'url(#indag)' }));
     svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: '#4FC3F7', 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
-    for (var q = 0; q < Math.min(6, labels.length); q++) {
-      var k = Math.round(q * (labels.length - 1) / (Math.min(6, labels.length) - 1 || 1));
-      svg.appendChild(TX(34 + q * (310 / (Math.min(6, labels.length) - 1 || 1)), 142, labels[k], 9, '#7C8DA1',
-        q === 0 ? 'start' : (q === Math.min(6, labels.length) - 1 ? 'end' : 'middle')));
-    }
+    var ticks = window.WufuRange ? WufuRange.yearTicks(labels) : [];
+    ticks.forEach(function (k) {
+      var x = 34 + k.i * (310 / Math.max(1, labels.length - 1));
+      var anchor = k.i === 0 ? 'start' : (k.i >= labels.length - 2 ? 'end' : 'middle');
+      svg.appendChild(TX(x, 142, k.text, 9, '#7C8DA1', anchor));
+    });
+    if (rngI) rngI.setLabels(rawL);
     var t = $('indAreaTitle'); if (t) t.textContent = (d.keys || [])[active] || '行业宽度';
   }
 
@@ -159,6 +164,10 @@
   function renderAll() {
     if (!D) return;
     renderMeta(D); renderRadar(D); renderCards(D); renderArea(D); renderHeatbar(D); renderHeat(D);
+    if (window.WufuRange && !rngI) {
+      rngI = WufuRange.mount('indRange', { onChange: function (x) { isel = x; if (D) renderArea(D); } });
+      rngI.setLabels((((D.area || {})[String(years)] || {}).labels) || []);
+    }
   }
   function fail() {
     ['indRadar', 'indArea'].forEach(function (id) { var s = $(id); if (s) { s.innerHTML = ''; s.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); } });
@@ -183,7 +192,7 @@
     if (c2.classList.contains('open')) load();
   }
   document.querySelectorAll('[data-seg] span[data-y]').forEach(function (s) {
-    s.addEventListener('click', function () { years = +s.getAttribute('data-y'); if (D) renderArea(D); });
+    s.addEventListener('click', function () { years = +s.getAttribute('data-y'); isel = [0, 1]; if (rngI) rngI.reset(); if (D) renderArea(D); });
   });
   document.querySelectorAll('#indMode span[data-m]').forEach(function (s) {
     s.onclick = function () {

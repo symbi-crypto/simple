@@ -17,15 +17,17 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 </head><body>
 <script src="../common/header.js" data-t1="ETF量化" data-t2="回测系统" data-badge="none" data-page="etf"></script>
 <div class="nav">
+  <a href="tool.html#/health">数据体检</a>
+  <a href="manage.html">其他功能</a>
   <button type="button" class="on">综合看板</button>
   <a href="gold.html">黄金看板</a>
-  <a href="index.html#/correlation">相关性</a>
-  <a href="index.html#/ic">因子IC</a>
-  <a href="index.html#/rotation">轮动回测</a>
-  <a href="index.html#/rebalance">再平衡回测</a>
-  <a href="index.html#/dca">定投回测</a>
-  <a href="index.html#/strategies">我的策略</a>
-</div>
+  <a href="tool.html#/correlation">相关性</a>
+  <a href="tool.html#/ic">因子IC</a>
+  <a href="tool.html#/rotation">轮动回测</a>
+  <a href="tool.html#/rebalance">再平衡回测</a>
+  <a href="tool.html#/dca">定投回测</a>
+  <a href="tool.html#/strategies">我的策略</a>
+  </div>
 <div class="wrap" id="dashWrap" data-kind="idx" data-json="../index-daily.json">
   <div class="card" id="c2">
     <div class="hd"><b>指数看板</b><span>—</span></div>
@@ -38,17 +40,21 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
     <div class="idx" id="idxH"></div>
     <div class="ghead" style="margin-top:10px"><b><span style="color:#9FB0C3">美股</span><span class="gname">—</span></b><span>各自交易日</span></div>
     <div class="idx" id="idxU"></div>
-    <div class="more" onclick="tg('c2')"><span>沪深300 / 国证2000 · 历史对比</span><span class="arw">▾</span></div>
+    <div class="more" onclick="tg('c2')"><span>A股市场宽度</span><span class="arw">▾</span></div>
     <div class="detail">
       <div class="chartbox">
         <div class="chartcap"><b>沪深300 / 国证2000</b><span>起点归一 = 100</span></div>
-        <svg viewBox="0 0 360 150" id="idxChart" role="img" aria-label="沪深300与国证2000历史对比"></svg>
+        <svg viewBox="0 0 360 176" id="idxChart" role="img" aria-label="沪深300与国证2000及两市成交额"></svg>
+        <div class="wr-tip">拖动下方白色条选时间段 · 双击还原</div>
+        <div id="idxRange" class="wr-host"></div>
         <div class="legend">
           <span><i style="background:#4FC3F7"></i>沪深300（大盘）</span>
           <span><i style="background:#F87171"></i>国证2000（小盘）</span>
+          <span><i style="background:rgba(79,195,247,.35);border:1px solid #4FC3F7"></i>两市成交额（柱）</span>
         </div>
       </div>
       <div class="subnote" id="idxSampleNote" style="margin:8px 0 0">—</div>
+      <div class="subnote" id="idxAmtNote" style="margin:4px 0 0">—</div>
       <div class="subnote" style="margin:6px 0 0">两条线各自归一 = 100，只比形状位置，不混算数值；右列分位为当前点位在所选窗口历史点位中的百分位。</div>
 
       <div class="blk" style="margin-top:18px;border-top:1px dashed var(--edge);padding-top:14px">
@@ -63,6 +69,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <div class="chartbox">
           <div class="chartcap"><b id="indAreaTitle">行业宽度</b><span>0–100% · 20/80 虚线</span></div>
           <svg viewBox="0 0 360 150" id="indArea" role="img" aria-label="行业宽度面积图"></svg>
+          <div id="indRange" class="wr-host"></div>
         </div>
         <div class="heatbar">
           <div class="chartcap"><b>七指标温度条</b><span>每格一周 · 红=过热 蓝=过冷</span></div>
@@ -79,6 +86,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
     </div>
   </div>
 </div>
+<script src="../common/range.js"></script>
 <script src="../common/dashboard.js"></script>
 <script src="../common/industry.js"></script>
 </body></html>

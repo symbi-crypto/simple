@@ -24,15 +24,17 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 </head><body>
 <script src="../common/header.js" data-t1="ETF量化" data-t2="回测系统" data-badge="none" data-page="etf"></script>
 <div class="nav">
+  <a href="tool.html#/health">数据体检</a>
+  <a href="manage.html">其他功能</a>
   <a href="dashboard.html">综合看板</a>
   <button type="button" class="on">黄金看板</button>
-  <a href="index.html#/correlation">相关性</a>
-  <a href="index.html#/ic">因子IC</a>
-  <a href="index.html#/rotation">轮动回测</a>
-  <a href="index.html#/rebalance">再平衡回测</a>
-  <a href="index.html#/dca">定投回测</a>
-  <a href="index.html#/strategies">我的策略</a>
-</div>
+  <a href="tool.html#/correlation">相关性</a>
+  <a href="tool.html#/ic">因子IC</a>
+  <a href="tool.html#/rotation">轮动回测</a>
+  <a href="tool.html#/rebalance">再平衡回测</a>
+  <a href="tool.html#/dca">定投回测</a>
+  <a href="tool.html#/strategies">我的策略</a>
+  </div>
 <div class="wrap" id="goldWrap" data-json="../gold-daily.json">
   <div class="card" id="g1">
     <div class="hd"><b>黄金看板</b><span>—</span></div>
@@ -53,6 +55,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <div class="chartbox">
           <div class="chartcap"><b id="gTitle">五资产价格</b><span>起点归一 = 100</span></div>
           <svg viewBox="0 0 360 158" id="gMain" role="img" aria-label="黄金看板合并趋势"></svg>
+          <div class="wr-tip">拖动下方白色条选时间段 · 双击还原</div>
+          <div id="gRange" class="wr-host"></div>
           <div class="legend" id="gLegend"></div>
         </div>
         <div class="subnote" id="gSample" style="margin:6px 0 0">—</div>
@@ -73,5 +77,6 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
     </div>
   </div>
 </div>
+<script src="../common/range.js"></script>
 <script src="../common/gold.js"></script>
 </body></html>

@@ -156,3 +156,15 @@ td.cell{height:23px;border-bottom:1px solid var(--line);font-size:9px;font-weigh
   .syshd h1{font-size:16px}
   .wrap{padding:12px 10px 26px}
 }
+
+/* v0.58 · 历史曲线下方的白色透明时间段选择条 */
+.wr-host{margin:6px 2px 4px}
+.wr{position:relative;height:46px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+.wr-sel{position:absolute;top:8px;height:16px;border-radius:6px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 0 8px rgba(255,255,255,.12)}
+.wr-h{position:absolute;top:4px;width:12px;height:24px;border-radius:4px;background:rgba(255,255,255,.88);border:1px solid #E6F4FF;box-shadow:0 0 0 2px rgba(14,116,144,.45);z-index:2}
+.wr-h::after{content:'';position:absolute;left:4px;top:7px;width:2px;height:10px;background:#0E7490;border-radius:1px}
+.wr-lab{position:absolute;top:30px;font-size:9px;color:#9FB0C3;white-space:nowrap}
+.wr-lab-l{transform:translateX(-6%)}
+.wr-lab-r{transform:translateX(-94%)}
+.wr-tip{font-size:9.5px;color:#7C8DA1;margin:2px 2px 0;text-align:right}

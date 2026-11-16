@@ -1,4 +1,4 @@
-/* dashboard.js — 综合看板渲染器（v0.57）
+/* dashboard.js — 综合看板渲染器（v0.58）
    数据只来自同目录的 cb-daily.json / index-daily.json，指数侧全部由本地真实日线计算，缺数一律显示「—」，不写示意值。 */
 (function () {
   'use strict';
@@ -7,6 +7,8 @@
   var kind = wrap.getAttribute('data-kind') || 'cb';
   var url = wrap.getAttribute('data-json') || '../cb-daily.json';
   var D = null, years = 5, distKey = '价格';
+  var selCB = [0, 1], selIDX = [0, 1], AMT = null, rngCB = null, rngIDX = null;
+  function SL(a, sel) { return window.WufuRange ? WufuRange.slice(a, sel) : a; }
   var NS = 'http://www.w3.org/2000/svg';
   function $(id) { return document.getElementById(id); }
   function T(v) { return (v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) ? '—' : String(v); }
@@ -108,10 +110,12 @@
   }
   function drawCbTrend(d) {
     var t = (d.trend || {})[String(years)] || {};
+    var LB = SL(t.labels || [], selCB);
     multi($('cbTrend'), [
-      { data: t.eq, color: '#F87171' }, { data: t.price, color: '#4FC3F7' },
-      { data: t.prem, color: '#A78BFA' }, { data: t.amount, color: '#9FB0C3' }
-    ], t.labels || []);
+      { data: SL(t.eq, selCB), color: '#F87171' }, { data: SL(t.price, selCB), color: '#4FC3F7' },
+      { data: SL(t.prem, selCB), color: '#A78BFA' }, { data: SL(t.amount, selCB), color: '#9FB0C3' }
+    ], LB);
+    if (rngCB) rngCB.setLabels(t.labels || []);
     var sn = $('cbSampleNote');
     if (sn) sn.textContent = years === 5 ? '样本 5 年' : (d.sampleNote || '样本 —');
   }
@@ -131,6 +135,13 @@
     if (sl) sl.innerHTML = '沪深300 ' + ch(findChg('沪深300')) + '<i>·</i>国证2000 ' + ch(findChg('国证2000'));
     renderIdxRows(d);
     drawIdxChart(d);
+    if (!AMT && !window.__amtTried) {
+      window.__amtTried = true;
+      fetch('../market-amount.json', { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (j) { AMT = j; if (D) drawIdxChart(D); })
+        .catch(function () { AMT = null; if (D) drawIdxChart(D); });
+    }
     var sn = $('idxSampleNote');
     if (sn) sn.textContent = ((d.trendNote || {})[String(years)]) || d.sampleNote || '样本 —';
   }
@@ -159,29 +170,55 @@
   function drawIdxChart(d) {
     var t = ((d.idxTrend || {})[String(years)] || {});
     var svg = $('idxChart'); if (!svg) return; svg.innerHTML = '';
-    var s1 = t.hs300 || [], s2 = t.gz2000 || [], n = Math.max(s1.length, s2.length);
+    var s1 = SL(t.hs300 || [], selIDX), s2 = SL(t.gz2000 || [], selIDX), LB = SL(t.labels || [], selIDX);
+    var n = Math.max(s1.length, s2.length);
     if (!n) { emptyChart('idxChart', '暂无指数曲线'); return; }
     var all = s1.concat(s2).filter(function (x) { return isFinite(x); });
     var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
     if (!isFinite(lo) || !isFinite(hi) || hi === lo) { lo = 60; hi = 140; }
     var pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
-    var Y = function (v) { return 12 + (hi - v) / (hi - lo) * 120; };
+    var Y = function (v) { return 12 + (hi - v) / (hi - lo) * 100; };
     grid(svg, [lo + (hi - lo) * 0.25, lo + (hi - lo) * 0.5, lo + (hi - lo) * 0.75], Y, 34, 344);
+    /* 两市成交额柱：独立量纲，画在下方 124~158，不与指数点位混算 */
+    var am = (AMT && AMT[String(years)]) ? SL(AMT[String(years)].amount || [], selIDX) : [];
+    var amax = 1;
+    am.forEach(function (v) { if (typeof v === 'number' && isFinite(v) && v > amax) amax = v; });
+    if (am.length > 1) {
+      var bw = Math.max(1.5, 310 / am.length * 0.55);
+      for (var ai = 0; ai < am.length; ai++) {
+        var v = am[ai]; if (typeof v !== 'number' || !isFinite(v)) continue;
+        var x = 34 + ai * (310 / Math.max(1, am.length - 1));
+        var h = Math.max(1, (v / amax) * 32);
+        svg.appendChild(E('rect', { x: (x - bw / 2).toFixed(1), y: (156 - h).toFixed(1),
+          width: bw.toFixed(1), height: h.toFixed(1), fill: 'rgba(79,195,247,.28)',
+          stroke: 'rgba(79,195,247,.45)', 'stroke-width': '.5' }));
+      }
+      svg.appendChild(E('line', { x1: 34, y1: 156, x2: 344, y2: 156, stroke: '#3E4E63', 'stroke-width': '1' }));
+      svg.appendChild(TX(344, 122, '成交额峰值 ' + Math.round(amax) + ' 亿', 8.5, '#7C8DA1', 'end'));
+    }
     [[s1, '#4FC3F7'], [s2, '#F87171']].forEach(function (p) {
       var pts = [];
       p[0].forEach(function (v, i) { if (isFinite(v)) pts.push((34 + i * (310 / Math.max(1, p[0].length - 1))) + ',' + Y(v)); });
       if (pts.length > 1) svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: p[1], 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
     });
-    var LB = t.labels || [], LN = 6;
-    if (LB.length) for (var q = 0; q < LN; q++) {
-      var k = Math.round(q * (LB.length - 1) / (LN - 1));
-      svg.appendChild(TX(34 + q * (310 / (LN - 1)), 146, LB[k], 9, '#7C8DA1',
-        q === 0 ? 'start' : (q === LN - 1 ? 'end' : 'middle')));
-    }
+    /* X 轴：每年只显示一个年份，避免日期叠在一起 */
+    var ticks = window.WufuRange ? WufuRange.yearTicks(LB) : [];
+    ticks.forEach(function (k) {
+      var x = 34 + k.i * (310 / Math.max(1, LB.length - 1));
+      var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
+      svg.appendChild(TX(x, 170, k.text, 9, '#7C8DA1', anchor));
+    });
+    if (rngIDX) rngIDX.setLabels(t.labels || []);
+    var note = $('idxAmtNote');
+    if (note) note.textContent = am.length > 1
+      ? '两市成交额 = 上证指数 + 深证成指 K 线成交额之和（亿元，近似口径），柱形单独归一，不与指数点位混读。'
+      : '两市成交额暂无快照，图上不摆空柱。';
   }
 
   /* ===================== 交互 ===================== */
   function applyYears() {
+    selCB = [0, 1]; selIDX = [0, 1];
+    if (rngCB) rngCB.reset(); if (rngIDX) rngIDX.reset();
     document.querySelectorAll('[data-seg] span[data-y]').forEach(function (s) { s.classList.toggle('on', +s.getAttribute('data-y') === years); });
     document.querySelectorAll('#cbBottom .row[data-a]').forEach(function (r) {
       var p = years === 5 ? r.getAttribute('data-a') : r.getAttribute('data-b');
@@ -198,6 +235,10 @@
   function boot() {
     if (D) { if (kind === 'cb') renderCB(); else renderIDX(); }
     applyYears();
+    if (window.WufuRange && !rngCB && !rngIDX) {
+      rngCB = WufuRange.mount('cbRange', { onChange: function (x) { selCB = x; if (D && kind === 'cb') drawCbTrend(D); } });
+      rngIDX = WufuRange.mount('idxRange', { onChange: function (x) { selIDX = x; if (D && kind !== 'cb') drawIdxChart(D); } });
+    }
   }
   function fail() {
     var strip = document.querySelector('#c1 .strip') || $('idxSum');

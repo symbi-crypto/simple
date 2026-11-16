@@ -656,11 +656,11 @@ document.addEventListener("DOMContentLoaded",function(){
 </header>
 <div id="dataLoadTip" style="display:none;align-items:center;gap:8px;margin:10px auto 0;max-width:1680px;padding:8px 14px;font-size:12.5px;color:#9FB0C3;background:rgba(14,116,144,.16);border:1px solid rgba(79,195,247,.3);border-radius:8px"><span class="dlt-ic spin" style="display:inline-block;width:12px;height:12px;border:2px solid #4FC3F7;border-top-color:transparent;border-radius:50%;flex:0 0 12px"></span><span class="dlt-tx">正在加载行情数据…</span></div>
 <div class="nav">
+  <button type="button" id="tabHealth">数据体检</button>
   <button type="button" id="tabDashboard" onclick="location.href='dashboard.html'">综合看板</button>
   
   <button type="button" id="tabIc">因子IC</button>
-  <button type="button" id="tabHealth">数据体检</button>
-  <button type="button" id="tabRotation" class="on">轮动回测</button>
+    <button type="button" id="tabRotation" class="on">轮动回测</button>
   <button type="button" id="tabStrategies">我的策略</button>
   <button type="button" id="tabCombo">策略组合</button>
   <button type="button" id="tabCorr" style="display:none">相关性</button>
@@ -11423,15 +11423,6 @@ function showStrategyDetail(name) {
     try{window.addEventListener("load",function(){setTimeout(onlyView,60);});}catch(e){}
     try{window.addEventListener("hashchange",function(){setTimeout(onlyView,30);});}catch(e){}
     try{document.title=VNAME[V]+" · "+(SYS==="cb"?"可转债":"ETF")+"系统";}catch(e){}
-  } else {
-    var dest={health:"../health/"+(SYS==="cb"?"cb":"etf")+"/index.html",strategies:"../"+(SYS==="cb"?"cb":"etf")+"/index.html",combo:"../combos/index.html"};
-    ["health","strategies","combo"].forEach(function(v){
-      var id=v==="health"?"tabHealth":v==="strategies"?"tabStrategies":"tabCombo";
-      try{var b=$(id);if(b)b.addEventListener("click",function(ev){
-        ev.preventDefault();ev.stopImmediatePropagation();
-        location.href=dest[v];
-      },true);}catch(e){}
-    });
   }
 
 

@@ -18,15 +18,15 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 </head><body>
 <script src="../common/header.js" data-t1="可转债量化" data-t2="回测系统" data-badge="none" data-page="cb"></script>
 <div class="nav">
+  <a href="tool.html#/health">数据体检</a>
   <button type="button" class="on">综合看板</button>
-  
-  <a href="index.html#/ic">因子IC</a>
-    <a href="index.html#/rotation">轮动回测</a>
-  <a href="index.html#/strategies">我的策略</a>
-    <a href="index.html#/correlation" style="display:none">相关性</a>
-  <a href="index.html#/rebalance" style="display:none">再平衡回测</a>
-  <a href="index.html#/dca" style="display:none">定投回测</a>
-    </div>
+  <a href="tool.html#/ic">因子IC</a>
+  <a href="tool.html#/rotation">轮动回测</a>
+  <a href="tool.html#/strategies">我的策略</a>
+  <a href="tool.html#/correlation" style="display:none">相关性</a>
+  <a href="tool.html#/rebalance" style="display:none">再平衡回测</a>
+  <a href="tool.html#/dca" style="display:none">定投回测</a>
+  </div>
 <div class="wrap" id="dashWrap" data-kind="cb" data-json="../cb-daily.json">
 <!-- 可转债看板 -->
   <div class="card" id="c1">
@@ -48,6 +48,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
           <div class="chartbox">
             <div class="chartcap"><b>等权指数 / 中位价 / 中位溢价率 / 总成交额</b><span id="cbSampleNote">—</span></div>
             <svg viewBox="0 0 360 158" id="cbTrend" role="img" aria-label="可转债历史趋势合并图"></svg>
+            <div class="wr-tip">拖动下方白色条选时间段 · 双击还原</div>
+            <div id="cbRange" class="wr-host"></div>
             <div class="legend">
               <span><i style="background:#F87171"></i>转债等权指数</span>
               <span><i style="background:#4FC3F7"></i>中位价</span>
@@ -86,5 +88,6 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
 
   
 </div>
+<script src="../common/range.js"></script>
 <script src="../common/dashboard.js"></script>
 </body></html>
