@@ -143,7 +143,7 @@ def get_boards():
 
 def one_board(b):
     code, name = b["f12"], b["f14"]
-    time.sleep(0.12)
+    time.sleep(0.25)
     st, txt = get(EM_KL % code, timeout=12, tries=3)
     o = jload(txt)
     kl = (o.get("data") or {}).get("klines") or []
@@ -166,17 +166,17 @@ def build_industry():
         raise RuntimeError("东财板块清单为空，无法生成行业宽度")
     res = []
     # 最多取前 120 个板块（热力图全铺这些），整体 180 秒硬截止，超时用已成功的继续
-    todo = boards[:80]
-    ex = ThreadPoolExecutor(max_workers=3)
+    todo = boards[:60]
+    ex = ThreadPoolExecutor(max_workers=2)
     futs = [ex.submit(one_board, b) for b in todo]
-    done, not_done = wait(futs, timeout=300)
+    done, not_done = wait(futs, timeout=240)
     for f in done:
         try:
             res.append(f.result())
         except Exception as e:
             WARN.append("板块任务异常: %s" % str(e)[:100])
     if not_done:
-        WARN.append("板块抓取 300 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
+        WARN.append("板块抓取 240 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
     ex.shutdown(wait=False, cancel_futures=True)
     ok = [r for r in res if r["ok"]]
     ok.sort(key=lambda x: x["code"])
@@ -576,14 +576,25 @@ def build_amount():
 
 
 def main():
-    print("=== 两市成交额 ===")
-    build_amount()
-    print("=== 行业宽度 ===")
-    build_industry()
-    print("=== 黄金看板 ===")
-    build_gold()
-    save("external-warnings.json", {"warnings": WARN, "at": datetime.datetime.utcnow().isoformat() + "Z"})
-    print("完成，warnings:", WARN)
+    errs = []
+    for name, fn in [("两市成交额", build_amount), ("行业宽度", build_industry), ("黄金看板", build_gold)]:
+        print("===", name, "===", flush=True)
+        try:
+            fn()
+        except Exception as e:
+            traceback.print_exc()
+            msg = "%s 失败：%s: %s" % (name, type(e).__name__, str(e)[:180])
+            WARN.append(msg)
+            errs.append(msg)
+            print(msg, flush=True)
+    save("external-warnings.json", {
+        "warnings": list(WARN),
+        "at": datetime.datetime.utcnow().isoformat() + "Z",
+        "failed": errs})
+    print("完成，warnings:", WARN, flush=True)
+    if errs:
+        # 单个源失败仍让该步红灯（不绿灯伪装），但其它源已经写回，不牵连
+        sys.exit(1)
 
 
 if __name__ == "__main__":
