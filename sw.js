@@ -8,7 +8,7 @@
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
    改任何页面或数据文件后请把 CACHE 末段 +1（v0.57 → v0.59）；1.0 之前一律用 v0.x。
    ============================================================ */
-var CACHE = "wufu-all-v0.59";
+var CACHE = "wufu-all-v0.60";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
