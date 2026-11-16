@@ -1,0 +1,65 @@
+{
+  "stock_board_industry_name_em": {
+    "ok": false,
+    "err": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+  },
+  "stock_board_industry_hist_em": {
+    "ok": false,
+    "err": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+  },
+  "index_realtime_sw_一级行业": {
+    "ok": false,
+    "err": "Expecting value: line 1 column 1 (char 0)"
+  },
+  "sw_index_first_info": {
+    "ok": true,
+    "rows": 31,
+    "cols": [
+      "行业代码",
+      "行业名称",
+      "成份个数",
+      "静态市盈率",
+      "TTM(滚动)市盈率",
+      "市净率",
+      "静态股息率"
+    ],
+    "head": [
+      {
+        "行业代码": "801010.SI",
+        "行业名称": "农林牧渔",
+        "成份个数": 104,
+        "静态市盈率": 29.74,
+        "TTM(滚动)市盈率": 33.95,
+        "市净率": 1.86,
+        "静态股息率": 2.21
+      },
+      {
+        "行业代码": "801030.SI",
+        "行业名称": "基础化工",
+        "成份个数": 413,
+        "静态市盈率": 21.83,
+        "TTM(滚动)市盈率": 18.03,
+        "市净率": 1.95,
+        "静态股息率": 1.84
+      },
+      {
+        "行业代码": "801040.SI",
+        "行业名称": "钢铁",
+        "成份个数": 44,
+        "静态市盈率": 16.29,
+        "TTM(滚动)市盈率": 20.38,
+        "市净率": 0.92,
+        "静态股息率": 2.68
+      }
+    ]
+  },
+  "index_hist_sw_801010": {
+    "ok": false,
+    "err": "Expecting value: line 1 column 1 (char 0)"
+  },
+  "index_level_one_hist_sw_老接口": {
+    "ok": false,
+    "err": "module 'akshare' has no attribute 'index_level_one_hist_sw'"
+  },
+  "akshare_version": "1.18.88"
+}
