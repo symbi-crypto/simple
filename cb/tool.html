@@ -8392,6 +8392,7 @@ function buildChips() {
       dataZoom: [{ type: "inside", start: 0, end: 100 }, { type: "slider", start: 0, end: 100, height: 16, bottom: 6 }],
       series: series
     };
+    if (opts.yMax != null) { o.yAxis.max = opts.yMax; o.yAxis.scale = false; }
     if (opts.graphic && opts.graphic.length) o.graphic = opts.graphic;
     return o;
   }
@@ -8400,93 +8401,189 @@ function buildChips() {
   // 第三参数 createDate = 策略创建日（保存日）。传入后：
   //   ① 在该日期画一条竖向 markLine 标注；② 创建日之后的策略曲线加粗（之前为细虚线），用于观察样本外表现。
   // 边界：创建日晚于回测末日（ci<0）或早于首个交易日（ci=0）时不分段，只给文字提示。
+  // [统一] 净值曲线（策略 / 基准 / 等权池 / 相对净值）—— 回测页与详情页共用
+  // v0.64：
+  //   ① 创建前/后两段取自同一条 nav；拖时间条重定基时共用一个基准，
+  //      不再出现「创建后单独从 1 重新计算」。创建后一段加粗加深（样本外）。
+  //   ② 图上方「净值 / 回撤」切换：回撤视图保留全段策略回撤（创建日后那段原样保留），
+  //      另加一条「创建后重算回撤」（仅创建日后有值，以创建日为峰值起点，当天 = 0）。
   function renderNavChart(id, r, createDate) {
     var dates = r.calendar.map(ts);
-    var navAll = dates.map(function (t, i) { return [t, +r.nav[i].toFixed(5)]; });
-    var _b0 = -1; for (var _bq = 0; _bq < r.bench_nav.length; _bq++) { var _bv0 = r.bench_nav[_bq]; if (_bv0 != null && _bv0 === _bv0) { _b0 = _bq; break; } }
-    var benchD = dates.map(function (t, i) { var _v = r.bench_nav[i]; return (_v == null || _v !== _v) ? [t, null] : [t, +_v.toFixed(5)]; });
-    var ewD = dates.map(function (t, i) { return [t, +r.ew_nav[i].toFixed(5)]; });
-    // 创建日落在回测日历上的位置：第一个 >= 创建日的交易日
+    var N = dates.length, navRaw = r.nav, k;
+    var _b0 = -1; for (k = 0; k < r.bench_nav.length; k++) { var _bv0 = r.bench_nav[k]; if (_bv0 != null && _bv0 === _bv0) { _b0 = k; break; } }
+    var bn = benchNameOfRes(r) + (_b0 > 0 ? "（数据自 " + r.calendar[_b0] + " 起）" : "");
     var cdStr = createDate ? String(createDate).slice(0, 10) : "";
     var cd = (/^\d{4}-\d{2}-\d{2}$/.test(cdStr)) ? ts(cdStr) : null;
     var ci = -1;
-    if (cd != null) { for (var _k = 0; _k < dates.length; _k++) { if (dates[_k] >= cd) { ci = _k; break; } } }
-    var bn = benchNameOfRes(r);
-    if (_b0 > 0) bn = bn + "（数据自 " + r.calendar[_b0] + " 起）";
-    var legend, series, tip = "";
-    var gfx = function (txt, color) {
-      return [{ type: "text", left: "center", bottom: 24, silent: true,
-        style: { text: txt, fontSize: 11, fill: color || "#FBBF24" } }];
-    };
-    if (ci > 0) {
-      // 创建日之前：细虚线（样本内）；之后：粗实线（样本外）。两段在创建日那一点重叠，保证曲线不断开。
-      var nAfter = dates.length - ci;
-      var afterD = dates.map(function (t, i) { return i < ci ? [t, null] : [t, +r.nav[i].toFixed(5)]; });
-      var mkLine = {
-        silent: true, symbol: "none", animation: false,
-        label: { formatter: "创建日 " + cdStr, position: "insideEndTop", fontSize: 11, color: "#FBBF24", backgroundColor: "rgba(16,24,36,.9)", padding: [2, 4], borderRadius: 3 },
-        lineStyle: { color: "#FBBF24", width: 1.6, type: "dashed" },
-        data: [{ xAxis: cd }]
-      };
-      legend = ["策略·创建前", "策略·创建后", bn, "等权池"];
-      series = [
-        { name: "策略·创建前", type: "line", showSymbol: false, lineStyle: { width: 1.4, color: COLOR.str, type: "dashed", opacity: 0.55 }, itemStyle: { color: COLOR.str }, data: navAll.slice(0, ci + 1) },
-        { name: "策略·创建后", type: "line", showSymbol: false, lineStyle: { width: 3.4, color: COLOR.str }, itemStyle: { color: COLOR.str }, data: afterD, markLine: mkLine },
-        { name: bn, type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.bench }, itemStyle: { color: COLOR.bench }, data: benchD },
-        { name: "等权池", type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.ew, type: "dashed" }, itemStyle: { color: COLOR.ew }, data: ewD }
-      ];
-      tip = nAfter >= 60
-        ? "创建日 " + cdStr + " 之后共 " + nAfter + " 个交易日（粗线=样本外）"
-        : "创建日 " + cdStr + " 之后仅 " + nAfter + " 个交易日，样本太少不足以评估";
-    } else {
-      if (_b0 > 0) tip = "⚠ " + bn + " 晚于回测起点 " + _b0 + " 个交易日，该段无可比数据（图中不显示，基准指标自该日起算）";
-      legend = ["策略", bn, "等权池"];
-      series = [
-        { name: "策略", type: "line", showSymbol: false, lineStyle: { width: 2.5, color: COLOR.str }, itemStyle: { color: COLOR.str }, data: navAll },
-        { name: bn, type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.bench }, itemStyle: { color: COLOR.bench }, data: benchD },
-        { name: "等权池", type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.ew, type: "dashed" }, itemStyle: { color: COLOR.ew }, data: ewD }
-      ];
-      if (cd != null && ci === 0) tip = "创建日 " + cdStr + " 早于回测起点，整段均为创建后";
-      else if (cd != null) tip = "创建日 " + cdStr + " 晚于本次回测末日，暂无创建后数据";
-    }
-    initChart(id).setOption(lineTimeOption(legend, series, tip ? { graphic: gfx(tip) } : {}));
-    if (charts[id]) charts[id].resize();
+    if (cd != null) { for (k = 0; k < N; k++) { if (dates[k] >= cd) { ci = k; break; } } }
+    var nAfter = ci > 0 ? N - ci : 0;
+    var mkLine = { silent: true, symbol: "none", animation: false,
+      label: { formatter: "创建日 " + cdStr, position: "insideEndTop", fontSize: 11, color: "#FBBF24", backgroundColor: "rgba(16,24,36,.9)", padding: [2, 4], borderRadius: 3 },
+      lineStyle: { color: "#FBBF24", width: 1.6, type: "dashed" }, data: [{ xAxis: cd }] };
+    var gfx = function (txt) { return [{ type: "text", left: "center", bottom: 24, silent: true, style: { text: txt, fontSize: 11, fill: "#FBBF24" } }]; };
+    var navTip = ci > 0
+      ? (nAfter >= 60 ? "创建日 " + cdStr + " 之后共 " + nAfter + " 个交易日（加粗线=创建后）"
+                      : "创建日 " + cdStr + " 之后仅 " + nAfter + " 个交易日，样本太少不足以评估")
+      : (cd == null ? "" : (ci === 0 ? "创建日 " + cdStr + " 早于回测起点，整段均为创建后" : "创建日 " + cdStr + " 晚于本次回测末日，暂无创建后数据"));
+    if (!navTip && _b0 > 0) navTip = "⚠ " + bn + " 晚于回测起点 " + _b0 + " 个交易日";
 
-    /* v0.63 · 拖下方白色透明时间条 → 以区间首日为起点重算收益（净值归到 1.000）；
-       主回测页的指标卡同步切成「区间口径」。不改回测结果对象、不改回测引擎。 */
-    (function () {
-      var ch = charts[id];
-      if (!ch || typeof ch.on !== 'function') return;
-      var N = dates.length, busy = false;
-      var baseSeries = series.map(function (s) { return s.data; });
-      function idxFromZoom() {
-        var opt = ch.getOption() || {}, dz = (opt.dataZoom || [])[0] || {};
-        var i0, i1, k;
-        if (typeof dz.startValue === 'number' && typeof dz.endValue === 'number' &&
-            isFinite(dz.startValue) && isFinite(dz.endValue)) {
-          i0 = 0; i1 = N - 1;
-          for (k = 0; k < N; k++) { if (dates[k] >= dz.startValue) { i0 = k; break; } }
-          for (k = N - 1; k >= 0; k--) { if (dates[k] <= dz.endValue) { i1 = k; break; } }
-        } else {
-          var st = typeof dz.start === 'number' ? dz.start : 0;
-          var en = typeof dz.end === 'number' ? dz.end : 100;
-          i0 = Math.round(st / 100 * (N - 1)); i1 = Math.round(en / 100 * (N - 1));
-        }
-        if (i1 <= i0) { i0 = 0; i1 = N - 1; }
-        return [i0, i1];
+    // 各条线的原始（未重定基）数值
+    var navAll = dates.map(function (t, i) { return [t, +navRaw[i].toFixed(5)]; });
+    var benchD = dates.map(function (t, i) { var v = r.bench_nav[i]; return (v == null || v !== v) ? [t, null] : [t, +v.toFixed(5)]; });
+    var ewD = dates.map(function (t, i) { return [t, +r.ew_nav[i].toFixed(5)]; });
+
+    var STR_LIGHT = { width: 2.2, color: COLOR.str, opacity: 0.8 };
+    var STR_HEAVY = { width: 3.8, color: "#38BDF8", opacity: 1, shadowColor: "rgba(56,189,248,.5)", shadowBlur: 7 };
+    var PCT = function (v) { return v == null ? "—" : ((v * 100).toFixed(2) + "%"); };
+
+    function navView() {
+      var legend, series;
+      if (ci > 0) {
+        var afterD = dates.map(function (t, i) { return i < ci ? [t, null] : [t, +navRaw[i].toFixed(5)]; });
+        legend = ["策略·创建前", "策略·创建后", bn, "等权池"];
+        series = [
+          { name: "策略·创建前", type: "line", showSymbol: false, z: 10, lineStyle: STR_LIGHT, itemStyle: { color: COLOR.str }, data: navAll.slice(0, ci + 1), __grp: "str" },
+          { name: "策略·创建后", type: "line", showSymbol: false, z: 10, lineStyle: STR_HEAVY, itemStyle: { color: "#38BDF8" }, data: afterD, markLine: mkLine, __grp: "str" },
+          { name: bn, type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.bench }, itemStyle: { color: COLOR.bench }, data: benchD },
+          { name: "等权池", type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.ew, type: "dashed" }, itemStyle: { color: COLOR.ew }, data: ewD }
+        ];
+      } else {
+        legend = ["策略", bn, "等权池"];
+        series = [
+          { name: "策略", type: "line", showSymbol: false, z: 10, lineStyle: { width: 2.8, color: COLOR.str }, itemStyle: { color: COLOR.str }, data: navAll, __grp: "str" },
+          { name: bn, type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.bench }, itemStyle: { color: COLOR.bench }, data: benchD },
+          { name: "等权池", type: "line", showSymbol: false, lineStyle: { width: 1.8, color: COLOR.ew, type: "dashed" }, itemStyle: { color: COLOR.ew }, data: ewD }
+        ];
       }
-      function rescale(dataArr, i0) {
-        var b = null, k, v;
-        for (k = i0; k < dataArr.length; k++) {
-          v = dataArr[k] && dataArr[k][1];
-          if (typeof v === 'number' && isFinite(v) && v > 0) { b = v; break; }
-        }
-        if (b == null) return dataArr.map(function (p) { return [p && p[0], null]; });
-        return dataArr.map(function (p) {
-          v = p && p[1];
-          return (typeof v === 'number' && isFinite(v) && v > 0) ? [p[0], +(v / b).toFixed(5)] : [p[0], null];
+      return { legend: legend, series: series, yFmt: null, yMax: null, tip: navTip };
+    }
+
+    function ddView() {
+      var ddAll = dates.map(function (t, i) { var v = r.drawdown[i]; return (v == null || v !== v) ? [t, null] : [t, +v.toFixed(5)]; });
+      var ddBench = dates.map(function (t, i) { var v = r.bench_drawdown[i]; return (v == null || v !== v) ? [t, null] : [t, +v.toFixed(5)]; });
+      var ddAfter = null;
+      if (ci > 0) {
+        var peak = -Infinity;
+        ddAfter = dates.map(function (t, i) {
+          if (i < ci) return [t, null];
+          var v = navRaw[i];
+          if (typeof v === "number" && isFinite(v) && v > peak) peak = v;
+          return [t, +(v / peak - 1).toFixed(5)];
         });
       }
+      var legend = ["策略回撤·全段", bn + "回撤"];
+      var series = [
+        { name: "策略回撤·全段", type: "line", showSymbol: false, lineStyle: { width: 2.2, color: COLOR.dd }, itemStyle: { color: COLOR.dd },
+          areaStyle: { color: "rgba(248,113,113,.10)" }, tooltip: { valueFormatter: PCT }, data: ddAll },
+        { name: bn + "回撤", type: "line", showSymbol: false, lineStyle: { width: 1.5, color: "#3E4E63" }, itemStyle: { color: "#3E4E63" },
+          tooltip: { valueFormatter: PCT }, data: ddBench }
+      ];
+      if (ddAfter) {
+        legend.splice(1, 0, "策略回撤·创建后重算");
+        series.splice(1, 0, { name: "策略回撤·创建后重算", type: "line", showSymbol: false, z: 10,
+          lineStyle: { width: 3.4, color: "#38BDF8", shadowColor: "rgba(56,189,248,.45)", shadowBlur: 6 }, itemStyle: { color: "#38BDF8" },
+          tooltip: { valueFormatter: PCT }, data: ddAfter, markLine: mkLine });
+      }
+      return { legend: legend, series: series,
+        yFmt: function (v) { return (v * 100).toFixed(0) + "%"; }, yMax: 0,
+        tip: ddAfter ? "红=全段回撤（创建日后沿用原峰值）　蓝=创建日重新起算的回撤" : "按回测起点计算的全段回撤" };
+    }
+
+    // ---- 切换键：插在图表 div 之前（h2 会被后续代码重写，故不放标题里） ----
+    var view = "nav", active = null, baseSeries = null;
+    var BTN = function (v, txt, on) {
+      return '<button type="button" data-v="' + v + '" style="cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;' +
+        (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
+            : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;') + '">' + txt + '</button>';
+    };
+    var box = null;
+    function ensureSwitch() {
+      if (typeof document === "undefined") return null;
+      var el = document.getElementById(id);
+      if (!el || !el.parentNode) return null;
+      var old = document.getElementById("__navMode_" + id);
+      if (old) return old;
+      var d = document.createElement("div");
+      d.id = "__navMode_" + id;
+      d.setAttribute("style", "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px");
+      d.innerHTML = '<span style="font-size:11px;color:#7C8DA1">曲线</span>' + BTN("nav", "净值", true) + BTN("dd", "回撤", false) +
+        '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
+      el.parentNode.insertBefore(d, el);
+      return d;
+    }
+    function paintSwitch() {
+      box = ensureSwitch();
+      if (!box || typeof box.getElementsByTagName !== "function") return;
+      var bs = box.getElementsByTagName("button"), j;
+      for (j = 0; j < bs.length; j++) {
+        var on = bs[j].getAttribute("data-v") === view;
+        bs[j].setAttribute("style", "cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;" +
+          (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
+              : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;'));
+        (function (b) { b.onclick = function () { setView(b.getAttribute("data-v")); }; })(bs[j]);
+      }
+      var hint = document.getElementById("__navModeHint_" + id);
+      if (hint) hint.textContent = view === "dd" ? "全段 / 创建后重算 / 基准" : "创建日后为加粗线";
+    }
+
+    function zoomPct() {
+      var ch = charts[id];
+      if (!ch || typeof ch.getOption !== "function") return [0, 100];
+      var dz = ((ch.getOption() || {}).dataZoom || [])[0] || {};
+      if (typeof dz.start === "number" && typeof dz.end === "number") return [dz.start, dz.end];
+      return [0, 100];
+    }
+    function draw(keepZoom) {
+      var vz = keepZoom ? zoomPct() : [0, 100];
+      active = view === "nav" ? navView() : ddView();
+      baseSeries = active.series.map(function (s) { return s.data; });
+      var opt = lineTimeOption(active.legend, active.series,
+        { yFmt: active.yFmt, yMax: active.yMax, graphic: active.tip ? gfx(active.tip) : null });
+      opt.dataZoom[0].start = vz[0]; opt.dataZoom[0].end = vz[1];
+      opt.dataZoom[1].start = vz[0]; opt.dataZoom[1].end = vz[1];
+      var ch = initChart(id);
+      ch.setOption(opt, true);
+      if (charts[id]) charts[id].resize();
+      paintSwitch();
+      apply();
+      if (ch.__v064Dz) ch.off('datazoom', ch.__v064Dz);
+      ch.__v064Dz = apply;
+      ch.on('datazoom', apply);
+    }
+    function setView(v) {
+      if (v !== "nav" && v !== "dd") return;
+      view = v;
+      draw(true);
+    }
+
+    // ---- 时间条：净值按区间首日重定基（策略前后两段共用一个基准）；回撤只裁显示 ----
+    function idxFromZoom() {
+      var ch = charts[id], opt = (ch && ch.getOption) ? (ch.getOption() || {}) : {};
+      var dz = (opt.dataZoom || [])[0] || {}, i0, i1, k2;
+      if (typeof dz.startValue === "number" && typeof dz.endValue === "number" && isFinite(dz.startValue) && isFinite(dz.endValue)) {
+        i0 = 0; i1 = N - 1;
+        for (k2 = 0; k2 < N; k2++) { if (dates[k2] >= dz.startValue) { i0 = k2; break; } }
+        for (k2 = N - 1; k2 >= 0; k2--) { if (dates[k2] <= dz.endValue) { i1 = k2; break; } }
+      } else {
+        var st = typeof dz.start === "number" ? dz.start : 0;
+        var en = typeof dz.end === "number" ? dz.end : 100;
+        i0 = Math.round(st / 100 * (N - 1)); i1 = Math.round(en / 100 * (N - 1));
+      }
+      if (i1 <= i0) { i0 = 0; i1 = N - 1; }
+      return [i0, i1];
+    }
+    function rescale(dataArr, i0) {
+      var b = null, k3, v;
+      for (k3 = i0; k3 < dataArr.length; k3++) {
+        v = dataArr[k3] && dataArr[k3][1];
+        if (typeof v === "number" && isFinite(v) && v > 0) { b = v; break; }
+      }
+      if (b == null) return dataArr.map(function (p) { return [p && p[0], null]; });
+      return dataArr.map(function (p) {
+        v = p && p[1];
+        return (typeof v === "number" && isFinite(v) && v > 0) ? [p[0], +(v / b).toFixed(5)] : [p[0], null];
+      });
+    }
       function rangeKpi(i0, i1) {
         var navS = [], benchS = [], rets = [], k, nv, bv;
         for (k = i0; k <= i1; k++) {
@@ -8518,25 +8615,40 @@ function buildChips() {
           (btotal == null ? '' : kcard('区间·基准', FMT.pct(btotal), '同期基准累计', btotal >= 0 ? 'up' : 'down'));
         var box = $('kpis'); if (box) box.innerHTML = html;
       }
-      function apply() {
-        if (busy) return; busy = true;
-        try {
-          var z = idxFromZoom(), i0 = z[0], i1 = z[1];
-          var full = (i0 <= 0 && i1 >= N - 1);
-          ch.setOption({ series: series.map(function (s, j) {
-            return { data: full ? baseSeries[j] : rescale(baseSeries[j], i0) };
+
+    var busy = false;
+    function apply() {
+      if (busy || !active) return; busy = true;
+      try {
+        var ch = charts[id];
+        if (!ch || typeof ch.setOption !== "function") return;
+        var z = idxFromZoom(), i0 = z[0], i1 = z[1];
+        var full = (i0 <= 0 && i1 >= N - 1);
+        if (view === "dd") {
+          // 回撤口径固定：全段峰值从回测起点、创建后重算峰值从创建日；时间条只裁显示。
+          ch.setOption({ series: baseSeries.map(function (d) { return { data: d }; }) });
+        } else {
+          var b = null;
+          for (k = i0; k < N; k++) { var nv = navRaw[k]; if (typeof nv === "number" && isFinite(nv) && nv > 0) { b = nv; break; } }
+          ch.setOption({ series: baseSeries.map(function (d, j) {
+            if (full) return { data: d };
+            if (active.series[j].__grp === "str" && b != null) {
+              return { data: d.map(function (p) {
+                var v = p && p[1];
+                return (typeof v === "number" && isFinite(v) && v > 0) ? [p[0], +(v / b).toFixed(5)] : [p[0], null];
+              }) };
+            }
+            return { data: rescale(d, i0) };
           }) });
-          if (id === 'cNav') {
-            if (full) { if (typeof renderKpis === 'function') renderKpis(r); }
-            else rangeKpi(i0, i1);
-          }
-        } catch (e) { }
-        busy = false;
-      }
-      if (ch.__v063Dz) ch.off('datazoom', ch.__v063Dz);
-      ch.__v063Dz = apply;
-      ch.on('datazoom', apply);
-    })();
+        }
+        if (id === "cNav") {
+          if (full) { if (typeof renderKpis === "function") renderKpis(r); }
+          else rangeKpi(i0, i1);
+        }
+      } catch (e) { }
+      busy = false;
+    }
+    draw(false);
   }
 
   // [统一] 定投市值曲线（定投市值/累计投入/一次性买入）—— 回测页与详情页共用
