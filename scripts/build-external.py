@@ -40,7 +40,7 @@ def get(url, timeout=12, tries=2):
             last = "HTTP %s" % e.code
         except Exception as e:
             last = "%s: %s" % (type(e).__name__, str(e)[:120])
-        time.sleep(0.35 * (k + 1))
+        time.sleep(0.6 * (k + 1))
     return None, last
 
 
@@ -129,7 +129,8 @@ def get_boards():
 
 def one_board(b):
     code, name = b["f12"], b["f14"]
-    st, txt = get(EM_KL % code, timeout=9, tries=2)
+    time.sleep(0.12)
+    st, txt = get(EM_KL % code, timeout=12, tries=3)
     o = jload(txt)
     kl = (o.get("data") or {}).get("klines") or []
     series = {}
@@ -151,17 +152,17 @@ def build_industry():
         raise RuntimeError("东财板块清单为空，无法生成行业宽度")
     res = []
     # 最多取前 120 个板块（热力图全铺这些），整体 180 秒硬截止，超时用已成功的继续
-    todo = boards[:120]
-    ex = ThreadPoolExecutor(max_workers=6)
+    todo = boards[:80]
+    ex = ThreadPoolExecutor(max_workers=3)
     futs = [ex.submit(one_board, b) for b in todo]
-    done, not_done = wait(futs, timeout=180)
+    done, not_done = wait(futs, timeout=300)
     for f in done:
         try:
             res.append(f.result())
         except Exception as e:
             WARN.append("板块任务异常: %s" % str(e)[:100])
     if not_done:
-        WARN.append("板块抓取 180 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
+        WARN.append("板块抓取 300 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
     ex.shutdown(wait=False, cancel_futures=True)
     ok = [r for r in res if r["ok"]]
     ok.sort(key=lambda x: x["code"])
