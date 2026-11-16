@@ -1,1 +1,1 @@
-{"warnings":["板块日线成功 51/120，热力图按实际成功数全铺","上海金 Au99.99 失败: RemoteDisconnected: Remote end closed connection without response"],"at":"2026-11-15T16:02:50.562708Z"}
+{"warnings":["两市成交额：上证 0 根 / 深证 0 根，不足，本次不叠柱","行业宽度 失败：RuntimeError: 东财板块清单为空，无法生成行业宽度","上海金 Au99.99 失败: RemoteDisconnected: Remote end closed connection without response"],"at":"2026-11-16T12:18:58.857044Z","failed":["行业宽度 失败：RuntimeError: 东财板块清单为空，无法生成行业宽度"]}
