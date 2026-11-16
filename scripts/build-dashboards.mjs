@@ -11,7 +11,7 @@ const avg = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); retu
 const pct = (s, v) => { s = s.filter(x => typeof x === 'number' && isFinite(x)); return v == null || !s.length ? null : Math.round(100 * s.filter(x => x <= v).length / s.length); };
 const dash = v => v == null ? '—' : String(v);
 
-/* ---------- 可转债：追加最新交易日 ---------- */
+/* ---------- 可转债：追加最新交易日（无新交易日也重算六卡，补齐指标） ---------- */
 const state = read('state.json');
 const cb = read('cb-daily.json');
 if (state && cb) {
@@ -20,9 +20,9 @@ if (state && cb) {
   const days = patch.days || [];
   const lastDay = days[days.length - 1];
   const asof = state.dataAsOf || cb.dataAsOf;
-  if (lastDay && asof && asof > cb.dataAsOf) {
+  if (lastDay) {
     const ss = lastDay.series || {}, prev = (days.length > 1 ? days[days.length - 2].series : {}) || {};
-    const cl = [], pr = [], nv = [], am = [], ch = [], dbl = [];
+    const cl = [], pr = [], nv = [], am = [], ch = [], dbl = [], navPrem = [];
     let below = 0, d130 = 0;
     for (const [c, v] of Object.entries(ss)) {
       const x = v && v.close; if (!(typeof x === 'number') || x <= 0) continue;
@@ -30,12 +30,19 @@ if (state && cb) {
       if (typeof v.premium === 'number') { pr.push(v.premium); dbl.push(x + v.premium); }
       if (typeof v.nav === 'number') nv.push(v.nav);
       if (typeof v.amount === 'number') am.push(v.amount);
+      if (typeof v.nav === 'number' && typeof v.premium === 'number') navPrem.push([v.nav, v.premium]);
       const pv = prev[c] && prev[c].close;
       if (typeof pv === 'number' && pv > 0) ch.push((x / pv - 1) * 100);
     }
     dbl.forEach(x => { if (x < 130) d130++; });
     const mp = med(cl), mpr = med(pr), sum = am.reduce((a, b) => a + b, 0);
-    cb.dataAsOf = asof; cb.count = cl.length;
+    const top10 = am.slice().sort((a, b) => b - a).slice(0, 10).reduce((a, b) => a + b, 0);
+    const topRatio = sum ? (100 * top10 / sum).toFixed(1) + '%' : '—';
+    const bandAvg = (lo, hi) => { const q = navPrem.filter(p => p[0] >= lo && p[0] < hi).map(p => p[1]); return q.length ? +(q.reduce((a, b) => a + b, 0) / q.length).toFixed(1) : null; };
+    const p100 = bandAvg(95, 105), p110 = bandAvg(105, 115);
+    const fresh = !!(asof && asof > cb.dataAsOf);
+    if (fresh) cb.dataAsOf = asof;
+    cb.count = cl.length;
     cb.summary = { medianPrice: mp == null ? null : +mp.toFixed(1), medianPremium: mpr == null ? null : +mpr.toFixed(1),
                    up: ch.filter(x => x > 0).length, down: ch.filter(x => x < 0).length };
     cb.kpi = [
@@ -43,14 +50,14 @@ if (state && cb) {
       { label: '价格中位 / 均价', value: dash(mp && mp.toFixed(1)) + ' / ' + dash(avg(cl) && avg(cl).toFixed(1)), sub: '元 · 全市场 ' + cl.length + ' 只' },
       { label: '溢价率中位 / 均值', value: dash(mpr && mpr.toFixed(1)) + '% / ' + dash(avg(pr) && avg(pr).toFixed(1)) + '%', sub: '转股溢价率' },
       { label: '转股价值中位 / 均值', value: dash(med(nv) && med(nv).toFixed(1)) + ' / ' + dash(avg(nv) && avg(nv).toFixed(1)), sub: '元' },
-      { label: '总成交额', value: sum ? (sum / 10000).toFixed(0) + ' 亿' : '—', sub: '前十占比 待接入' },
-      { label: '百元 / 110元溢价率', value: '—', sub: '自定义口径 · 待接入' }
+      { label: '总成交额', value: sum ? (sum / 10000).toFixed(0) + ' 亿' : '—', sub: '前十占比 ' + topRatio },
+      { label: '百元 / 110元溢价率', value: (p100 == null ? '—' : p100 + '%') + ' / ' + (p110 == null ? '—' : p110 + '%'), sub: '平价 95–105 / 105–115 溢价率均值 · 自定义口径' }
     ];
     cb.extra = { '破面<100元': below, '双低<130': d130 };
     cb.note = '历史曲线由内嵌全历史逐日截面计算，未引外部数据源；含退市债。';
     save('cb-daily.json', cb);
-    console.log('cb-daily.json ->', asof, cl.length, '只');
-  } else console.log('cb-daily.json 已是最新，不重写');
+    console.log('cb-daily.json ->', cb.dataAsOf, cl.length, '只', fresh ? '(新交易日)' : '(仅补齐六卡指标)');
+  } else console.log('无可用增量日，cb-daily.json 保持原值');
 }
 
 /* ---------- 指数：从本地 index.gz 真算，不做任何外部抓取 ---------- */
