@@ -126,6 +126,14 @@
         : '<b>' + inf.from + ' → ' + inf.to + '</b> · 区间均值 ' + mv + '% · 占比类曲线保持原值，不重定基';
     }
     var t = $('indAreaTitle'); if (t) t.textContent = (d.keys || [])[active] || '行业宽度';
+    /* v0.65：点曲线 → 当日日期 + 宽度值 */
+    if (window.WufuRange) WufuRange.probe(svg, {
+      labels: labels, vbW: 360, y0: 8, y1: 124,
+      xAt: X, yAt: Y,
+      series: [{ name: (d.keys || [])[active] || '行业宽度', color: '#4FC3F7', data: a,
+        fmt: function (v) { return v.toFixed(1) + '%'; } }],
+      note: '0–100 占比 · 不重定基'
+    });
   }
 
   /* ---------- 七指标温度条 ---------- */

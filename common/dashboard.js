@@ -44,9 +44,20 @@
       }
       if (pts.length > 1) svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: s.color, 'stroke-width': s.width || 1.8, 'stroke-linejoin': 'round' }));
     });
-    (labels || []).forEach(function (L, i) {
-      var x = 34 + i * (310 / Math.max(1, (labels.length - 1)));
-      svg.appendChild(TX(x, 146, L, 9, '#7C8DA1', i === 0 ? 'start' : (i === labels.length - 1 ? 'end' : 'middle')));
+    /* v0.65：X 轴每年只留一个年份 */
+    var ticks = window.WufuRange ? WufuRange.yearTicks(labels) : [];
+    ticks.forEach(function (k) {
+      var x = 34 + k.i * (310 / Math.max(1, (labels || []).length - 1));
+      svg.appendChild(TX(x, 146, k.text, 9, '#7C8DA1', k.i === 0 ? 'start' : (k.i >= (labels || []).length - 2 ? 'end' : 'middle')));
+    });
+    /* v0.65：点曲线 → 当日日期 + 各线数值 */
+    if (window.WufuRange) WufuRange.probe(svg, {
+      labels: labels || [], vbW: 360, y0: 8, y1: 140,
+      xAt: function (i) { return 34 + i * (310 / Math.max(1, (labels || []).length - 1)); },
+      yAt: Y,
+      series: specs.map(function (s) { return { name: s.name || '', color: s.color, data: s.data,
+        fmt: function (v) { return v.toFixed(1); } }; }),
+      note: '起点=100 · 归一值'
     });
   }
   function emptyChart(id, msg) {
@@ -240,6 +251,17 @@
     if (note) note.textContent = am.length > 1
       ? '两市成交额 = 上证指数 + 深证成指 K 线成交额之和（亿元，近似口径），柱形单独归一，不与指数点位混读。'
       : '两市成交额暂无快照，图上不摆空柱。';
+    /* v0.65：点曲线 → 当日日期 + 沪深300/国证2000 数值（成交额柱是绝对金额，不混进浮层） */
+    if (window.WufuRange) WufuRange.probe(svg, {
+      labels: LB, vbW: 360, y0: 8, y1: 158,
+      xAt: function (i) { return 34 + i * (310 / Math.max(1, LB.length - 1)); },
+      yAt: Y,
+      series: [
+        { name: '沪深300', color: '#4FC3F7', data: s1, fmt: function (v) { return v.toFixed(1); } },
+        { name: '国证2000', color: '#F87171', data: s2, fmt: function (v) { return v.toFixed(1); } }
+      ],
+      note: '起点=100 · 成交额柱只裁区间'
+    });
   }
 
   /* ===================== 交互 ===================== */
@@ -265,6 +287,13 @@
     if (window.WufuRange && !rngCB && !rngIDX) {
       rngCB = WufuRange.mount('cbRange', { onChange: function (x) { selCB = x; if (D && kind === 'cb') drawCbTrend(D); } });
       rngIDX = WufuRange.mount('idxRange', { onChange: function (x) { selIDX = x; if (D && kind !== 'cb') drawIdxChart(D); } });
+      /* v0.65：首次渲染时条还没 mount，mount 后补一次日期标签 */
+      if (D) {
+        var tl = kind === 'cb' ? (((D.trend || {})[String(years)] || {}).labels || [])
+                               : (((D.idxTrend || {})[String(years)] || {}).labels || []);
+        if (kind === 'cb' && rngCB) rngCB.setLabels(tl);
+        if (kind !== 'cb' && rngIDX) rngIDX.setLabels(tl);
+      }
     }
   }
   function fail() {

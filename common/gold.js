@@ -72,6 +72,7 @@
     specs.forEach(function (s) {
       var rb = window.WufuRange ? WufuRange.rebase(s.data || [], gsel) : { data: SL(s.data || []), ret: null };
       rets.push({ name: s.name || '', ret: rb.ret });
+      s.__full = rb.data;                       /* v0.65：与 labels 同长，供点击探针取值 */
       var a = rb.data.filter(function (x) { return typeof x === 'number' && isFinite(x); });
       arr.push(a); if (a.length > n) n = a.length;
     });
@@ -92,10 +93,12 @@
       svg.appendChild(E('line', { x1: 34, y1: Y(100), x2: 344, y2: Y(100), stroke: '#4FC3F7', 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.45' }));
     }
     specs.forEach(function (s, j) {
-      var a = arr[j]; if (a.length < 2) return;
-      var pts = [];
-      for (var i = 0; i < a.length; i++) pts.push(X(i, a.length).toFixed(1) + ',' + Y(a[i]).toFixed(1));
-      svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: s.color, 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
+      var full = s.__full || arr[j], pts = [];
+      for (var i = 0; i < full.length; i++) {
+        if (typeof full[i] !== 'number' || !isFinite(full[i])) continue;
+        pts.push(X(i, full.length).toFixed(1) + ',' + Y(full[i]).toFixed(1));
+      }
+      if (pts.length > 1) svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: s.color, 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
     });
     /* 每年只显示一个年份，避免 61/121 个月标签叠在一起 */
     var ticks = window.WufuRange ? WufuRange.yearTicks(LB) : [];
@@ -103,6 +106,15 @@
       var x = 34 + k.i * (310 / Math.max(1, LB.length - 1));
       var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
       svg.appendChild(TX(x, 148, k.text, 9, '#7C8DA1', anchor));
+    });
+    /* v0.65：点曲线 → 当日日期 + 各资产归一值 */
+    if (window.WufuRange) WufuRange.probe(svg, {
+      labels: LB, vbW: 360, y0: 8, y1: 140,
+      xAt: function (i) { return 34 + i * (310 / Math.max(1, LB.length - 1)); },
+      yAt: Y,
+      series: specs.map(function (s) { return { name: s.name || '', color: s.color, data: s.__full || [],
+        fmt: function (v) { return v.toFixed(1); } }; }),
+      note: '起点=100 · 归一值'
     });
     return rets;
   }
@@ -173,6 +185,16 @@
     svg.appendChild(TX(31, Y(hi) + 6, Math.round(hi), 9, '#7C8DA1', 'end'));
     svg.appendChild(TX(31, Y(lo) + 2, Math.round(lo), 9, '#7C8DA1', 'end'));
     svg.appendChild(TX(344, 90, '均值虚线', 8.5, '#7C8DA1', 'end'));
+    /* v0.65：点 GVZ 曲线 → 当日日期 + 点位 */
+    var gL = SL(((d.trend || {})[String(years)] || {}).labels || []);
+    var gV = SL(((d.trend || {})[String(years)] || {}).gvz || []);
+    if (window.WufuRange) WufuRange.probe(svg, {
+      labels: gL, vbW: 360, y0: 6, y1: 80, boxW: 132, boxY: 4,
+      xAt: function (i) { return 34 + i * (310 / Math.max(1, gL.length - 1)); },
+      yAt: Y,
+      series: [{ name: 'GVZ', color: '#FBBF24', data: gV, fmt: function (v) { return v.toFixed(2); } }],
+      note: '指数点位 · 不重定基'
+    });
   }
 
   function renderPos(d) {

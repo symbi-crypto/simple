@@ -26,6 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
+<script src="../common/range.js"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -8317,10 +8318,23 @@ function buildChips() {
         grid: { left: 56, right: 16, top: 20, bottom: 34, containLabel: true },
         xAxis: { type: "category", data: main.dates, axisLabel: { fontSize: 10, hideOverlap: false, formatter: function (v) { return String(v).slice(0, 4); } } },
         yAxis: { type: "value", scale: true, axisLabel: { fontSize: 10 } },
-        dataZoom: [{ type: "inside", start: 0, end: 100 }, { type: "slider", start: 0, end: 100, height: 14, bottom: 4 }],
+        dataZoom: [{ type: "inside", start: 0, end: 100, zoomOnMouseWheel: false, moveOnMouseMove: false, moveOnMouseWheel: false }],
         series: [{ name: "组合IC", type: "line", showSymbol: false, lineStyle: { width: 1.6, color: "#4FC3F7" }, itemStyle: { color: "#4FC3F7" }, data: main.ics.map(function (x) { return +x.toFixed(4); }) }]
       });
       if (charts["cICChart"]) charts["cICChart"].resize();
+      /* v0.65：统一白色透明时间条 */
+      if (window.WufuRange) {
+        var __icHost = document.getElementById('__wrIc');
+        if (!__icHost) {
+          __icHost = document.createElement('div'); __icHost.id = '__wrIc';
+          var __icEl = document.getElementById('cICChart');
+          if (__icEl && __icEl.parentNode) __icEl.parentNode.insertBefore(__icHost, __icEl.nextSibling);
+        }
+        WufuRange.bindZoom('__wrIc', 'cICChart', {
+          tip: '拖动下方白色条选时间段 · 双击还原',
+          labels: main.dates.map(function (x) { return String(x).slice(0, 10); })
+        });
+      }
     } else if ($("cICChart")) { $("cICChart").style.display = "none"; }
 
     var futArr = [5, 10, 20, 40];
@@ -8389,7 +8403,7 @@ function buildChips() {
       grid: { left: 56, right: 20, top: 36, bottom: 40, containLabel: true },
       xAxis: { type: "time", minInterval: 365 * 24 * 3600 * 1000, axisLabel: { fontSize: 11, hideOverlap: false, formatter: function (v) { return "" + new Date(v).getFullYear(); } } },
       yAxis: { type: "value", scale: true, axisLabel: { fontSize: 11, formatter: opts.yFmt || function (v) { return v.toFixed(1); } } },
-      dataZoom: [{ type: "inside", start: 0, end: 100 }, { type: "slider", start: 0, end: 100, height: 16, bottom: 6 }],
+      dataZoom: [{ type: "inside", start: 0, end: 100, zoomOnMouseWheel: false, moveOnMouseMove: false, moveOnMouseWheel: false }],
       series: series
     };
     if (opts.yMax != null) { o.yAxis.max = opts.yMax; o.yAxis.scale = false; }
@@ -8490,7 +8504,7 @@ function buildChips() {
         tip: ddAfter ? "红=全段回撤（创建日后沿用原峰值）　蓝=创建日重新起算的回撤" : "按回测起点计算的全段回撤" };
     }
 
-    // ---- 切换键：插在图表 div 之前（h2 会被后续代码重写，故不放标题里） ----
+    // ---- 切换键：净值 / 回撤 / 全部（v0.65）----
     var view = "nav", active = null, baseSeries = null;
     var BTN = function (v, txt, on) {
       return '<button type="button" data-v="' + v + '" style="cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;' +
@@ -8508,6 +8522,7 @@ function buildChips() {
       d.id = "__navMode_" + id;
       d.setAttribute("style", "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px");
       d.innerHTML = '<span style="font-size:11px;color:#7C8DA1">曲线</span>' + BTN("nav", "净值", true) + BTN("dd", "回撤", false) +
+        BTN("all", "全部", false) +
         '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
       el.parentNode.insertBefore(d, el);
       return d;
@@ -8517,7 +8532,9 @@ function buildChips() {
       if (!box || typeof box.getElementsByTagName !== "function") return;
       var bs = box.getElementsByTagName("button"), j;
       for (j = 0; j < bs.length; j++) {
-        var on = bs[j].getAttribute("data-v") === view;
+        var v = bs[j].getAttribute("data-v");
+        if (v === "all") { (function (bb) { bb.onclick = function () { setFull(); }; })(bs[j]); continue; }
+        var on = v === view;
         bs[j].setAttribute("style", "cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;" +
           (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
               : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;'));
@@ -8527,49 +8544,88 @@ function buildChips() {
       if (hint) hint.textContent = view === "dd" ? "全段 / 创建后重算 / 基准" : "创建日后为加粗线";
     }
 
-    function zoomPct() {
+    // ---- 统一白色透明时间条：默认最近 1 年，点「全部」或拉到最左看全段 ----
+    var oneYearA = 0;
+    (function () {
+      if (N < 2) return;
+      var cut = dates[N - 1] - 365 * 86400000, i0 = 0;
+      for (var q = 0; q < N; q++) { if (dates[q] >= cut) { i0 = q; break; } }
+      oneYearA = i0 / (N - 1);
+      if (!isFinite(oneYearA) || oneYearA < 0) oneYearA = 0;
+    })();
+    var curSel = [oneYearA, 1], userPicked = false, navRng = null;
+    function syncZoom(x) {
       var ch = charts[id];
-      if (!ch || typeof ch.getOption !== "function") return [0, 100];
-      var dz = ((ch.getOption() || {}).dataZoom || [])[0] || {};
-      if (typeof dz.start === "number" && typeof dz.end === "number") return [dz.start, dz.end];
-      return [0, 100];
+      if (ch && typeof ch.dispatchAction === "function")
+        ch.dispatchAction({ type: "dataZoom", dataZoomIndex: 0, start: x[0] * 100, end: x[1] * 100 });
     }
+    function ensureRange() {
+      if (typeof document === "undefined" || !window.WufuRange) return;
+      var el = document.getElementById(id);
+      if (!el || !el.parentNode) return;
+      var rid = "__navRange_" + id, host = document.getElementById(rid);
+      if (!host) { host = document.createElement("div"); host.id = rid; el.parentNode.insertBefore(host, el.nextSibling); }
+      var iid = "__navRangeInfo_" + id, info = document.getElementById(iid);
+      if (!info) { info = document.createElement("div"); info.id = iid; info.className = "wr-info"; host.parentNode.insertBefore(info, host.nextSibling); }
+      if (!navRng) {
+        navRng = WufuRange.mount(rid, {
+          value: curSel,
+          tip: "拖动下方白色条选时间段 · 双击还原 · 点「全部」看全段",
+          onChange: function (x) { curSel = x; userPicked = true; syncZoom(x); apply(); paintInfo(); }
+        });
+        if (navRng) navRng.setLabels(r.calendar || []);
+      }
+    }
+    function paintInfo() {
+      var el = document.getElementById("__navRangeInfo_" + id);
+      if (!el || !window.WufuRange) return;
+      var inf = WufuRange.info(r.calendar || [], curSel);
+      var full = WufuRange.isFull(curSel);
+      if (!userPicked && !full) {
+        el.innerHTML = '<b>最近 1 年</b> · ' + inf.from + ' → ' + inf.to +
+          ' · 曲线为原始净值（未按区间重定基）、指标卡为全段口径 · 点「全部」或把白条拉到最左看全段';
+      } else if (full) {
+        el.innerHTML = '<b>全段</b> · ' + inf.from + ' → ' + inf.to + ' · 原始净值 · 指标卡为全段口径' +
+          (view === "dd" ? ' · 回撤只裁显示、不重定基' : '');
+      } else {
+        var s = [], lo = Math.round(curSel[0] * (N - 1)), hi = Math.round(curSel[1] * (N - 1));
+        for (var q = lo; q <= hi; q++) { var nv = navRaw[q]; if (typeof nv === "number" && isFinite(nv) && nv > 0) s.push(nv); }
+        var tot = s.length > 1 ? (s[s.length - 1] / s[0] - 1) * 100 : null;
+        el.innerHTML = '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=1 · 区间收益 ' +
+          (tot == null ? '—' : (tot >= 0 ? '+' : '') + tot.toFixed(1) + '%') + ' · ' +
+          (view === "dd" ? '回撤只裁显示、不重定基' : '指标卡切区间口径');
+      }
+    }
+    function setFull() {
+      userPicked = true; curSel = [0, 1];
+      if (navRng) navRng.set([0, 1], true);
+      syncZoom([0, 1]); apply(); paintInfo();
+    }
+
+    function zoomPct() { return [curSel[0] * 100, curSel[1] * 100]; }
     function draw(keepZoom) {
-      var vz = keepZoom ? zoomPct() : [0, 100];
+      var vz = zoomPct();
       active = view === "nav" ? navView() : ddView();
       baseSeries = active.series.map(function (s) { return s.data; });
       var opt = lineTimeOption(active.legend, active.series,
         { yFmt: active.yFmt, yMax: active.yMax, gridTop: active.gridTop, graphic: active.tip ? gfx(active.tip) : null });
       opt.dataZoom[0].start = vz[0]; opt.dataZoom[0].end = vz[1];
-      opt.dataZoom[1].start = vz[0]; opt.dataZoom[1].end = vz[1];
+      opt.tooltip.formatter = function (ps) {
+        return WufuRange.tipFormatter(ps, function (v) {
+          if (typeof v !== "number" || !isFinite(v)) return "—";
+          return view === "dd" ? (v * 100).toFixed(2) + "%" : (+v).toFixed(3);
+        });
+      };
       var ch = initChart(id);
       ch.setOption(opt, true);
       if (charts[id]) charts[id].resize();
-      paintSwitch();
-      apply();
-      if (ch.__v064Dz) ch.off('datazoom', ch.__v064Dz);
-      ch.__v064Dz = apply;
-      ch.on('datazoom', apply);
+      paintSwitch(); ensureRange(); apply(); paintInfo();
     }
-    function setView(v) {
-      if (v !== "nav" && v !== "dd") return;
-      view = v;
-      draw(true);
-    }
+    function setView(v) { if (v !== "nav" && v !== "dd") return; view = v; draw(true); }
 
-    // ---- 时间条：净值按区间首日重定基（策略前后两段共用一个基准）；回撤只裁显示 ----
+    // ---- 区间索引：由白条直接给出，不再读 ECharts 的 slider ----
     function idxFromZoom() {
-      var ch = charts[id], opt = (ch && ch.getOption) ? (ch.getOption() || {}) : {};
-      var dz = (opt.dataZoom || [])[0] || {}, i0, i1, k2;
-      if (typeof dz.startValue === "number" && typeof dz.endValue === "number" && isFinite(dz.startValue) && isFinite(dz.endValue)) {
-        i0 = 0; i1 = N - 1;
-        for (k2 = 0; k2 < N; k2++) { if (dates[k2] >= dz.startValue) { i0 = k2; break; } }
-        for (k2 = N - 1; k2 >= 0; k2--) { if (dates[k2] <= dz.endValue) { i1 = k2; break; } }
-      } else {
-        var st = typeof dz.start === "number" ? dz.start : 0;
-        var en = typeof dz.end === "number" ? dz.end : 100;
-        i0 = Math.round(st / 100 * (N - 1)); i1 = Math.round(en / 100 * (N - 1));
-      }
+      var i0 = Math.round(curSel[0] * (N - 1)), i1 = Math.round(curSel[1] * (N - 1));
       if (i1 <= i0) { i0 = 0; i1 = N - 1; }
       return [i0, i1];
     }
@@ -8585,7 +8641,7 @@ function buildChips() {
         return (typeof v === "number" && isFinite(v) && v > 0) ? [p[0], +(v / b).toFixed(5)] : [p[0], null];
       });
     }
-      function rangeKpi(i0, i1) {
+function rangeKpi(i0, i1) {
         var navS = [], benchS = [], rets = [], k, nv, bv;
         for (k = i0; k <= i1; k++) {
           nv = r.nav[k]; bv = r.bench_nav ? r.bench_nav[k] : null;
@@ -8624,15 +8680,14 @@ function buildChips() {
         var ch = charts[id];
         if (!ch || typeof ch.setOption !== "function") return;
         var z = idxFromZoom(), i0 = z[0], i1 = z[1];
-        var full = (i0 <= 0 && i1 >= N - 1);
-        if (view === "dd") {
-          // 回撤口径固定：全段峰值从回测起点、创建后重算峰值从创建日；时间条只裁显示。
+        var full = window.WufuRange ? WufuRange.isFull(curSel) : (i0 <= 0 && i1 >= N - 1);
+        if (view === "dd" || full || !userPicked) {
+          /* 默认最近 1 年只裁显示窗口：净值仍是原值，创建前后连续，不触发重定基 */
           ch.setOption({ series: baseSeries.map(function (d) { return { data: d }; }) });
         } else {
           var b = null;
           for (k = i0; k < N; k++) { var nv = navRaw[k]; if (typeof nv === "number" && isFinite(nv) && nv > 0) { b = nv; break; } }
           ch.setOption({ series: baseSeries.map(function (d, j) {
-            if (full) return { data: d };
             if (active.series[j].__grp === "str" && b != null) {
               return { data: d.map(function (p) {
                 var v = p && p[1];
@@ -8643,7 +8698,7 @@ function buildChips() {
           }) });
         }
         if (id === "cNav") {
-          if (full) { if (typeof renderKpis === "function") renderKpis(r); }
+          if (full || !userPicked) { if (typeof renderKpis === "function") renderKpis(r); }
           else rangeKpi(i0, i1);
         }
       } catch (e) { }
@@ -8651,6 +8706,7 @@ function buildChips() {
     }
     draw(false);
   }
+
 
   // [统一] 定投市值曲线（定投市值/累计投入/一次性买入）—— 回测页与详情页共用
   function renderDCAChart(id, R) {
@@ -8662,6 +8718,19 @@ function buildChips() {
       { name: "一次性买入", type: "line", showSymbol: false, lineStyle: { width: 1.8, color: "#FBBF24" }, itemStyle: { color: "#FBBF24" }, data: dates.map(function (d) { return [d[0], +R.lumpArr[d[1]].toFixed(0)]; }) }
     ], { yFmt: function (v) { return (v / 10000).toFixed(1) + "万"; } }));
     if (charts[id]) charts[id].resize();
+    /* v0.65：统一白色透明时间条 */
+    if (window.WufuRange) {
+      var __h = document.getElementById('__wr_' + id);
+      if (!__h) {
+        __h = document.createElement('div'); __h.id = '__wr_' + id;
+        var __el = document.getElementById(id);
+        if (__el && __el.parentNode) __el.parentNode.insertBefore(__h, __el.nextSibling);
+      }
+      WufuRange.bindZoom('__wr_' + id, id, {
+        tip: '拖动下方白色条选时间段 · 双击还原',
+        labels: R.cal.slice(R.si, R.ei + 1).map(function (x) { return String(x).slice(0, 10); })
+      });
+    }
   }
 
 function renderKpis(r) {
@@ -8698,7 +8767,15 @@ function renderKpis(r) {
 
   function baseChart() {
     return {
-      tooltip: { trigger: "axis", triggerOn: "click", renderMode: "richText", confine: true },
+      tooltip: {
+        trigger: "axis", triggerOn: "click|mousemove", confine: true,
+        backgroundColor: "rgba(16,24,36,.95)", borderColor: "#3E4E63", borderWidth: 1,
+        textStyle: { color: "#F1F5F9", fontSize: 11 },
+        axisPointer: { type: "cross", lineStyle: { color: "#4FC3F7", width: 1, type: "dashed" },
+          crossStyle: { color: "#4FC3F7" },
+          label: { show: true, backgroundColor: "#202E3F", color: "#F1F5F9", fontSize: 10 } },
+        formatter: function (ps) { return window.WufuRange ? WufuRange.tipFormatter(ps) : (ps && ps[0] ? String(ps[0].axisValue) : ""); }
+      },
       grid: { left: 56, right: 20, top: 34, bottom: 26, containLabel: true },
       legend: { top: 4, textStyle: { fontSize: 12, color: "#D8E2EF" } }
     };
@@ -12003,7 +12080,15 @@ function showStrategyDetail(name) {
     chEl.style.display = "block";
     var chart = echarts.getInstanceByDom(chEl) || echarts.init(chEl);
     chart.setOption({
-      tooltip: { trigger: "axis", triggerOn: "click", renderMode: "richText", confine: true },
+      tooltip: {
+        trigger: "axis", triggerOn: "click|mousemove", confine: true,
+        backgroundColor: "rgba(16,24,36,.95)", borderColor: "#3E4E63", borderWidth: 1,
+        textStyle: { color: "#F1F5F9", fontSize: 11 },
+        axisPointer: { type: "cross", lineStyle: { color: "#4FC3F7", width: 1, type: "dashed" },
+          crossStyle: { color: "#4FC3F7" },
+          label: { show: true, backgroundColor: "#202E3F", color: "#F1F5F9", fontSize: 10 } },
+        formatter: function (ps) { return window.WufuRange ? WufuRange.tipFormatter(ps) : (ps && ps[0] ? String(ps[0].axisValue) : ""); }
+      },
       legend: { type: "scroll", textStyle: { color: "#9FB0C3", fontSize: 10 }, top: 4, height: 22, iconSize: 9 },
       grid: { left: 44, right: 16, top: 62, bottom: 26, containLabel: true },
       xAxis: { type: "category", data: xlabels, axisLabel: { color: "#7C8DA1", fontSize: 10 } },
@@ -13124,7 +13209,15 @@ function showStrategyDetail(name) {
       return { name: r.label, type: "line", symbol: "none", data: r.icList, smooth: true };
     });
     var option = {
-      tooltip: { trigger: "axis", triggerOn: "click", renderMode: "richText", confine: true },
+      tooltip: {
+        trigger: "axis", triggerOn: "click|mousemove", confine: true,
+        backgroundColor: "rgba(16,24,36,.95)", borderColor: "#3E4E63", borderWidth: 1,
+        textStyle: { color: "#F1F5F9", fontSize: 11 },
+        axisPointer: { type: "cross", lineStyle: { color: "#4FC3F7", width: 1, type: "dashed" },
+          crossStyle: { color: "#4FC3F7" },
+          label: { show: true, backgroundColor: "#202E3F", color: "#F1F5F9", fontSize: 10 } },
+        formatter: function (ps) { return window.WufuRange ? WufuRange.tipFormatter(ps) : (ps && ps[0] ? String(ps[0].axisValue) : ""); }
+      },
       legend: { type: "scroll", textStyle: { color: "#9FB0C3", fontSize: 10 }, top: 26, height: 26, iconSize: 9, pageIconColor: "#9FB0C3", pageTextStyle: { color: "#9FB0C3" } },
       grid: { left: 44, right: 14, top: 58, bottom: 28, containLabel: true },
       xAxis: { type: "category", data: dates, axisLabel: { color: "#7C8DA1", fontSize: 10, interval: "auto", formatter: function (v) { return (v || "").slice(0, 4); } } },
@@ -13156,7 +13249,15 @@ function showStrategyDetail(name) {
       return { name: r.label, type: "line", symbol: "circle", symbolSize: 5, data: means, smooth: true };
     });
     var option = {
-      tooltip: { trigger: "axis", triggerOn: "click", renderMode: "richText", confine: true },
+      tooltip: {
+        trigger: "axis", triggerOn: "click|mousemove", confine: true,
+        backgroundColor: "rgba(16,24,36,.95)", borderColor: "#3E4E63", borderWidth: 1,
+        textStyle: { color: "#F1F5F9", fontSize: 11 },
+        axisPointer: { type: "cross", lineStyle: { color: "#4FC3F7", width: 1, type: "dashed" },
+          crossStyle: { color: "#4FC3F7" },
+          label: { show: true, backgroundColor: "#202E3F", color: "#F1F5F9", fontSize: 10 } },
+        formatter: function (ps) { return window.WufuRange ? WufuRange.tipFormatter(ps) : (ps && ps[0] ? String(ps[0].axisValue) : ""); }
+      },
       legend: { type: "scroll", textStyle: { color: "#9FB0C3", fontSize: 10 }, top: 26, height: 26, iconSize: 9, pageIconColor: "#9FB0C3", pageTextStyle: { color: "#9FB0C3" } },
       grid: { left: 44, right: 16, top: 58, bottom: 28, containLabel: true },
       xAxis: { type: "category", data: futNs.map(function (n) { return n + "日"; }), axisLabel: { color: "#7C8DA1", fontSize: 10 } },
