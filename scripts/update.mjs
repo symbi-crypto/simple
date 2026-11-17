@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = path.join(ROOT, 'state.json');
 const STATUS = path.join(ROOT, 'sync-status.json');
+const CHAIN_R_STATUS = path.join(ROOT, 'chain-R-status.json');
 const EXTRA = path.join(ROOT, 'etf-extra.json');
 const OVERRIDES = path.join(ROOT, 'local-overrides.json');
 const FIX_ETF = ['corrections','ohlcFix','navFix','resupply','swaps','refactors','exempt','fyFix','fyCheck'];
@@ -52,6 +53,29 @@ const TARGETS = [
 ];
 
 function die(msg) { console.error('✗ ' + msg); process.exit(1); }
+
+/* v0.69 链 R 契约校验：不认 HTTP 200，只认数据本身。
+   行数下限 / 关键字段非空 / 末日格式，任一不满足就保留旧值并明确标红。 */
+function validatePatch(name, value) {
+  let p;
+  try { p = JSON.parse(value); } catch (e) { return { ok: false, why: '补丁不是合法 JSON' }; }
+  const days = (p && Array.isArray(p.days)) ? p.days : [];
+  if (!days.length) return { ok: false, why: 'days 为空' };
+  const last = String((days[days.length - 1] || {}).date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(last)) return { ok: false, why: '末日格式异常：' + last };
+  let valid = 0;
+  for (const d of days.slice(-5)) {
+    const s = (d && d.series) || {};
+    for (const c of Object.keys(s)) {
+      const row = s[c] || {};
+      const v = (row.close != null ? row.close : row.raw_close);
+      if (typeof v === 'number' && isFinite(v) && v > 0) valid++;
+    }
+  }
+  const need = name === '可转债' ? 50 : 30;
+  if (valid < need) return { ok: false, why: `近5日有效收盘 ${valid} 个 < 下限 ${need}`, rows: valid, last, days: days.length };
+  return { ok: true, rows: valid, last, days: days.length };
+}
 /* v0.53 本地自测：只跑覆盖层合并，不启动浏览器、不写仓库文件 */
 if (process.env.WUFU_OVERRIDE_SELFTEST === '1') {
   const mk = () => ({
@@ -361,12 +385,21 @@ function countNewSeries(raw) {
   const oldLS = (old && old.localStorage) || {};
   const out = {}, notes = [];
   let changed = 0, cbNew = 0;
+  const chainR = { results: {}, warnings: [] };
 
   try {
     for (const t of TARGETS) {
       const oldVal = typeof oldLS[t.key] === 'string' ? oldLS[t.key] : null;
       try {
         const r = await syncOne(ctx, t, goal);
+        const vd = validatePatch(t.name, r.value);
+        chainR.results[t.key] = Object.assign({ name: t.name, goal }, vd);
+        if (!vd.ok && !r.skipped) {
+          out[t.key] = oldVal;
+          chainR.warnings.push(`${t.name}：链 R 校验未通过（${vd.why}），保留原值`);
+          notes.push(`${t.name}：链 R 校验未通过（${vd.why}），保留原值`);
+          continue;
+        }
         const od = lastDate(oldVal), nd = lastDate(r.value);
         if (r.skipped) { out[t.key] = oldVal || r.value; notes.push(`${t.name}：已是 ${nd}，无需更新`); continue; }
         /* 新值不比仓库旧值新，就保留旧值：绝不倒退 */
@@ -420,6 +453,13 @@ function countNewSeries(raw) {
   const statusObj = { goal, dataAsOf: finalAsOf, targets: notes, cbNewSeries: cbNew,
     overrideFixPoints: applied.fixPoints, etfExtra: ovExtraN, site: SITE };
   const stChanged = writeIfChanged(STATUS, statusObj);
+  const chainRObj = {
+    chain: 'R', contract: 'wufu-patch-v1', dataAsOf: finalAsOf, goal,
+    source: '浏览器代点「一键更新行情」→ 东财 push2his 主源(f51-f61) / 腾讯 newfqkline 失败兜底 / 新浪美股(待探针)',
+    validatedAt: new Date().toISOString(),
+    targets: chainR.results, warnings: chainR.warnings
+  };
+  writeIfChanged(CHAIN_R_STATUS, chainRObj);
   console.log(`  CB 新上市标的 newSeries：${cbNew} 只；覆盖层修复点：${applied.fixPoints}；新增标的：${applied.custom} 只；status 变更：${stChanged ? '是' : '否'}`);
   notes.forEach(n => console.log('  · ' + n));
 })().catch(e => die(String(e && e.stack || e)));

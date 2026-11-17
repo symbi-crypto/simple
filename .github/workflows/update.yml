@@ -6,6 +6,7 @@ name: 每周行情同步
 # 想换时间只改下面 cron 一行（GitHub cron 用 UTC）；想临时补跑用 Actions 页 Run workflow。
 #
 # 三条链（按资产族收敛，上游源不合并，合并的是落库契约）：
+#   R 浏览器代点  → state.json / chain-R-status.json                 可转债、A股/跨境 ETF 日线增量（v0.69 起带契约校验）
 #   L 本地 gz    → cb-daily.json / index-daily.json                 零抓取、含退市债
 #   A 东财+申万  → industry / market-amount / us-etf-daily.json      A股行业、成交额、美股ETF
 #   G Yahoo+CBOE → gold-daily.json                                  境外商品与波动率
@@ -91,7 +92,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          FILES="sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json us-etf-daily.json external-warnings.json external-warnings-L.json external-warnings-A.json external-warnings-G.json"
+          FILES="sync-status.json chain-R-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json us-etf-daily.json external-warnings.json external-warnings-L.json external-warnings-A.json external-warnings-G.json"
           CHANGED=""
           for f in $FILES; do [ -f "$f" ] && git add "$f" && CHANGED="$CHANGED $f"; done
           if [ -f state.json ]; then git add state.json; fi

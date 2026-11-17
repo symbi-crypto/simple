@@ -1,7 +1,9 @@
 
 /* ==========================================================================
    一键更新行情 v1  (2026-11-02)
-   · 按标的路由多源：腾讯 newfqkline / 腾讯实时 / 新浪美股日K / 东财 push2his
+   · v0.69 方案甲：A股/跨境 ETF 主源统一东财 push2his（f51–f61），腾讯 newfqkline 仅失败兜底
+   · 美股 3 只（QQQ/SPY/TIP）暂留 新浪美股日K → 腾讯us* 链：东财 suggest 未验通，不切
+   · 扶摇（需 Key，默认停用）仍可选启用；CSI 4 只指数沿用东财首选 + 腾讯实时兜底
    · 原子更新：每只标的独立判定，失败保留旧值并列清单，绝不推算、不静默前值填充
    · 增量写入 localStorage，页面加载自动回放
    · 新增交易日自动追加（全部序列同步延长，缺失一律 -1）
@@ -169,16 +171,21 @@
     (kl || []).forEach(function (s) {
       var p = String(s).split(",");
       if (!p[0]) return;
-      o[p[0]] = { o: num(p[1]), c: num(p[2]), h: num(p[3]), l: num(p[4]), v: null, a: null, to: null };
+      var v = num(p[5]), a = num(p[6]), to = num(p[10]);
+      o[p[0]] = { o: num(p[1]), c: num(p[2]), h: num(p[3]), l: num(p[4]),
+        v: (v !== null ? v / 100 : null),          /* f56「手」→ 万股，与腾讯 parseTx 同口径 */
+        a: (a !== null ? a / 1e4 : null),          /* f57「元」→ 万元 */
+        to: (to !== null && to > 0 ? to : null) };  /* f61 换手率 %；美股为 0.00 时不冒充真值 */
     });
     return o;
   }
-  async function emFetch(sec) {
+  async function emFetch(sec, mkt) {
+    var secid = (mkt || "2") + "." + sec;
     var lastErr = "";
     for (var i = 0; i < EM_HOSTS.length; i++) {
       var cb = "__wufuEM_" + sec + "_" + i + "_" + Date.now();
-      var q = "secid=2." + sec + "&ut=" + EM_UT +
-        "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58" +
+      var q = "secid=" + encodeURIComponent(secid) + "&ut=" + EM_UT +
+        "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
         "&klt=101&fqt=0&end=20500101&lmt=60&cb=" + cb + "&_=" + Date.now();
       try {
         var j = await jsonpCb("https://" + EM_HOSTS[i] + "/api/qt/stock/kline/get?" + q, cb, 9000);
@@ -1548,6 +1555,7 @@
     try {
       var cal = d.calendar, last = cal[cal.length - 1];
       var srcStat = { tx: 0, sina: "未用", em: "未用", qt: "未用",
+        emMain: 0, txFallback: 0, emFail: 0, usPending: "东财 suggest 未验通，美股3只暂留新浪→腾讯链",
         fy: 0, fyFail: 0, cal: "", micro: "未启用" };
       var fyUsed = {}, patchMicro = null;
       FY_FAIL = 0; FY_DEAD = false;
@@ -1606,6 +1614,7 @@
               prevClose[c] = rec.prev; srcStat.qt = "已兜底(当日+昨收)";
             }
           } else if (USETF[c]) {
+            /* 暂不切东财：suggest 接口实测 403，105.SPY / 105.TIP 返回 0 行，QuoteID 未验通 */
             var sym = USETF[c], vn = "_wufuUS_" + sym;
             try {
               var arr = await jsonpVar(SINA + "var%20" + vn + "=/US_MinKService.getDailyK?symbol=" + sym +
@@ -1632,9 +1641,24 @@
                 bars[c] = parseTx(await txFetch(tc2, 60)); srcStat.tx++; srcStat.fyFail++;
               }
             } else {
-              var tc = txCode(c);
-              if (!tc) throw new Error("无代码映射");
-              bars[c] = parseTx(await txFetch(tc, 60)); srcStat.tx++;
+              /* v0.69 方案甲：6 位 A股/跨境 ETF 主源统一东财 push2his，腾讯仅失败兜底 */
+              var m6 = /^(\d{6})\.(SH|SZ|BJ)$/.exec(c);
+              if (m6) {
+                try {
+                  bars[c] = await emFetch(m6[1], m6[2] === "SH" ? "1" : "0");
+                  srcStat.emMain++;
+                } catch (e) {
+                  var tc = txCode(c);
+                  if (!tc) throw new Error("无代码映射");
+                  bars[c] = parseTx(await txFetch(tc, 60));
+                  srcStat.txFallback++; srcStat.emFail++;
+                }
+              } else {
+                /* 美股指数 / 港股 / 特色指数：无 6 位 A股代码，保持原腾讯映射 */
+                var tc = txCode(c);
+                if (!tc) throw new Error("无代码映射");
+                bars[c] = parseTx(await txFetch(tc, 60)); srcStat.tx++;
+              }
             }
           }
         } catch (e) {
@@ -1779,10 +1803,11 @@
       rep.navCodes = navStat.ok; rep.navRows = navStat.rows;
       rep.sources = "扶摇净值 " + navStat.ok + " 只 / " + navStat.rows + " 个真值日" +
         (navStat.skip ? "（跳过 " + navStat.skip + "）" : "") +
-        " · 价格固定腾讯未复权（扶摇日线为前复权，811/1001 日偏差>0.5%，不写入）" +
+        " · 价格主源东财 push2his 未复权(fqt=0)，腾讯 newfqkline 仅失败兜底" +
+        " · 东财主源 " + srcStat.emMain + " 只 / 腾讯兜底 " + srcStat.txFallback + " 只 / 东财失败 " + srcStat.emFail + " 只" +
         " · 交易日历 " + srcStat.cal + " · 微盘标尺 " + srcStat.micro +
-        " · 腾讯newfqkline " + srcStat.tx + " 只 · 新浪美股 " + srcStat.sina +
-        " · 东财 " + srcStat.em + " · 腾讯实时 " + srcStat.qt;
+        " · 其它腾讯映射 " + srcStat.tx + " 只 · 新浪美股 " + srcStat.sina + "（" + srcStat.usPending + "）" +
+        " · CSI东财 " + srcStat.em + " · 腾讯实时 " + srcStat.qt;
       rep.micro = srcStat.micro;
       rep.ts = new Date().toLocaleString("zh-CN", { hour12: false });
       try { rep.issues = scanIssues().length; } catch (e) { rep.issues = 0; }

@@ -336,17 +336,22 @@
   }
   /* ======================================================================
      一键更新行情 · 联网增量（替代原「导入更新包」）
-     数据源（均为免费公开接口，无需 Key / 代理 / 积分）：
+     数据源（v0.69 方案甲 · 主源统一东财，腾讯只做失败兜底）：
        ① 东财 RPTA_WEB_KZZ_LS  逐日 FCLOSE / PUREBONDVALUE / SWAPOR（JSONP，按日期批量）
-       ② 腾讯 newfqkline        开高低收 / 成交量 / 成交额 / 换手率（CORS *，逐只）
-       ③ 东财公告              ST 实施 / 叠加 / 撤销公告（CORS *，按正股 50 只/批）
-       ④ 三个基准股指 + 自建等权指数（腾讯 K 线 / 等权收益续接）
+       ② 东财 push2his          开高低收 / 量额 / 换手率（f51–f61，K 线主源，逐只）
+       ③ 腾讯 newfqkline        仅当 ② 失败时兜底（CORS *，逐只）
+       ④ 东财公告              ST 实施 / 叠加 / 撤销公告（CORS *，按正股 50 只/批）
+       ⑤ 三个基准股指（东财 push2his 主源，腾讯兜底）+ 自建等权指数
      结果写入本机 patch（p.days / p.st / p.report），刷新后由 applyPatch 回放。
      口径：公告日生效、完全撤销公告当日恢复；价格单位与内嵌数据一致（元 / 万元 / 手 / %）。
+     东财 f56「手」/ f57「元」→ 万元 与腾讯 day[5]/day[8] 同口径；f61 即换手率 %。
      ====================================================================== */
   var NET_EM = "https://datacenter-web.eastmoney.com/api/data/v1/get";
   var NET_QQ = "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get";
   var NET_ANN = "https://np-anotice-stock.eastmoney.com/api/security/ann";
+  var EM_HOSTS_CB = ["push2his.eastmoney.com", "1.push2his.eastmoney.com",
+    "7.push2his.eastmoney.com", "23.push2his.eastmoney.com", "48.push2his.eastmoney.com"];
+  var EM_UT_CB = "fa5fd1943c7b386f172d6893dbfba10b";
   var netBusy = false;
 
   /* ======================================================================
@@ -611,6 +616,50 @@
     var u = NET_QQ + "?param=" + encodeURIComponent(sym + ",day,,," + n + ",");
     var o = await _get(u, 15000), d = o && o.data && o.data[sym];
     return (d && (d.day || d.qfqday)) || [];
+  }
+  /* v0.69：东财 push2his 日 K 主源。返回格式与 _qqRows 完全一致：
+     [日期, 开, 收, 高, 低, 成交量(手), , 换手率(%), 成交额(万元)] */
+  function _emSecid(code) {
+    var m = /^(\d{6})\.(SH|SZ|BJ)$/.exec(String(code));
+    if (!m) return null;
+    return (m[2] === "SH" ? "1." : "0.") + m[1];
+  }
+  function _emKlineRaw(url, cbName, ms) {
+    var r = (window.WUFU_ROUTE ? window.WUFU_ROUTE(url) : url);
+    if (r !== url) return _getRaw(r, ms).then(function (j) { return (j && j.data && j.data.klines) || []; });
+    return new Promise(function (res, rej) {
+      var sc = document.createElement("script"), done = false;
+      var t = setTimeout(function () { if (!done) { done = true; rej(new Error("东财K线超时")); } }, ms || 12000);
+      window[cbName] = function (j) {
+        if (done) return; done = true; clearTimeout(t);
+        try { delete window[cbName]; } catch (e) { window[cbName] = null; }
+        res((j && j.data && j.data.klines) || []);
+      };
+      sc.onerror = function () { if (!done) { done = true; clearTimeout(t); rej(new Error("东财K线网络失败")); } };
+      sc.src = url;
+      document.head.appendChild(sc);
+    });
+  }
+  async function _emKlineRows(code, n) {
+    var secid = _emSecid(code);
+    if (!secid) throw new Error("无东财 secid 映射");
+    var lastErr = "";
+    for (var i = 0; i < EM_HOSTS_CB.length; i++) {
+      var cb = "__wufuEMK_" + Date.now().toString(36) + "_" + i;
+      var q = "secid=" + encodeURIComponent(secid) + "&ut=" + EM_UT_CB +
+        "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
+        "&klt=101&fqt=0&end=20500101&lmt=" + n + "&cb=" + cb + "&_=" + Date.now();
+      try {
+        var kl = await _emKlineRaw("https://" + EM_HOSTS_CB[i] + "/api/qt/stock/kline/get?" + q, cb, 9000);
+        if (kl.length) return kl.map(function (s) {
+          var p = String(s).split(","), a = _num(p[6]);
+          return [p[0], _num(p[1]), _num(p[2]), _num(p[3]), _num(p[4]), _num(p[5]),
+                  null, _num(p[10]), (a != null ? a / 1e4 : null)];
+        });
+        lastErr = "空结果";
+      } catch (e) { lastErr = (e && e.message) || "不可用"; }
+    }
+    throw new Error(lastErr || "东财K线全部子域不可用");
   }
   async function _emRows(since, prog) {
     var out = [], page = 1, pages = 1;
@@ -896,15 +945,20 @@
       dates.sort();
       if (!dates.length) { prog("已是最新：数据源还没有 " + since + " 之后的交易日。"); return; }
       pbar(0.18);
-      // ② 腾讯 K 线：开高低 / 成交量 / 成交额 / 换手率（含 3 只兜底 ETF）
+      // ② K 线：东财 push2his 主源（f51–f61），腾讯 newfqkline 仅失败兜底
       var codes = {};
       dates.forEach(function (dt) { Object.keys(byDate[dt]).forEach(function (c) { if (addCodes.indexOf(c) < 0) codes[c] = 1; }); });
       ["518880.SH", "511010.SH", "511990.SH"].forEach(function (c) { if (D.series[c]) codes[c] = 1; });
       var list = Object.keys(codes), n = Math.min(30, Math.max(10, dates.length + 3)), qqFail = 0;
-      var kres = await _pool(list, 8, async function (c) { return { c: c, arr: await _qqRows(_qqSym(c), n) }; },
-        function (d, tot) { if (d % 40 === 0 || d === tot) prog("腾讯 K 线 " + d + "/" + tot + " 只…"); pbar(0.18 + 0.42 * d / tot); });
+      var emOk = 0, qqFallback = 0;
+      var kres = await _pool(list, 8, async function (c) {
+        try { return { c: c, arr: await _emKlineRows(c, n), src: "EM" }; }
+        catch (e) { return { c: c, arr: await _qqRows(_qqSym(c), n), src: "QQ" }; }
+      },
+        function (d, tot) { if (d % 40 === 0 || d === tot) prog("行情 K 线 " + d + "/" + tot + " 只…"); pbar(0.18 + 0.42 * d / tot); });
       kres.forEach(function (x) {
         if (!x || !x.arr || !x.arr.length) { qqFail++; return; }
+        if (x.src === "EM") emOk++; else qqFallback++;
         x.arr.forEach(function (row) {
           var dt = String(row[0] || ""); if (dt < since || dt > today) return;
           if (!byDate[dt]) { byDate[dt] = {}; if (dates.indexOf(dt) < 0) dates.push(dt); }
@@ -921,7 +975,10 @@
       dates.sort(); pbar(0.64);
       // ③ 基准：三个股指（腾讯）+ 可转债等权（按日等权收益续接）
       var idxSym = { "000300.SH": "sh000300", "000852.SH": "sh000852", "399303.SZ": "sz399303" };
-      var ires = await _pool(Object.keys(idxSym), 3, async function (k) { return { k: k, arr: await _qqRows(idxSym[k], n) }; });
+      var ires = await _pool(Object.keys(idxSym), 3, async function (k) {
+        try { return { k: k, arr: await _emKlineRows(k, n) }; }
+        catch (e) { return { k: k, arr: await _qqRows(idxSym[k], n) }; }
+      });
       var idxRows = {};
       ires.forEach(function (x) { if (x) (x.arr || []).forEach(function (r) { if (!idxRows[r[0]]) idxRows[r[0]] = {}; var v = _num(r[2]); if (v != null) idxRows[r[0]][x.k] = v; }); });
       var eqPrev = (D.index && D.index["index_CBALL"] && D.index["index_CBALL"].length) ? D.index["index_CBALL"][D.index["index_CBALL"].length - 1] : null;
@@ -967,7 +1024,8 @@
       Object.keys(newHist).forEach(function (c) { p.newSeries[c] = newHist[c]; });
       p.excludedCodes = excluded;
       p.report = { ts: ts(), dates: dates, ok: list.length - qqFail, skip: qqFail, fail: 0,
-                   net: { em_rows: rows.length, qq_fail: qqFail, new_codes: Object.keys(newCodes),
+                   net: { em_rows: rows.length, kline_em: emOk, kline_qq_fallback: qqFallback,
+                          kline_qq_fail: qqFail, new_codes: Object.keys(newCodes),
                           added_codes: Object.keys(newHist), excluded_codes: excluded,
                           st_events: evs.length, st_err: stErr,
                           ann_events: annCnt, ann_err: annErr } };
@@ -993,7 +1051,7 @@
       try { mergeExtras(p); } catch (e) { }
       log("联网更新行情", "", "ok", "新增 " + dates.length + " 天 · 价值分析 " + rows.length + " 行 · K线 " + list.length + " 只 · ST 事件 " + evs.length + " 条 · 公告期 " + annCnt + " 条 · YTM 延伸至 " + dates[dates.length - 1]);
       var msg = "联网更新完成：新增 " + dates.length + " 个交易日（" + dates[0] + " → " + dates[dates.length - 1] + "）· K 线 " +
-                (list.length - qqFail) + "/" + list.length + " 只 · ST 公告 " + evs.length + " 条" +
+                (list.length - qqFail) + "/" + list.length + " 只（东财 " + emOk + " / 腾讯兜底 " + qqFallback + "）· ST 公告 " + evs.length + " 条" +
                 (stErr ? "（公告源异常：" + stErr + "，行情已更新）" : "") +
                 (Object.keys(newHist).length ? " · 新纳入 " + Object.keys(newHist).length + " 只普通转债" : "") +
                 (excluded.length ? " · 排除 " + excluded.length + " 只（可交换债 / 定向转债 / 非沪深）" : "") +
