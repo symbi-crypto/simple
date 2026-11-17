@@ -997,3 +997,13 @@ JS 错误 0）、数据文件 md5 与改前一致。回测引擎、策略参数�
 - 根因：时间条重绘走 setOption(opt, true)（notMerge），opt 未带 backgroundColor，冲掉初始化时设的 transparent，ECharts 内置 dark 主题回退到 #100C2A。
 - 修正：重绘前显式设 opt.backgroundColor = "transparent"，让卡片底色透出；净值/回撤两条路径共用该 draw，一并生效。
 - 其余（数据、时间条、读数、创建后加粗、看板）未改动。
+
+
+---
+
+## v0.68 · 申万一级行业 + SLOPE 函数（2026-11-17）
+
+- 行业宽度数据源改为 **申万 2021 版 31 个一级行业指数**（AKShare `index_hist_sw`），撤掉东财细分板块口径；行业脚本在 GitHub Actions 出口串行抓取、失败沿用上次真值。
+- 自定义公式函数表新增 `SLOPE(X,N)`：对 X 的近 N 点做 OLS 线性回归斜率。乖离率斜率动量可直接写 `SLOPE(BIAS(90),25)`（或 `SLOPE(乖离率(90),25)`）。
+- 两个系统（etf/cb）的公式编译器与求值器同步；因子 IC/参数调优共用同一表达式函数表。
+- 其余（回测引擎、策略参数、.gz 数据）未改动。
