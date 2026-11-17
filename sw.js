@@ -115,7 +115,7 @@ self.addEventListener("fetch", function (e) {
     }
     /* 主文档与看板脚本不升 CACHE 名时也要能更新：
        ETF / 可转债 tool.html、common 下 4 个看板脚本均 network-first，离线回退缓存 */
-    if (/\/(etf|cb)\/tool\.html$/.test(u.pathname) || /\/common\/(range|dashboard|gold|industry)\.js$/.test(u.pathname)) {
+    if (/\/(etf|cb)\/tool\.html$/.test(u.pathname) || /\/(etf|cb)\/(dashboard|gold)\.html$/.test(u.pathname) || /\/common\/(range|dashboard|gold|industry)\.js$/.test(u.pathname)) {
       try {
         var fresh2 = await fetch(req);
         if (fresh2 && fresh2.ok) {

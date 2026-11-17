@@ -25,15 +25,44 @@
     vals.forEach(function (v) { g.appendChild(E('line', { x1: x0, y1: yfn(v), x2: x1, y2: yfn(v) })); });
     svg.appendChild(g);
   }
-  /* 多条序列共用画布：每条自身归一，只比形状 */
+  /* 多条序列共用画布：每条自身归一，只比形状。
+     v0.69c：Y 轴按可见数据自适应（分位 1%~99% 且强制含 100），不再固定 40~260 后 clamp。
+     旧写法在中位溢价率涨到 225+ 或 10 年成交额倍数破万时，会把超出部分 clamp 到画布外，
+     看起来就是「曲线超出表格」。现在所有线都落在 12~112 的绘图区内，极值贴边但不出框。 */
   function multi(svg, specs, labels) {
     if (!svg) return; svg.innerHTML = '';
     var n = 0; specs.forEach(function (s) { if (s && s.data && s.data.length > n) n = s.data.length; });
     if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
-    var X = function (i) { return 34 + i * (310 / (n - 1)); };
-    var Y = function (v) { return 12 + (200 - Math.max(40, Math.min(260, v))) * 0.62; };
-    grid(svg, [60, 100, 140, 200], Y, 34, 344);
-    [60, 100, 140, 200].forEach(function (v) { svg.appendChild(TX(2, Y(v) + 3, String(v), 9)); });
+    var all = [];
+    specs.forEach(function (s) {
+      var a = [], mn = null, mx = null;
+      (s.data || []).forEach(function (v) {
+        if (typeof v === 'number' && isFinite(v)) {
+          a.push(v); if (mn === null || v < mn) mn = v; if (mx === null || v > mx) mx = v;
+        }
+      });
+      if (!a.length) return;
+      /* 10 年成交额倍数会因早期基数极小放大到 10 万倍，若混进定轴会把刻度拉成负数、
+         把其余三条压成平线。倍率 >20 倍的线不参与定轴，仍绘制并贴边，文案另作说明。 */
+      if (mn > 0 && mx / mn > 20) { s.clipped = true; return; }
+      s.clipped = false;
+      a.forEach(function (v) { all.push(v); });
+    });
+    if (!all.length) all = [100];
+    all.sort(function (a, b) { return a - b; });
+    var q = function (p) { return all[Math.max(0, Math.min(all.length - 1, Math.floor(p * (all.length - 1))))]; };
+    var lo = Math.min(q(0.01), 100), hi = Math.max(q(0.99), 100);
+    if (!(hi > lo)) hi = lo + 10;
+    var pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    var yTop = 12, yBot = 112;
+    var Y = function (v) {
+      var x = Math.max(lo, Math.min(hi, v));
+      return yTop + (hi - x) / (hi - lo) * (yBot - yTop);
+    };
+    var yticks = [];
+    for (var ti = 0; ti <= 4; ti++) yticks.push(lo + (hi - lo) * ti / 4);
+    grid(svg, yticks, Y, 34, 344);
+    yticks.forEach(function (v) { svg.appendChild(TX(2, Y(v) + 3, v.toFixed(0), 9)); });
     specs.forEach(function (s) {
       if (!s || !s.data || !s.data.length) return;
       var pts = [], nn = s.data.length;
@@ -50,14 +79,18 @@
       var x = 34 + k.i * (310 / Math.max(1, (labels || []).length - 1));
       svg.appendChild(TX(x, 146, k.text, 9, '#7C8DA1', k.i === 0 ? 'start' : (k.i >= (labels || []).length - 2 ? 'end' : 'middle')));
     });
-    /* v0.65：点曲线 → 当日日期 + 各线数值 */
+    /* v0.69c：浮层显示与上方六卡同源的真实值；曲线本身仍是起点=100 的归一形状 */
     if (window.WufuRange) WufuRange.probe(svg, {
       labels: labels || [], vbW: 360, y0: 8, y1: 140,
       xAt: function (i) { return 34 + i * (310 / Math.max(1, (labels || []).length - 1)); },
       yAt: Y,
       series: specs.map(function (s) { return { name: s.name || '', color: s.color, data: s.data,
-        fmt: function (v) { return v.toFixed(1); } }; }),
-      note: '起点=100 · 归一值'
+        fmt: function (v, i) {
+          var r = s.real && s.real[i];
+          if (typeof r === 'number' && isFinite(r)) return r.toFixed(1) + (s.unit || '');
+          return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) + '（归一）' : '—';
+        } }; }),
+      note: '浮层=真实值 · 曲线=归一形状'
     });
   }
   function emptyChart(id, msg) {
@@ -122,25 +155,46 @@
   function drawCbTrend(d) {
     var t = (d.trend || {})[String(years)] || {};
     var LB = SL(t.labels || [], selCB);
+    /* v0.69c：当日真实值取自上方六卡同源字段，把「起点=100」的归一曲线按末日锚回真实量纲。
+       归一严格等于 真实值/区间起点值*100，故 真实值(i) = norm(i)/norm(last) * 当日真实值。 */
+    var sum = d.summary || {}, kp = {};
+    (d.kpi || []).forEach(function (k) { kp[k.label] = k.value; });
+    var num = function (x) { var m = String(x == null ? '' : x).match(/-?[\d.]+/); return m ? parseFloat(m[0]) : null; };
+    var REAL = { eq: null, price: num(sum.medianPrice), prem: num(sum.medianPremium), amount: num(kp['总成交额']) };
     var specs = [
-      { data: t.eq, color: '#F87171', name: '等权' }, { data: t.price, color: '#4FC3F7', name: '中位价' },
-      { data: t.prem, color: '#A78BFA', name: '中位溢价率' }, { data: t.amount, color: '#9FB0C3', name: '成交额倍数' }
+      { key: 'eq', color: '#F87171', name: '转债等权', unit: '' },
+      { key: 'price', color: '#4FC3F7', name: '中位价', unit: ' 元' },
+      { key: 'prem', color: '#A78BFA', name: '中位溢价率', unit: '%' },
+      { key: 'amount', color: '#9FB0C3', name: '总成交额', unit: ' 亿' }
     ];
     var txt = [];
     specs.forEach(function (s) {
-      var rb = window.WufuRange ? WufuRange.rebase(s.data || [], selCB) : { data: SL(s.data || [], selCB), ret: null };
+      var raw = t[s.key] || [];
+      var rb = window.WufuRange ? WufuRange.rebase(raw, selCB) : { data: SL(raw, selCB), ret: null };
       s.data = rb.data;
       if (rb.ret !== null) txt.push(s.name + ' ' + (rb.ret >= 0 ? '+' : '') + rb.ret.toFixed(1) + '%');
+      var lv = null;
+      for (var i = raw.length - 1; i >= 0; i--) {
+        if (typeof raw[i] === 'number' && isFinite(raw[i]) && raw[i] > 0) { lv = raw[i]; break; }
+      }
+      var rl = REAL[s.key];
+      s.real = (rl != null && lv != null) ? SL(raw.map(function (v) {
+        return (typeof v === 'number' && isFinite(v) && v > 0) ? v / lv * rl : null;
+      }), selCB) : null;
     });
     multi($('cbTrend'), specs, LB);
     var ri = $('cbRangeInfo');
     if (ri && window.WufuRange) {
       var inf = WufuRange.info(t.labels || [], selCB);
-      ri.textContent = WufuRange.isFull(selCB)
-        ? '拖动下方时间条，以所选区间开头为起点重算收益 · 各线各自归一 100 · 周频'
+      ri.innerHTML = WufuRange.isFull(selCB)
+        ? '拖动下方时间条，以所选区间开头为起点重算收益 · 各线各自归一 100 · 周频<br>点曲线浮层为<b>真实值</b>（元 / % / 亿），与上方六卡一致；等权指数无绝对量纲，显示归一值。'
         : '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=100 · ' + txt.join(' / ') +
-          '<br>成交额线是「相对首日倍数」，不是收益率；分位刻度仍是全历史口径。';
+          '<br>浮层为真实值；成交额线是「相对首日倍数」，不是收益率；分位刻度仍是全历史口径。';
     }
+    var clipped = specs.filter(function (s) { return s.clipped; });
+    if (clipped.length && ri) ri.insertAdjacentHTML('beforeend',
+      '<br><span style="color:#FBBF24">' + clipped.map(function (s) { return s.name; }).join('、') +
+      ' 倍率过大已贴边显示（早期基数极小），浮层仍为真实值。</span>');
     if (rngCB) rngCB.setLabels(t.labels || []);
     var sn = $('cbSampleNote');
     if (sn) sn.textContent = years === 5 ? '样本 5 年 · 周频' : ((d.sampleNote || '样本 —') + ' · 周频');

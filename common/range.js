@@ -252,7 +252,7 @@
             g.appendChild(E('circle', { cx: x, cy: c.yAt(v), r: 2.8,
               fill: s.color || '#4FC3F7', stroke: '#0E7490', 'stroke-width': '1' }));
           }
-          var txt = !ok ? '—' : (s.fmt ? s.fmt(v) : (typeof v === 'number' ? v.toFixed(2) : String(v)));
+          var txt = !ok ? '—' : (s.fmt ? s.fmt(v, i) : (typeof v === 'number' ? v.toFixed(2) : String(v)));
           rows.push({ name: s.name || '', color: s.color || '#9FB0C3', text: txt });
         });
         var lines = 1 + rows.length + (c.note ? 1 : 0);
