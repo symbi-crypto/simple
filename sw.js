@@ -6,7 +6,7 @@
      兼容「服务器自动二次压缩」与「原样返回」两种托管行为
    · 导航请求离线时才回首页；静态资源失败原样抛错，不把 gz 伪装成 HTML
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
-   改任何页面或数据文件后请把 CACHE 版本号 +1。
+   改任何页面或数据文件后请把 CACHE 末段 +1（v0.67 → v0.68）；1.0 之前一律用 v0.x。
    ============================================================ */
 var CACHE = "wufu-all-v0.69";
 
@@ -17,13 +17,14 @@ var LIST = [
   "common/storage.js", "common/echarts.min.js", "common/inflate.js",
   "common/index-unify.js", "common/index.gz", "common/holiday-cn.json", "common/icon.svg",
   "common/patch-etf.js", "common/patch-cb.js", "common/combo-system.css", "common/hub-combo.js",
-  "common/export.js",
-  "etf/index.html", "etf/tool.html", "etf/manage.html", "etf/icon.svg", "etf/manifest.webmanifest",
+  "common/export.js", "common/dashboard.css", "common/dashboard.js",
+  "common/gold.js", "common/industry.js",
+  "etf/index.html", "etf/tool.html", "etf/dashboard.html", "etf/gold.html", "etf/manage.html", "etf/icon.svg", "etf/manifest.webmanifest",
   "etf/data/etf-data.gz", "etf/data/etf-data-vol.gz", "etf/data/etf-index.gz", "etf/data/holiday-cn.json",
-  "cb/index.html", "cb/tool.html", "cb/icon.svg", "cb/manifest.webmanifest",
+  "cb/index.html", "cb/tool.html", "cb/dashboard.html", "cb/icon.svg", "cb/manifest.webmanifest",
   "cb/data/cb-data.gz", "cb/data/cb-vol.gz", "cb/data/cb-extra.gz", "cb/data/holiday-cn.json",
   "cb/data/cb-scale-daily.json",
-  "combos/index.html",
+  "combos/index.html", "cb-daily.json", "index-daily.json", "gold-daily.json", "industry-daily.json", "market-amount.json", "us-etf-daily.json",
   "health/index.html", "health/etf/index.html", "health/cb/index.html"
 ];
 
@@ -97,7 +98,7 @@ self.addEventListener("fetch", function (e) {
        ignoreSearch 让「首次只开首页就断网」也能打开体检页，不必先联网进过一次。 */
     /* 日频剩余规模快照：整包可能只换数据、不升 CACHE 版本，
        必须 network-first，否则 cache-first 会让按钮永远读到旧快照 */
-    if (u.pathname.indexOf("cb-scale-daily.json") >= 0) {
+    if (/\/(cb-scale-daily|cb-daily|index-daily|gold-daily|industry-daily|market-amount|us-etf-daily)\.json$/.test(u.pathname)) {
       try {
         var fresh = await fetch(req);
         if (fresh && fresh.ok) {
@@ -111,6 +112,19 @@ self.addEventListener("fetch", function (e) {
       var stale = await c.match(new Request(new URL(u.pathname, u.origin).href), { ignoreVary: true });
       if (stale) return stale;
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    /* 主文档不升 CACHE 名时也要能更新：network-first，离线回退缓存 */
+    if (/\/etf\/tool\.html$/.test(u.pathname)) {
+      try {
+        var fresh2 = await fetch(req);
+        if (fresh2 && fresh2.ok) {
+          try {
+            var fb2 = await fresh2.clone().arrayBuffer();
+            await c.put(new Request(new URL(u.pathname, u.origin).href), cleanResponse(fb2, fresh2));
+          } catch (e5) { }
+          return fresh2;
+        }
+      } catch (e6) { }
     }
     var hit = await c.match(req, { ignoreVary: true, ignoreSearch: true });
     if (hit) return hit;
