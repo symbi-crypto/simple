@@ -1329,7 +1329,7 @@ document.addEventListener("DOMContentLoaded",function(){
     <div class="cards">
 
       <div class="card"><h2>净值曲线 <span class="n">策略 / 基准 / 等权池（选中标的）</span></h2><div class="chart" id="cNav"></div></div>
-      <div class="card"><h2>回撤 <span class="n">策略与基准的最大回撤路径</span></h2><div class="chart short" id="cDD"></div></div>
+      <!-- v0.69：独立「回撤」卡片已移除；回撤统一由净值图上方「净值 / 回撤」切换键呈现 -->
       <div class="card"><h2>月度收益热力图 <span class="n">绿色为正、红色为负（%）</span></h2><div class="chart short" id="cMonth"></div></div>
       <div class="card" id="stStatsCard"><h2>统计 <span class="n">按年度 / 回撤</span></h2>
         <div class="stats-tabs">
@@ -8553,7 +8553,7 @@ function buildChips() {
       oneYearA = i0 / (N - 1);
       if (!isFinite(oneYearA) || oneYearA < 0) oneYearA = 0;
     })();
-    var curSel = [oneYearA, 1], navRng = null;
+    var curSel = [oneYearA, 1], navRng = null, quickKey = "1Y", quickExpect = null;
     function syncZoom(x) {
       var ch = charts[id];
       if (ch && typeof ch.dispatchAction === "function")
@@ -8571,10 +8571,114 @@ function buildChips() {
         navRng = WufuRange.mount(rid, {
           value: curSel,
           tip: "拖动下方白色条选时间段 · 双击还原全段",
-          onChange: function (x) { curSel = x; syncZoom(x); apply(); paintInfo(); }
+          onChange: function (x) {
+            curSel = x; syncZoom(x);
+            /* 快捷按钮 / 自定义区间触发时保留高亮；手动拖条或双击还原按实际选区定状态 */
+            if (quickExpect && Math.abs(x[0] - quickExpect[0]) < 1e-6 && Math.abs(x[1] - quickExpect[1]) < 1e-6) {
+              /* keep quickKey */
+            } else {
+              quickKey = WufuRange.isFull(x) ? "ALL" : "CUSTOM";
+            }
+            quickExpect = null;
+            apply(); paintInfo(); paintQuick();
+          }
         });
         if (navRng) navRng.setLabels(r.calendar || []);
       }
+    }
+    /* ---- v0.69：自定义展示区间 + 快捷区间按钮（仿果仁网） ---- */
+    function ensureQuickStyle() {
+      if (typeof document === "undefined" || !document.head || document.getElementById("__wrQuickStyle")) return;
+      var st = document.createElement("style"); st.id = "__wrQuickStyle";
+      st.textContent = [
+        ".wr-quick{margin:2px 2px 10px;display:flex;flex-direction:column;gap:8px}",
+        ".wr-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}",
+        ".wr-quick-lab{font-size:11px;color:#9FB0C3;white-space:nowrap}",
+        ".wr-quick-sep{font-size:11px;color:#7C8DA1}",
+        ".wr-quick input[type=date]{background:#202E3F;color:#D8E6F2;border:1px solid #33465C;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}",
+        ".wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}",
+        ".wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:#202E3F;color:#9FB0C3;border:1px solid #33465C;white-space:nowrap}",
+        ".wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}"
+      ].join("\n");
+      document.head.appendChild(st);
+    }
+    function paintQuick() {
+      var q = document.getElementById("__navQuick_" + id);
+      if (!q || !window.WufuRange) return;
+      var bs = q.getElementsByTagName("button"), j;
+      for (j = 0; j < bs.length; j++) bs[j].className = (bs[j].getAttribute("data-v") === quickKey) ? "on" : "";
+      var inf = WufuRange.info(r.calendar || [], curSel);
+      var fi = q.querySelector('[data-q="from"]'), ti = q.querySelector('[data-q="to"]');
+      if (fi && document.activeElement !== fi) fi.value = String(inf.from || "").slice(0, 10);
+      if (ti && document.activeElement !== ti) ti.value = String(inf.to || "").slice(0, 10);
+    }
+    function setQuick(kind) {
+      if (!navRng || N < 2) return;
+      quickKey = kind;
+      if (kind === "ALL") { quickExpect = [0, 1]; navRng.set([0, 1]); paintQuick(); return; }
+      var months = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12, "2Y": 24 }[kind];
+      if (!months) { quickKey = "ALL"; quickExpect = [0, 1]; navRng.set([0, 1]); paintQuick(); return; }
+      var d = new Date(ts(String(r.calendar[N - 1]).slice(0, 10)));
+      d.setMonth(d.getMonth() - months);
+      var cut = d.getTime(), i0 = 0, q2;
+      for (q2 = 0; q2 < N; q2++) { if (dates[q2] >= cut) { i0 = q2; break; } }
+      var a = Math.max(0, Math.min(0.98, i0 / (N - 1)));
+      quickExpect = [a, 1];
+      navRng.set([a, 1]);
+      paintQuick();
+    }
+    var customTid = null;
+    function applyCustomRange() {
+      /* 两个日期框分别 change：合并成一次计算，避免中间态把另一个框的值回写覆盖 */
+      if (customTid) clearTimeout(customTid);
+      customTid = setTimeout(function () { customTid = null; doApplyCustomRange(); }, 140);
+    }
+    function doApplyCustomRange() {
+      if (!navRng || N < 2) return;
+      var q = document.getElementById("__navQuick_" + id);
+      if (!q) return;
+      var fi = q.querySelector('[data-q="from"]'), ti = q.querySelector('[data-q="to"]');
+      var f = fi && fi.value, t = ti && ti.value;
+      if (!f || !t) return;
+      var fm = ts(f), tm = ts(t);
+      if (!isFinite(fm) || !isFinite(tm) || tm < fm) return;
+      var i0 = 0, i1 = N - 1, q3;
+      for (q3 = 0; q3 < N; q3++) { if (dates[q3] >= fm) { i0 = q3; break; } }
+      for (q3 = N - 1; q3 >= 0; q3--) { if (dates[q3] <= tm) { i1 = q3; break; } }
+      if (i1 <= i0) return;
+      var a = Math.max(0, i0 / (N - 1)), b = Math.min(1, i1 / (N - 1));
+      if (b - a < 0.02) b = Math.min(1, a + 0.02);
+      quickKey = "CUSTOM"; quickExpect = [a, b];
+      navRng.set([a, b]);
+    }
+    function ensureQuick() {
+      if (typeof document === "undefined" || !window.WufuRange) return;
+      ensureQuickStyle();
+      var el = document.getElementById(id);
+      if (!el || !el.parentNode) return;
+      var qid = "__navQuick_" + id, q = document.getElementById(qid);
+      if (!q) {
+        q = document.createElement("div");
+        q.id = qid; q.className = "wr-quick";
+        var names = { "1M": "1个月", "3M": "3个月", "6M": "6个月", "1Y": "1年", "2Y": "2年", "ALL": "全部" };
+        var keys = ["1M", "3M", "6M", "1Y", "2Y", "ALL"];
+        var btns = keys.map(function (k) { return '<button type="button" data-v="' + k + '">' + names[k] + '</button>'; }).join("");
+        q.innerHTML = '<div class="wr-quick-row"><span class="wr-quick-lab">展示区间</span>' +
+          '<input type="date" data-q="from" aria-label="起始日期" /><span class="wr-quick-sep">-</span>' +
+          '<input type="date" data-q="to" aria-label="结束日期" /></div>' +
+          '<div class="wr-quick-btns">' + btns + '</div>';
+        var anchor = document.getElementById("__navRangeInfo_" + id) || document.getElementById("__navRange_" + id);
+        if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(q, anchor.nextSibling);
+        else el.parentNode.insertBefore(q, el.nextSibling);
+        q.addEventListener("click", function (ev) {
+          var b = ev.target;
+          if (b && b.tagName === "BUTTON" && b.getAttribute("data-v")) setQuick(b.getAttribute("data-v"));
+        });
+        q.addEventListener("change", function (ev) {
+          if (ev.target && ev.target.getAttribute && ev.target.getAttribute("data-q")) applyCustomRange();
+        });
+      }
+      paintQuick();
     }
     function paintInfo() {
       var el = document.getElementById("__navRangeInfo_" + id);
@@ -8612,7 +8716,7 @@ function buildChips() {
       var ch = initChart(id);
       ch.setOption(opt, true);
       if (charts[id]) charts[id].resize();
-      paintSwitch(); ensureRange(); apply(); paintInfo();
+      paintSwitch(); ensureRange(); ensureQuick(); apply(); paintInfo(); paintQuick();
     }
     function setView(v) { if (v !== "nav" && v !== "dd") return; view = v; draw(true); }
 
@@ -8818,6 +8922,7 @@ function renderKpis(r) {
   }
 
   function renderDD(r) {
+    if (!$("cDD")) return;  /* v0.69：独立回撤卡片已移除，保留函数兼容旧调用 */
     var dates = r.calendar.map(ts);
     initChart("cDD").setOption({
       tooltip: baseChart().tooltip,
