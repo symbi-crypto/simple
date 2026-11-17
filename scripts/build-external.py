@@ -3,13 +3,13 @@
 """build-external.py — 在 GitHub Actions 出口抓取并「算好」两份看板快照。
 
 产出：
-  industry-daily.json  东财行业板块口径的 A股行业宽度全景 + 全行业热力图
+  industry-daily.json  申万一级行业指数口径的 A股行业宽度全景 + 全行业热力图
   gold-daily.json      国际金/银/油/铜/BTC + GVZ + 上海金 + 三项比价
 
 原则：
   · 只写算好的小 JSON，原始日线不进仓库、不进页面。
   · 抓不到就明确报错或标 null，绝不用示意值补位。
-  · 口径写进 JSON：东财「行业板块」是细分板块，不是申万一级行业。
+  · 口径写进 JSON：申万 2021 版 31 个一级行业指数，非东财细分板块。
 """
 import json, ssl, gzip, time, os, sys, datetime, urllib.request, urllib.error, traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
@@ -107,93 +107,84 @@ def save(name, obj):
 
 
 # =====================================================================
-# 一、行业宽度（东财行业板块口径）
+# 一、行业宽度（申万一级行业指数 31 个）
+#   数据源：AKShare -> 申万宏源研究 index_hist_sw / sw_index_first_info
+#   口径：真正的申万 2021 版 31 个一级行业指数日线，不再是东财细分板块。
+#   失败：抓不到的行业标进 warnings；少于 25 条直接失败，不覆盖上次快照。
 # =====================================================================
-EM_LIST = ("https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1&np=1"
-           "&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3")
-EM_KL = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=90.%s&klt=101&fqt=1"
-         "&beg=20100101&end=20500101&fields1=f1,f2,f3"
-         "&fields2=f51,f52,f53,f54,f55,f56,f57,f58")
 
 
-def get_boards():
-    out, total = [], None
-    for pn in range(1, 7):
-        st, txt = get(EM_LIST % pn, timeout=12)
-        d = (jload(txt).get("data") or {})
-        diff = d.get("diff") or []
-        if isinstance(diff, dict):
-            diff = list(diff.values())
-        total = d.get("total") or total
-        if not isinstance(diff, list) or not diff:
-            break
-        out += [x for x in diff if isinstance(x, dict) and x.get("f12") and x.get("f14")]
-        if total and len(out) >= total:
-            break
-        time.sleep(0.25)
-    # 去重
+def get_sw_boards():
+    """31 个申万一级行业代码与名称。"""
+    import akshare as ak
+    info = ak.sw_index_first_info()
+    out = []
+    for _, row in info.iterrows():
+        code = str(row["行业代码"]).split(".")[0]
+        name = str(row["行业名称"]).strip()
+        if code.isdigit() and len(code) == 6 and name:
+            out.append({"code": code, "name": name})
+    # 去重保序
     seen, uniq = set(), []
     for b in out:
-        if b["f12"] not in seen:
-            seen.add(b["f12"])
+        if b["code"] not in seen:
+            seen.add(b["code"])
             uniq.append(b)
-    print("板块清单", len(uniq), "total", total)
+    print("申万一级行业清单", len(uniq), flush=True)
     return uniq
 
 
-def one_board(b):
-    code, name = b["f12"], b["f14"]
-    time.sleep(0.25)
-    st, txt = get(EM_KL % code, timeout=12, tries=3)
-    o = jload(txt)
-    kl = (o.get("data") or {}).get("klines") or []
-    series = {}
-    if isinstance(kl, list):
-        for line in kl:
-            p = line.split(",")
-            if len(p) < 7:
-                continue
-            try:
-                series[p[0]] = (float(p[2]), float(p[6]))  # close, amount
-            except Exception:
-                continue
-    return {"code": code, "name": name, "series": series, "ok": len(series) >= 220}
+def one_sw(b):
+    """逐条抓全历史日线；串行 + 重试，避免官网限流把整批打挂。"""
+    import akshare as ak
+    last = ""
+    for k in range(3):
+        try:
+            df = ak.index_hist_sw(symbol=b["code"], period="day")
+            series = {}
+            for _, row in df.iterrows():
+                d = str(row["日期"])[:10]
+                try:
+                    c = float(row["收盘"])
+                    a = float(row.get("成交额") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if c > 0:
+                    series[d] = (c, a)
+            if len(series) >= 220:
+                return {"code": b["code"], "name": b["name"], "series": series, "ok": True}
+            last = "仅 %d 根日线" % len(series)
+        except Exception as e:
+            last = "%s: %s" % (type(e).__name__, str(e)[:120])
+        time.sleep(1.0 * (k + 1))
+    WARN.append("申万 %s %s 抓取失败: %s" % (b["code"], b["name"], last))
+    return {"code": b["code"], "name": b["name"], "series": {}, "ok": False}
 
 
 def build_industry():
-    boards = get_boards()
-    if not boards:
-        raise RuntimeError("东财板块清单为空，无法生成行业宽度")
+    boards = get_sw_boards()
+    if len(boards) < 28:
+        raise RuntimeError("申万一级清单仅 %d 条，异常，拒绝生成" % len(boards))
+    # 串行抓取：31 个请求，官网对并发敏感
     res = []
-    # 最多取前 120 个板块（热力图全铺这些），整体 180 秒硬截止，超时用已成功的继续
-    todo = boards[:60]
-    ex = ThreadPoolExecutor(max_workers=2)
-    futs = [ex.submit(one_board, b) for b in todo]
-    done, not_done = wait(futs, timeout=240)
-    for f in done:
-        try:
-            res.append(f.result())
-        except Exception as e:
-            WARN.append("板块任务异常: %s" % str(e)[:100])
-    if not_done:
-        WARN.append("板块抓取 240 秒截止，%d 个任务未完成，按已成功数出图" % len(not_done))
-    ex.shutdown(wait=False, cancel_futures=True)
+    for b in boards:
+        res.append(one_sw(b))
+        time.sleep(0.35)
     ok = [r for r in res if r["ok"]]
     ok.sort(key=lambda x: x["code"])
-    print("板块日线成功", len(ok), "/", len(todo))
-    if len(ok) < 31:
-        raise RuntimeError("仅 %d 个板块拿到 >=220 根日线，不足 31，拒绝生成空壳" % len(ok))
-    if len(ok) < len(todo):
-        WARN.append("板块日线成功 %d/%d，热力图按实际成功数全铺" % (len(ok), len(todo)))
+    print("申万一级日线成功", len(ok), "/", len(boards), flush=True)
+    if len(ok) < 25:
+        raise RuntimeError("仅 %d 个申万一级行业拿到 >=220 根日线，拒绝生成空壳" % len(ok))
+    if len(ok) < len(boards):
+        WARN.append("申万一级行业日线成功 %d/%d，热力图按实际成功数全铺" % (len(ok), len(boards)))
 
-    # 全局交易日 = 所有成功板块日期的并集
+    todo = boards
+    # 全局交易日 = 所有成功行业日期的并集
     all_days = sorted(set().union(*[set(r["series"]) for r in ok]))
-    # 只保留 2016 年以后，MA200 需要预热但更早的样本对 10 年窗口无意义
     all_days = [d for d in all_days if d >= "2016-01-01"]
     if len(all_days) < 250:
         raise RuntimeError("全局交易日仅 %d 天，不足" % len(all_days))
 
-    # 为每个板块建按日期索引的 close 列表，便于算 MA
     prepared = []
     for r in ok:
         ds = sorted(r["series"])
@@ -201,7 +192,6 @@ def build_industry():
                          "dates": ds, "close": [r["series"][d][0] for d in ds],
                          "amt": [r["series"][d][1] for d in ds]})
 
-    # 逐日指标（只对 10 年窗口算；MA 用前缀和，避免 O(n^2)）
     calc_days = set(window(all_days, 10))
     metrics = {k: {} for k in ["ma20", "ma60", "ma200", "up", "posmom", "mommedian", "amount"]}
     for r in prepared:
@@ -251,11 +241,9 @@ def build_industry():
         x = arr[-1 - back]
         return x if isinstance(x, (int, float)) else None
 
-    # 七项：行业宽度(=MA20占比)、MA60、MA200、上涨占比、20日动量为正占比、中位动量分位、成交额分位
     keys = ["行业宽度", "MA60占比", "MA200占比", "上涨占比", "动量>0占比", "中位动量分位", "成交额分位"]
     seqs = {"行业宽度": breadth_series, "MA60占比": ma60_series, "MA200占比": ma200_series,
             "上涨占比": up_series, "动量>0占比": posmom_series,
-            # 滚动 5 年窗口分位（250 日预热后才有值）
             "中位动量分位": [pct(mom_series[max(0, i - 1250):i + 1], mom_series[i]) if i > 250 else None for i in range(len(mom_series))],
             "成交额分位": [pct(amt_series[max(0, i - 1250):i + 1], amt_series[i]) if i > 250 else None for i in range(len(amt_series))]}
 
@@ -270,7 +258,7 @@ def build_industry():
         series = {k: [seqs[k][i] for i in wd] for k in keys}
         area[str(Y)] = {"labels": labels, "series": series, "points": len(wd)}
 
-    # 热力图：最近 6 个交易日，每个板块当日涨跌 与 距 MA20 乖离
+    # 热力图：最近 6 个交易日，每个行业当日涨跌 与 距 MA20 乖离
     hd = days[-6:]
     hnames, hchg, hbias = [], [], []
     for r in prepared:
@@ -290,7 +278,6 @@ def build_industry():
             birow.append(round((c / ma - 1) * 100, 2) if ma else None)
         hnames.append(r["name"]); hchg.append(chrow); hbias.append(birow)
 
-    # 温度条：七指标 × 最近 24 周（每周取最后一个交易日）
     weeks, seen_w, week_cells = [], set(), [[] for _ in keys]
     for i in range(len(days) - 1, -1, -1):
         iso = datetime.date.fromisoformat(days[i]).isocalendar()
@@ -307,14 +294,14 @@ def build_industry():
         week_cells[j] = [x for x in reversed(week_cells[j])]
 
     out = {
-        "format": "wufu-dash-industry-v1",
+        "format": "wufu-dash-industry-v2",
         "dataAsOf": last,
-        "source": "东财行业板块（m:90+t:2，细分板块，非申万一级行业）",
+        "source": "申万一级行业指数（AKShare index_hist_sw / 申万宏源研究，2021 版 31 个一级）",
         "boardCount": len(ok),
-        "boardTotal": len(todo),
+        "boardTotal": 31,
         "sampleDays": len(days),
         "sampleFrom": days[0] if days else None,
-        "sampleNote": "样本 %d 个交易日（%s 起）· 清单前 %d 个板块中 %d 个成功" % (len(days), days[0] if days else "—", len(todo), len(ok)),
+        "sampleNote": "样本 %d 个交易日（%s 起）· 申万一级行业 %d/31 条成功" % (len(days), days[0] if days else "—", len(ok)),
         "keys": keys,
         "indicators": [{"key": k, "name": k, "value": today[j]} for j, k in enumerate(keys)],
         "radar": {"today": today, "lastWeek": lastweek},
@@ -322,7 +309,7 @@ def build_industry():
         "heat": {"dates": hd, "names": hnames, "chg": hchg, "bias": hbias},
         "heatbar": {"names": keys, "weeks": weeks, "cells": week_cells},
         "warnings": WARN,
-        "note": "宽度 = 当日站上自身20日均线的板块数 / 有数据板块数 ×100；分母是东财细分行业板块，不是全A个股，数值不与参考站直接对照。MA200 需 200 日预热，早期为 null。"
+        "note": "宽度 = 当日站上自身20日均线的申万一级行业数 / 有数据行业数 ×100；分母是 31 条申万一级行业指数，不是全A个股，数值不与参考站直接对照。MA200 需 200 日预热，早期为 null。"
     }
     save("industry-daily.json", out)
     print("行业宽度当前值", dict(zip(keys, today)))
