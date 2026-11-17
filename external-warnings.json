@@ -1,1 +1,1 @@
-{"warnings":["两市成交额：上证 0 根 / 深证 4095 根，不足，本次不叠柱","上海金 Au99.99 失败: RemoteDisconnected: Remote end closed connection without response"],"at":"2026-11-17T00:35:00.688059Z","failed":[]}
+{"warnings":[],"at":"2026-11-17T08:11:46.468368Z","failed":[],"byChain":{"L":{"ok":true,"at":"2026-11-17T08:11:46.468368Z","warnings":[],"note":""},"A":{"ok":true,"at":"2026-11-17T08:11:41.393293Z","warnings":[],"note":""},"G":{"ok":true,"at":"2026-11-17T08:11:46.426708Z","warnings":[],"note":""}}}
