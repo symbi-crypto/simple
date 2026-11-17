@@ -1916,6 +1916,7 @@ window.WufuExpr = (function () {
     { name: 'MAX', cn: 'MAX', help: 'N 日最大值', args: 2 },
     { name: 'MIN', cn: 'MIN', help: 'N 日最小值', args: 2 },
     { name: 'STD', cn: 'STD', help: 'N 日总体标准差', args: 2 },
+    { name: 'SLOPE', cn: 'SLOPE', help: 'X 的 N 日线性回归斜率（OLS）；如 SLOPE(乖离率(90),25) 或 SLOPE(BIAS(90),25)', args: 2 },
     { name: 'ABS', cn: 'ABS', help: '绝对值', args: 1 },
     { name: 'ROC', cn: 'ROC', help: 'N 日涨幅：ROC(X,N)，省略 X 时作用于净值（如 ROC(20)）', args: 2 },
     { name: 'VOL', cn: '收益波动率', help: 'N 日收益波动率：VOL(X,N)，省略 X 时作用于净值（如 收益波动率(20)）', args: 2 },
@@ -2475,6 +2476,7 @@ window.WufuExpr = (function () {
         case 'max': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; return Math.max.apply(null, s);
         case 'min': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; return Math.min.apply(null, s);
         case 'std': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; var vv = 0; for (var q = 0; q < s.length; q++) vv += (s[q] - mu) * (s[q] - mu); return Math.sqrt(vv / s.length); }
+        case 'slope': N = argNum(1) || 25; s = win(args[0], N); if (!s || s.length < 2) return NaN; { var muY = 0; for (var q = 0; q < s.length; q++) muY += s[q]; muY /= s.length; var muT = (s.length + 1) / 2, numSl = 0, denSl = 0; for (var q = 0; q < s.length; q++) { var dt = (q + 1) - muT; numSl += dt * (s[q] - muY); denSl += dt * dt; } return denSl > 0 ? numSl / denSl : NaN; }
         case 'abs': return Math.abs(argNum(0));
         case 'roc': N = argNum(1) || 10; if (i - N < 0) return NaN; { var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
         case 'vol': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var rr = []; for (var q = 1; q < s.length; q++) { if (s[q - 1] === 0) return NaN; rr.push(s[q] / s[q - 1] - 1); } if (rr.length < 2) return NaN; var mu = 0; for (var q = 0; q < rr.length; q++) mu += rr[q]; mu /= rr.length; var vv = 0; for (var q = 0; q < rr.length; q++) vv += (rr[q] - mu) * (rr[q] - mu); return Math.sqrt(vv / rr.length); }
