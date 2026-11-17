@@ -1,6 +1,6 @@
 /* industry.js — A股行业宽度全景（v0.59）
    数据只读 ../industry-daily.json，且仅在指数看板展开后才拉，不进首屏。
-   口径由数据文件自带：东财行业板块（细分板块），不是申万 31 个一级行业。 */
+   口径由数据文件自带：申万 2021 版 31 个一级行业指数。 */
 (function () {
   'use strict';
   var NS = 'http://www.w3.org/2000/svg';
@@ -174,7 +174,7 @@
     });
     tbl.innerHTML = html;
     var note = $('indHeatNote');
-    if (note) note.textContent = names.length + ' 个东财行业板块全铺 · 列 = 最近 ' + dates.length + " 个交易日 · 格子填" +
+    if (note) note.textContent = names.length + ' 个申万一级行业全铺 · 列 = 最近 ' + dates.length + " 个交易日 · 格子填" +
       (hmode === 'chg' ? '当日涨跌幅 %' : '距 MA20 乖离率 %') + '；红深领涨、绿深领跌，缺数标「—」。';
   }
 
