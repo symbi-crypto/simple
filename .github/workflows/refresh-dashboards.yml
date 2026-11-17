@@ -1,6 +1,6 @@
 name: 刷新综合看板快照
 
-# 手动补数：不等周五，直接在 Actions 出口抓行业板块与国际金价，算好写回仓库。
+# 手动补数：不等周五，直接在 Actions 出口抓申万一级行业与国际金价，算好写回仓库。
 # 抓不到会明确失败（不再 continue-on-error 绿灯），部分板块缺失会写进 warnings 并标注实际数量。
 on:
   workflow_dispatch:
@@ -28,7 +28,10 @@ jobs:
       - name: 生成本地看板快照（可转债 / 指数）
         run: node scripts/build-dashboards.mjs
 
-      - name: 抓取并计算行业宽度 + 黄金快照
+      - name: 安装申万行业数据源
+        run: python3 -m pip install --quiet akshare==1.18.88
+
+      - name: 抓取并计算申万一级行业宽度 + 黄金快照
         run: python3 scripts/build-external.py
 
       - name: 打印摘要
