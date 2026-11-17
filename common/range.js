@@ -21,7 +21,16 @@
     '.wr-tip{font-size:9.5px;color:#7C8DA1;margin:2px 2px 0;text-align:right}',
     '.wr-info{font-size:9.5px;color:#9FB0C3;line-height:1.6;margin:2px 2px 6px;word-break:break-all}',
     '.wr-info b{color:#4FC3F7;font-weight:600}',
-    '.wr-host svg{cursor:crosshair}'
+    '.wr-host svg{cursor:crosshair}',
+    /* v0.69b：看板曲线同款「展示区间」控件 */
+    '.wr-quick{margin:2px 2px 10px;display:flex;flex-direction:column;gap:8px}',
+    '.wr-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
+    '.wr-quick-lab{font-size:11px;color:#9FB0C3;white-space:nowrap}',
+    '.wr-quick-sep{font-size:11px;color:#7C8DA1}',
+    '.wr-quick input[type=date]{background:#202E3F;color:#D8E6F2;border:1px solid #33465C;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}',
+    '.wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}',
+    '.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:#202E3F;color:#9FB0C3;border:1px solid #33465C;white-space:nowrap}',
+    '.wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}'
   ].join('\n');
 
   function ensureStyle() {
@@ -321,6 +330,91 @@
     if (opts.labels) rng.setLabels(opts.labels);
     if (opts.value) ch.dispatchAction({ type: 'dataZoom', dataZoomIndex: 0, start: opts.value[0] * 100, end: opts.value[1] * 100 });
     return rng;
+  };
+
+
+  /* ---------------- 通用「展示区间」控件（v0.69b） ----------------
+     两个日期框 + 1/3/6 个月、1/2 年、全部；不碰数据，只回报归一化区间 [a,b]。
+     opts = { anchorId, labels():[] , get():[a,b], set([a,b]) , id? } */
+  R.quick = function (opts) {
+    if (typeof document === 'undefined') return null;
+    ensureStyle();
+    var anchor = document.getElementById(opts.anchorId);
+    if (!anchor || !anchor.parentNode) return null;
+    var q = document.createElement('div');
+    q.id = opts.id || ('__wrQuick_' + opts.anchorId);
+    q.className = 'wr-quick';
+    var names = { '1M': '1个月', '3M': '3个月', '6M': '6个月', '1Y': '1年', '2Y': '2年', 'ALL': '全部' };
+    var keys = ['1M', '3M', '6M', '1Y', '2Y', 'ALL'];
+    q.innerHTML = '<div class="wr-quick-row"><span class="wr-quick-lab">展示区间</span>' +
+      '<input type="date" data-q="from" aria-label="起始日期" /><span class="wr-quick-sep">-</span>' +
+      '<input type="date" data-q="to" aria-label="结束日期" /></div>' +
+      '<div class="wr-quick-btns">' + keys.map(function (k) {
+        return '<button type="button" data-v="' + k + '">' + names[k] + '</button>';
+      }).join('') + '</div>';
+    anchor.parentNode.insertBefore(q, anchor.nextSibling);
+
+    var key = 'ALL', tid = null;
+    function labels() { try { return opts.labels() || []; } catch (e) { return []; } }
+    function day(i, L) { return String(L[i] || '').slice(0, 10); }
+    function findGE(v) { var L = labels(), n = L.length, i; for (i = 0; i < n; i++) if (day(i, L) >= v) return i; return n - 1; }
+    function findLE(v) { var L = labels(), n = L.length, i; for (i = n - 1; i >= 0; i--) if (day(i, L) <= v) return i; return 0; }
+    function hi() { var bs = q.getElementsByTagName('button'), j;
+      for (j = 0; j < bs.length; j++) bs[j].className = (bs[j].getAttribute('data-v') === key) ? 'on' : '';
+      var lab = q.querySelector('.wr-quick-lab');
+      if (lab) lab.textContent = key === 'CUSTOM' ? '展示区间 · 自定义' : '展示区间'; }
+    function paintInputs() {
+      var L = labels(); if (!L.length) return;
+      var inf = R.info(L, opts.get ? opts.get() : [0, 1]);
+      var fi = q.querySelector('[data-q="from"]'), ti = q.querySelector('[data-q="to"]');
+      if (fi && document.activeElement !== fi) fi.value = String(inf.from || '').slice(0, 10);
+      if (ti && document.activeElement !== ti) ti.value = String(inf.to || '').slice(0, 10);
+      hi();
+    }
+    function setSel(x, k) { key = k; if (opts.set) opts.set(x); paintInputs(); }
+    /* 白条手动拖动 / 双击还原 / 5-10 年切换后，按实际选区重定高亮 */
+    function mark(sel) { key = R.isFull(sel) ? 'ALL' : 'CUSTOM'; paintInputs(); }
+
+    q.addEventListener('click', function (ev) {
+      var b = ev.target;
+      if (!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-v')) return;
+      var k = b.getAttribute('data-v'), L = labels(), n = L.length;
+      if (n < 2) return;
+      if (k === 'ALL') { setSel([0, 1], 'ALL'); return; }
+      var months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12, '2Y': 24 }[k];
+      if (!months) return;
+      var d = new Date(day(n - 1, L) + 'T00:00:00+08:00');
+      d.setMonth(d.getMonth() - months);
+      var p2 = function (x) { return ('0' + x).slice(-2); };
+      var cut = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+      var i0 = findGE(cut);
+      setSel([Math.max(0, i0 / (n - 1)), 1], k);
+    });
+    q.addEventListener('change', function (ev) {
+      if (!ev.target || !ev.target.getAttribute || !ev.target.getAttribute('data-q')) return;
+      if (tid) clearTimeout(tid);
+      tid = setTimeout(function () {
+        tid = null;
+        var fi = q.querySelector('[data-q="from"]'), ti = q.querySelector('[data-q="to"]');
+        var f = fi && fi.value, t = ti && ti.value, L = labels(), n = L.length;
+        if (!f || !t || f > t || n < 2) return;
+        var i0 = findGE(f), i1 = findLE(t);
+        /* 区间完全落在数据范围外：不改曲线，但别让「全部」继续高亮误导 */
+        if (i1 <= i0) { key = 'CUSTOM'; hi(); return; }
+        setSel([i0 / (n - 1), Math.min(1, i1 / (n - 1))], 'CUSTOM');
+      }, 140);
+    });
+    paintInputs();
+    /* 看板作为主文档内嵌视图时，新增这一行会让 iframe 变高；主动通知父页重算高度，
+       否则「展示区间」控件可能被裁在可视区外。 */
+    try {
+      if (window.parent && window.parent !== window) {
+        var h = Math.max(document.documentElement.scrollHeight,
+                         document.body ? document.body.scrollHeight : 0);
+        window.parent.postMessage({ wufuDashHeight: h }, '*');
+      }
+    } catch (e) { }
+    return { mark: mark, paint: paintInputs, el: q };
   };
 
   window.WufuRange = R;

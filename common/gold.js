@@ -7,7 +7,7 @@
   if (!wrap) return;
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, mode = 'price';
-  var gsel = [0, 1], rngG = null;
+  var gsel = [0, 1], rngG = null, quickG = null;
   function SL(a) { return window.WufuRange ? WufuRange.slice(a, gsel) : a; }
 
   function $(id) { return document.getElementById(id); }
@@ -213,8 +213,14 @@
     if (!D) return;
     renderSum(D); renderKpi(D); renderMain(D); renderGvz(D); renderPos(D);
     if (window.WufuRange && !rngG) {
-      rngG = WufuRange.mount('gRange', { onChange: function (x) { gsel = x; if (D) { renderMain(D); renderGvz(D); } } });
+      rngG = WufuRange.mount('gRange', { onChange: function (x) { gsel = x; if (quickG) quickG.mark(x); if (D) { renderMain(D); renderGvz(D); } } });
       rngG.setLabels((((D.trend || {})[String(years)] || {}).labels) || []);
+      /* v0.69b：同款「展示区间」控件 */
+      if (!quickG) quickG = WufuRange.quick({ anchorId: 'gRangeInfo',
+        labels: function () { return (((D.trend || {})[String(years)] || {}).labels) || []; },
+        get: function () { return gsel; },
+        set: function (x) { gsel = x; if (rngG) rngG.set(x, true); renderMain(D); renderGvz(D); } });
+      else quickG.paint();
     }
   }
   function fail() {
@@ -226,14 +232,14 @@
 
   document.querySelectorAll('[data-gseg] span[data-y]').forEach(function (s) {
     s.onclick = function () {
-      years = +s.getAttribute('data-y'); gsel = [0, 1]; if (rngG) rngG.reset();
+      years = +s.getAttribute('data-y'); gsel = [0, 1]; if (rngG) rngG.reset(); if (quickG) quickG.mark([0, 1]);
       document.querySelectorAll('[data-gseg] span[data-y]').forEach(function (x) { x.classList.toggle('on', +x.getAttribute('data-y') === years); });
       renderAll();
     };
   });
   document.querySelectorAll('[data-mseg] span[data-m]').forEach(function (s) {
     s.onclick = function () {
-      mode = s.getAttribute('data-m'); gsel = [0, 1]; if (rngG) rngG.reset();
+      mode = s.getAttribute('data-m'); gsel = [0, 1]; if (rngG) rngG.reset(); if (quickG) quickG.mark([0, 1]);
       document.querySelectorAll('[data-mseg] span[data-m]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-m') === mode); });
       if (D) renderMain(D);
     };

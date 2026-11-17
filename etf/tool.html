@@ -8426,6 +8426,16 @@ function buildChips() {
   //   ② 图上方「净值 / 回撤」切换：回撤视图保留全段策略回撤（创建日后那段原样保留），
   //      另加一条「创建后重算回撤」（仅创建日后有值，以创建日为峰值起点，当天 = 0）。
   function renderNavChart(id, r, createDate) {
+    /* v0.69b：每次重绘先清掉上一次的覆盖层。旧闭包的按钮 / 时间条监听随 DOM 一起移除，
+       杜绝「按钮属于旧闭包、图表属于新闭包」——否则切回撤后点「全部」会把净值数据塞进
+       回撤图（yAxis.max=0 遇正净值，整段曲线落在轴外）；定投页也会残留切换键与两条白条。 */
+    window.__navOwner = window.__navOwner || {};
+    var _owner = window.__navOwner[id] = (window.__navOwner[id] || 0) + 1;
+    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__wr_"].forEach(function (_p) {
+      var _e = document.getElementById(_p + id);
+      if (_e && _e.parentNode) _e.parentNode.removeChild(_e);
+    });
+    function alive() { return window.__navOwner && window.__navOwner[id] === _owner; }
     var dates = r.calendar.map(ts);
     var N = dates.length, navRaw = r.nav, k;
     var _b0 = -1; for (k = 0; k < r.bench_nav.length; k++) { var _bv0 = r.bench_nav[k]; if (_bv0 != null && _bv0 === _bv0) { _b0 = k; break; } }
@@ -8585,6 +8595,7 @@ function buildChips() {
           value: curSel,
           tip: "拖动下方白色条选时间段 · 双击还原全段",
           onChange: function (x) {
+            if (!alive()) return;
             curSel = x; syncZoom(x);
             /* 快捷按钮 / 自定义区间触发时保留高亮；手动拖条或双击还原按实际选区定状态 */
             if (quickExpect && Math.abs(x[0] - quickExpect[0]) < 1e-6 && Math.abs(x[1] - quickExpect[1]) < 1e-6) {
@@ -8626,7 +8637,7 @@ function buildChips() {
       if (ti && document.activeElement !== ti) ti.value = String(inf.to || "").slice(0, 10);
     }
     function setQuick(kind) {
-      if (!navRng || N < 2) return;
+      if (!alive() || !navRng || N < 2) return;
       quickKey = kind;
       if (kind === "ALL") { quickExpect = [0, 1]; navRng.set([0, 1]); paintQuick(); return; }
       var months = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12, "2Y": 24 }[kind];
@@ -8647,7 +8658,7 @@ function buildChips() {
       customTid = setTimeout(function () { customTid = null; doApplyCustomRange(); }, 140);
     }
     function doApplyCustomRange() {
-      if (!navRng || N < 2) return;
+      if (!alive() || !navRng || N < 2) return;
       var q = document.getElementById("__navQuick_" + id);
       if (!q) return;
       var fi = q.querySelector('[data-q="from"]'), ti = q.querySelector('[data-q="to"]');
@@ -8731,7 +8742,7 @@ function buildChips() {
       if (charts[id]) charts[id].resize();
       paintSwitch(); ensureRange(); ensureQuick(); apply(); paintInfo(); paintQuick();
     }
-    function setView(v) { if (v !== "nav" && v !== "dd") return; view = v; draw(true); }
+    function setView(v) { if (!alive() || (v !== "nav" && v !== "dd")) return; view = v; draw(true); }
 
     // ---- 区间索引：由白条直接给出，不再读 ECharts 的 slider ----
     function idxFromZoom() {
@@ -8785,7 +8796,7 @@ function rangeKpi(i0, i1) {
 
     var busy = false;
     function apply() {
-      if (busy || !active) return; busy = true;
+      if (!alive() || busy || !active) return; busy = true;
       try {
         var ch = charts[id];
         if (!ch || typeof ch.setOption !== "function") return;
@@ -8820,6 +8831,14 @@ function rangeKpi(i0, i1) {
 
   // [统一] 定投市值曲线（定投市值/累计投入/一次性买入）—— 回测页与详情页共用
   function renderDCAChart(id, R) {
+    /* v0.69b：定投与净值曲线共用 cNav 容器；切到定投时把净值专属控件清干净，
+       并让净值闭包失效，避免两条时间条、残留「净值 / 回撤」切换键。 */
+    window.__navOwner = window.__navOwner || {};
+    window.__navOwner[id] = (window.__navOwner[id] || 0) + 1;
+    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__wr_"].forEach(function (_p) {
+      var _e = document.getElementById(_p + id);
+      if (_e && _e.parentNode) _e.parentNode.removeChild(_e);
+    });
     var dates = [];
     for (var i = R.si; i <= R.ei; i++) dates.push([ts(R.cal[i]), i]);
     initChart(id).setOption(lineTimeOption(["定投市值", "累计投入", "一次性买入"], [

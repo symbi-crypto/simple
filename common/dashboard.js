@@ -7,7 +7,7 @@
   var kind = wrap.getAttribute('data-kind') || 'cb';
   var url = wrap.getAttribute('data-json') || '../cb-daily.json';
   var D = null, years = 5, distKey = '价格';
-  var selCB = [0, 1], selIDX = [0, 1], AMT = null, rngCB = null, rngIDX = null;
+  var selCB = [0, 1], selIDX = [0, 1], AMT = null, rngCB = null, rngIDX = null, quickCB = null, quickIDX = null;
   function SL(a, sel) { return window.WufuRange ? WufuRange.slice(a, sel) : a; }
   var NS = 'http://www.w3.org/2000/svg';
   function $(id) { return document.getElementById(id); }
@@ -268,6 +268,7 @@
   function applyYears() {
     selCB = [0, 1]; selIDX = [0, 1];
     if (rngCB) rngCB.reset(); if (rngIDX) rngIDX.reset();
+    if (quickCB) quickCB.mark([0, 1]); if (quickIDX) quickIDX.mark([0, 1]);
     document.querySelectorAll('[data-seg] span[data-y]').forEach(function (s) { s.classList.toggle('on', +s.getAttribute('data-y') === years); });
     document.querySelectorAll('#cbBottom .row[data-a]').forEach(function (r) {
       var p = years === 5 ? r.getAttribute('data-a') : r.getAttribute('data-b');
@@ -285,8 +286,17 @@
     if (D) { if (kind === 'cb') renderCB(); else renderIDX(); }
     applyYears();
     if (window.WufuRange && !rngCB && !rngIDX) {
-      rngCB = WufuRange.mount('cbRange', { onChange: function (x) { selCB = x; if (D && kind === 'cb') drawCbTrend(D); } });
-      rngIDX = WufuRange.mount('idxRange', { onChange: function (x) { selIDX = x; if (D && kind !== 'cb') drawIdxChart(D); } });
+      rngCB = WufuRange.mount('cbRange', { onChange: function (x) { selCB = x; if (quickCB) quickCB.mark(x); if (D && kind === 'cb') drawCbTrend(D); } });
+      rngIDX = WufuRange.mount('idxRange', { onChange: function (x) { selIDX = x; if (quickIDX) quickIDX.mark(x); if (D && kind !== 'cb') drawIdxChart(D); } });
+      /* v0.69b：看板曲线加同款「展示区间」控件 */
+      quickCB = WufuRange.quick({ anchorId: 'cbRangeInfo',
+        labels: function () { return (((D.trend || {})[String(years)] || {}).labels) || []; },
+        get: function () { return selCB; },
+        set: function (x) { selCB = x; if (rngCB) rngCB.set(x, true); if (D && kind === 'cb') drawCbTrend(D); } });
+      quickIDX = WufuRange.quick({ anchorId: 'idxRangeInfo',
+        labels: function () { return (((D.idxTrend || {})[String(years)] || {}).labels) || []; },
+        get: function () { return selIDX; },
+        set: function (x) { selIDX = x; if (rngIDX) rngIDX.set(x, true); if (D && kind !== 'cb') drawIdxChart(D); } });
       /* v0.65：首次渲染时条还没 mount，mount 后补一次日期标签 */
       if (D) {
         var tl = kind === 'cb' ? (((D.trend || {})[String(years)] || {}).labels || [])

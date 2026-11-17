@@ -5,7 +5,7 @@
   'use strict';
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, active = 0, hmode = 'chg', loaded = false;
-  var isel = [0, 1], rngI = null;
+  var isel = [0, 1], rngI = null, quickI = null;
   function SL(a) { return window.WufuRange ? WufuRange.slice(a, isel) : a; }
   function $(id) { return document.getElementById(id); }
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
@@ -182,8 +182,14 @@
     if (!D) return;
     renderMeta(D); renderRadar(D); renderCards(D); renderArea(D); renderHeatbar(D); renderHeat(D);
     if (window.WufuRange && !rngI) {
-      rngI = WufuRange.mount('indRange', { onChange: function (x) { isel = x; if (D) renderArea(D); } });
+      rngI = WufuRange.mount('indRange', { onChange: function (x) { isel = x; if (quickI) quickI.mark(x); if (D) renderArea(D); } });
       rngI.setLabels((((D.area || {})[String(years)] || {}).labels) || []);
+      /* v0.69b：同款「展示区间」控件 */
+      if (!quickI) quickI = WufuRange.quick({ anchorId: 'indRangeInfo',
+        labels: function () { return (((D.area || {})[String(years)] || {}).labels) || []; },
+        get: function () { return isel; },
+        set: function (x) { isel = x; if (rngI) rngI.set(x, true); renderArea(D); } });
+      else quickI.paint();
     }
   }
   function fail() {
@@ -209,7 +215,7 @@
     if (c2.classList.contains('open')) load();
   }
   document.querySelectorAll('[data-seg] span[data-y]').forEach(function (s) {
-    s.addEventListener('click', function () { years = +s.getAttribute('data-y'); isel = [0, 1]; if (rngI) rngI.reset(); if (D) renderArea(D); });
+    s.addEventListener('click', function () { years = +s.getAttribute('data-y'); isel = [0, 1]; if (rngI) rngI.reset(); if (quickI) quickI.mark([0, 1]); if (D) renderArea(D); });
   });
   document.querySelectorAll('#indMode span[data-m]').forEach(function (s) {
     s.onclick = function () {
