@@ -53,7 +53,10 @@ jobs:
       - name: 生成本地看板快照（可转债 / 指数）
         run: node scripts/build-dashboards.mjs
 
-      - name: 抓取并计算行业宽度 + 黄金快照
+      - name: 安装申万行业数据源
+        run: python3 -m pip install --quiet akshare==1.18.88
+
+      - name: 抓取并计算申万一级行业宽度 + 黄金快照
         run: python3 scripts/build-external.py
 
       - name: 有变化才提交（没变化不触发 Netlify 构建）
