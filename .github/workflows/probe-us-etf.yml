@@ -1,0 +1,35 @@
+name: probe-us-etf
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          python - <<'PY'
+          import urllib.request,json,datetime
+          H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+          ids={"XLV":"107","XLP":"107","QQQ":"105","TQQQ":"105","BTAL":"107"}
+          def go(u):
+            r=urllib.request.Request(u,headers=H)
+            with urllib.request.urlopen(r,timeout=20) as f: return f.status,f.read()
+          for c,pre in ids.items():
+            tests=[("yahoo",f"https://query1.finance.yahoo.com/v8/finance/chart/{c}?period1=915148800&period2=1763337600&interval=1d&events=div%2Csplits"),
+                   ("stooq",f"https://stooq.com/q/d/l/?s={c.lower()}.us&i=d"),
+                   ("em",f"https://push2his.eastmoney.com/api/qt/stock/kline/get?secid={pre}.{c}&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56&klt=101&fqt=2&beg=19900101&end=20261117")]
+            for kind,u in tests:
+              try:
+                st,b=go(u); rows=0; a=z=""
+                if kind=="yahoo":
+                  j=json.loads(b); ts=j['chart']['result'][0]['timestamp']; rows=len(ts)
+                  a=datetime.datetime.utcfromtimestamp(ts[0]).strftime('%Y-%m-%d'); z=datetime.datetime.utcfromtimestamp(ts[-1]).strftime('%Y-%m-%d')
+                elif kind=="em":
+                  j=json.loads(b); kl=(j.get('data') or {}).get('klines') or []; rows=len(kl)
+                  if kl: a=kl[0][:10]; z=kl[-1][:10]
+                else:
+                  ls=b.decode('utf8','ignore').strip().split('\n'); rows=max(0,len(ls)-1)
+                  if len(ls)>1: a=ls[1][:10]; z=ls[-1][:10]
+                print("USPROBE",kind,c,"HTTP",st,"bytes",len(b),"rows",rows,a,"~",z)
+              except Exception as e: print("USPROBE",kind,c,"ERR",type(e).__name__,str(e)[:60])
+          PY
