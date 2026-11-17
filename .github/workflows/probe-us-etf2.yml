@@ -1,0 +1,44 @@
+name: probe-us-etf2
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          python - <<'PY' > probe-us-result.txt
+          import urllib.request,json,datetime
+          H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+          ids={"XLV":"107","XLP":"107","QQQ":"105","TQQQ":"105","BTAL":"107"}
+          def go(u):
+            r=urllib.request.Request(u,headers=H)
+            with urllib.request.urlopen(r,timeout=20) as f: return f.status,f.read()
+          for c,pre in ids.items():
+            tests=[("yahoo",f"https://query1.finance.yahoo.com/v8/finance/chart/{c}?period1=915148800&period2=1763337600&interval=1d&events=div%2Csplits"),
+                   ("stooq",f"https://stooq.com/q/d/l/?s={c.lower()}.us&i=d"),
+                   ("em",f"https://push2his.eastmoney.com/api/qt/stock/kline/get?secid={pre}.{c}&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56&klt=101&fqt=2&beg=19900101&end=20261117")]
+            for kind,u in tests:
+              try:
+                st,b=go(u); rows=0; a=z=""; extra=""
+                if kind=="yahoo":
+                  j=json.loads(b); res=j['chart']['result'][0]; ts=res['timestamp']; rows=len(ts)
+                  a=datetime.datetime.utcfromtimestamp(ts[0]).strftime('%Y-%m-%d'); z=datetime.datetime.utcfromtimestamp(ts[-1]).strftime('%Y-%m-%d')
+                  extra="adjclose="+str(bool(res.get('indicators',{}).get('adjclose')))+",div="+str(len((res.get('events') or {}).get('dividends') or {}))
+                elif kind=="em":
+                  j=json.loads(b); kl=(j.get('data') or {}).get('klines') or []; rows=len(kl)
+                  if kl: a=kl[0][:10]; z=kl[-1][:10]
+                else:
+                  ls=b.decode('utf8','ignore').strip().split('\n'); rows=max(0,len(ls)-1)
+                  if len(ls)>1: a=ls[1][:10]; z=ls[-1][:10]
+                print("USPROBE",kind,c,"HTTP",st,"bytes",len(b),"rows",rows,a,"~",z,extra)
+              except Exception as e: print("USPROBE",kind,c,"ERR",type(e).__name__,str(e)[:70])
+          PY
+          git config user.email "probe@local"
+          git config user.name "probe"
+          git add probe-us-result.txt
+          git commit -m "probe: us etf history" || true
+          git push
