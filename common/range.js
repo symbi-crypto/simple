@@ -68,7 +68,8 @@
     var a = 0, b = 1, labels = null, drag = null, tid = null;
     if (opts.value && opts.value.length === 2) {
       a = clamp(+opts.value[0]); b = clamp(+opts.value[1]);
-      if (b - a < 0.02) { a = 0; b = 1; }
+      /* v0.69d2：0.3% 下限（约 8 个交易日），不再把「1个月」(≈0.8%) 还原成全段 */
+      if (b - a < 0.003) { a = 0; b = 1; }
     }
 
     function clamp(x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
@@ -150,7 +151,8 @@
       set: function (x, noFire) {
         if (!x || x.length !== 2) return;
         a = clamp(+x[0]); b = clamp(+x[1]);
-        if (b - a < 0.02) { a = 0; b = 1; }
+        /* v0.69d2：原 0.02 会让 1 个月快捷区间被吞；只在几乎重合时还原 */
+        if (!(b - a >= 0.003)) { a = 0; b = 1; }
         paint(); if (!noFire) fire();
       },
       reset: function () { a = 0; b = 1; paint(); },

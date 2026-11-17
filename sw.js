@@ -6,9 +6,9 @@
      兼容「服务器自动二次压缩」与「原样返回」两种托管行为
    · 导航请求离线时才回首页；静态资源失败原样抛错，不把 gz 伪装成 HTML
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
-   改任何页面或数据文件后请把 CACHE 末段 +1（v0.67 → v0.68）；1.0 之前一律用 v0.x。
+   改任何页面或数据文件后请把 CACHE 末段 +1（v0.69 → v0.70）；1.0 之前一律用 v0.x。
    ============================================================ */
-var CACHE = "wufu-all-v0.69";
+var CACHE = "wufu-all-v0.70";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
@@ -18,7 +18,7 @@ var LIST = [
   "common/index-unify.js", "common/index.gz", "common/holiday-cn.json", "common/icon.svg",
   "common/patch-etf.js", "common/patch-cb.js", "common/combo-system.css", "common/hub-combo.js",
   "common/export.js", "common/dashboard.css", "common/dashboard.js",
-  "common/gold.js", "common/industry.js",
+  "common/range.js", "common/gold.js", "common/industry.js",
   "etf/index.html", "etf/tool.html", "etf/dashboard.html", "etf/gold.html", "etf/manage.html", "etf/icon.svg", "etf/manifest.webmanifest",
   "etf/data/etf-data.gz", "etf/data/etf-data-vol.gz", "etf/data/etf-index.gz", "etf/data/holiday-cn.json",
   "cb/index.html", "cb/tool.html", "cb/dashboard.html", "cb/icon.svg", "cb/manifest.webmanifest",
@@ -113,8 +113,8 @@ self.addEventListener("fetch", function (e) {
       if (stale) return stale;
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
-    /* 主文档与看板脚本不升 CACHE 名时也要能更新：
-       ETF / 可转债 tool.html、common 下 4 个看板脚本均 network-first，离线回退缓存 */
+    /* v0.69d：主文档、看板 HTML 与 common 下 4 个看板脚本均 network-first。
+       u.pathname 不含 query，所以带 ?v=70 的请求同样命中本分支并回写无 query 的缓存键。 */
     if (/\/(etf|cb)\/tool\.html$/.test(u.pathname) || /\/(etf|cb)\/(dashboard|gold)\.html$/.test(u.pathname) || /\/common\/(range|dashboard|gold|industry)\.js$/.test(u.pathname)) {
       try {
         var fresh2 = await fetch(req);

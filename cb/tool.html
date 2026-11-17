@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js"></script>
+<script src="../common/range.js?v=70"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded",function(){
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 <div id="viewDashboard" style="display:none">
-  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=70" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
 </div>
 <div id="viewRotation" style="display:none">
 <div id="step1">
@@ -8430,7 +8430,7 @@ function buildChips() {
        回撤图（yAxis.max=0 遇正净值，整段曲线落在轴外）；定投页也会残留切换键与两条白条。 */
     window.__navOwner = window.__navOwner || {};
     var _owner = window.__navOwner[id] = (window.__navOwner[id] || 0) + 1;
-    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__wr_"].forEach(function (_p) {
+    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__dcaQuick_", "__wr_"].forEach(function (_p) {
       var _e = document.getElementById(_p + id);
       if (_e && _e.parentNode) _e.parentNode.removeChild(_e);
     });
@@ -8633,7 +8633,7 @@ function buildChips() {
       d.setMonth(d.getMonth() - months);
       var cut = d.getTime(), i0 = 0, q2;
       for (q2 = 0; q2 < N; q2++) { if (dates[q2] >= cut) { i0 = q2; break; } }
-      var a = Math.max(0, Math.min(0.98, i0 / (N - 1)));
+      var a = Math.max(0, Math.min(0.997, i0 / (N - 1)));
       quickExpect = [a, 1];
       navRng.set([a, 1]);
       paintQuick();
@@ -8822,7 +8822,7 @@ function rangeKpi(i0, i1) {
        并让净值闭包失效，避免两条时间条、残留「净值 / 回撤」切换键。 */
     window.__navOwner = window.__navOwner || {};
     window.__navOwner[id] = (window.__navOwner[id] || 0) + 1;
-    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__wr_"].forEach(function (_p) {
+    ["__navMode_", "__navRange_", "__navRangeInfo_", "__navQuick_", "__dcaQuick_", "__wr_"].forEach(function (_p) {
       var _e = document.getElementById(_p + id);
       if (_e && _e.parentNode) _e.parentNode.removeChild(_e);
     });
@@ -8842,10 +8842,99 @@ function rangeKpi(i0, i1) {
         var __el = document.getElementById(id);
         if (__el && __el.parentNode) __el.parentNode.insertBefore(__h, __el.nextSibling);
       }
-      WufuRange.bindZoom('__wr_' + id, id, {
+      var __markFn = null;
+      var __rng = WufuRange.bindZoom('__wr_' + id, id, {
         tip: '拖动下方白色条选时间段 · 双击还原',
-        labels: R.cal.slice(R.si, R.ei + 1).map(function (x) { return String(x).slice(0, 10); })
+        labels: R.cal.slice(R.si, R.ei + 1).map(function (x) { return String(x).slice(0, 10); }),
+        onChange: function (x) { if (__markFn) __markFn(x); }
       });
+      /* v0.69d：定投曲线同款「展示区间」——两个日期框 + 1/3/6 月、1/2 年、全部。
+         三条线是绝对金额（元），只裁显示区间、不重定基；双击白条仍还原全段。 */
+      if (__rng) {
+        var __qs = document.getElementById('__dcaQuickStyle');
+        if (!__qs) {
+          __qs = document.createElement('style'); __qs.id = '__dcaQuickStyle';
+          __qs.textContent = [
+            '.wr-quick{margin:2px 2px 10px;display:flex;flex-direction:column;gap:8px}',
+            '.wr-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
+            '.wr-quick-lab{font-size:11px;color:#9FB0C3;white-space:nowrap}',
+            '.wr-quick-sep{font-size:11px;color:#7C8DA1}',
+            '.wr-quick input[type=date]{background:#202E3F;color:#D8E6F2;border:1px solid #33465C;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}',
+            '.wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}',
+            '.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:#202E3F;color:#9FB0C3;border:1px solid #33465C;white-space:nowrap}',
+            '.wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}'
+          ].join('\n');
+          document.head.appendChild(__qs);
+        }
+        var __qid = '__dcaQuick_' + id, __q = document.getElementById(__qid);
+        if (__q && __q.parentNode) __q.parentNode.removeChild(__q);
+        __q = document.createElement('div'); __q.id = __qid; __q.className = 'wr-quick';
+        var __names = { '1M': '1个月', '3M': '3个月', '6M': '6个月', '1Y': '1年', '2Y': '2年', 'ALL': '全部' };
+        __q.innerHTML = '<div class="wr-quick-row"><span class="wr-quick-lab">展示区间</span>' +
+          '<input type="date" data-q="from" aria-label="起始日期" /><span class="wr-quick-sep">-</span>' +
+          '<input type="date" data-q="to" aria-label="结束日期" /></div>' +
+          '<div class="wr-quick-btns">' + ['1M', '3M', '6M', '1Y', '2Y', 'ALL'].map(function (k) {
+            return '<button type="button" data-v="' + k + '">' + __names[k] + '</button>';
+          }).join('') + '</div>';
+        var __host = document.getElementById('__wr_' + id);
+        if (__host && __host.parentNode) __host.parentNode.insertBefore(__q, __host.nextSibling);
+        var __labs = R.cal.slice(R.si, R.ei + 1).map(function (x) { return String(x).slice(0, 10); });
+        var __n = __labs.length, __key = 'ALL', __tid = null;
+        function __paint() {
+          var bs = __q.getElementsByTagName('button');
+          for (var j = 0; j < bs.length; j++) bs[j].className = (bs[j].getAttribute('data-v') === __key) ? 'on' : '';
+          var sel = __rng.get ? __rng.get() : [0, 1];
+          var i0 = Math.round(sel[0] * (__n - 1)), i1 = Math.round(sel[1] * (__n - 1));
+          var fi = __q.querySelector('[data-q="from"]'), ti = __q.querySelector('[data-q="to"]');
+          if (fi && document.activeElement !== fi) fi.value = __labs[i0] || '';
+          if (ti && document.activeElement !== ti) ti.value = __labs[i1] || '';
+        }
+        /* v0.69d3：fire() 是 setTimeout 异步，set 返回后 mark 仍会跑一次；
+           用 __suppressMark 让它只刷新日期框、不覆盖快捷按钮的 key。 */
+        var __suppressMark = false;
+        function __set(x, k) {
+          __suppressMark = true;
+          __rng.set(x);
+          __key = k; __paint();
+          setTimeout(function () { __suppressMark = false; }, 0);
+        }
+        __markFn = function (sel) {
+          if (!__suppressMark)
+            __key = (window.WufuRange && WufuRange.isFull && WufuRange.isFull(sel)) ? 'ALL' : 'CUSTOM';
+          __paint();
+        };
+        __q.addEventListener('click', function (ev) {
+          var b = ev.target;
+          if (!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-v')) return;
+          var k = b.getAttribute('data-v');
+          if (k === 'ALL') { __set([0, 1], 'ALL'); return; }
+          var months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12, '2Y': 24 }[k];
+          if (!months || __n < 2) return;
+          var d = new Date(__labs[__n - 1] + 'T00:00:00+08:00');
+          d.setMonth(d.getMonth() - months);
+          var p2 = function (x) { return ('0' + x).slice(-2); };
+          var cut = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+          var i0 = 0;
+          for (var z = 0; z < __n; z++) if (__labs[z] >= cut) { i0 = z; break; }
+          __set([Math.max(0, i0 / (__n - 1)), 1], k);
+        });
+        __q.addEventListener('change', function (ev) {
+          if (!ev.target || !ev.target.getAttribute || !ev.target.getAttribute('data-q')) return;
+          if (__tid) clearTimeout(__tid);
+          __tid = setTimeout(function () {
+            __tid = null;
+            var fi = __q.querySelector('[data-q="from"]'), ti = __q.querySelector('[data-q="to"]');
+            var f = fi && fi.value, t = ti && ti.value;
+            if (!f || !t || f > t || __n < 2) return;
+            var i0 = 0, i1 = __n - 1, z;
+            for (z = 0; z < __n; z++) if (__labs[z] >= f) { i0 = z; break; }
+            for (z = __n - 1; z >= 0; z--) if (__labs[z] <= t) { i1 = z; break; }
+            if (i1 <= i0) return;
+            __set([i0 / (__n - 1), Math.min(1, i1 / (__n - 1))], 'CUSTOM');
+          }, 140);
+        });
+        __paint();
+      }
     }
   }
 

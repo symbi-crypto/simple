@@ -216,11 +216,13 @@
       rngG = WufuRange.mount('gRange', { onChange: function (x) { gsel = x; if (quickG) quickG.mark(x); if (D) { renderMain(D); renderGvz(D); } } });
       rngG.setLabels((((D.trend || {})[String(years)] || {}).labels) || []);
       /* v0.69b：同款「展示区间」控件 */
-      if (!quickG) quickG = WufuRange.quick({ anchorId: 'gRangeInfo',
-        labels: function () { return (((D.trend || {})[String(years)] || {}).labels) || []; },
-        get: function () { return gsel; },
-        set: function (x) { gsel = x; if (rngG) rngG.set(x, true); renderMain(D); renderGvz(D); } });
-      else quickG.paint();
+      /* v0.69d：旧缓存 range.js 没有 quick，先判存在，避免 TypeError 或 null.paint() */
+      if (!quickG && window.WufuRange && typeof WufuRange.quick === 'function')
+        quickG = WufuRange.quick({ anchorId: 'gRangeInfo',
+          labels: function () { return (((D.trend || {})[String(years)] || {}).labels) || []; },
+          get: function () { return gsel; },
+          set: function (x) { gsel = x; if (rngG) rngG.set(x, true); renderMain(D); renderGvz(D); } });
+      else if (quickG) quickG.paint();
     }
   }
   function fail() {

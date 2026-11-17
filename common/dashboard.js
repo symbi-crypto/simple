@@ -84,12 +84,19 @@
       labels: labels || [], vbW: 360, y0: 8, y1: 140,
       xAt: function (i) { return 34 + i * (310 / Math.max(1, (labels || []).length - 1)); },
       yAt: Y,
-      series: specs.map(function (s) { return { name: s.name || '', color: s.color, data: s.data,
-        fmt: function (v, i) {
-          var r = s.real && s.real[i];
-          if (typeof r === 'number' && isFinite(r)) return r.toFixed(1) + (s.unit || '');
-          return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) + '（归一）' : '—';
-        } }; }),
+      series: specs.map(function (s) {
+        /* v0.69d：range.js 旧版的 probe 只把 (v) 传给 fmt、不传索引，导致 s.real[i] 恒为
+           undefined、浮层全退回「（归一）」。改用 data 函数捕获索引：probe 取数时会先调
+           data(i)，把 i 存进 _i，随后 fmt(v) 即可用 _i 取真实值。与 range.js 版本无关。 */
+        var _i = 0;
+        return { name: s.name || '', color: s.color,
+          data: function (i) { _i = i; return (s.data || [])[i]; },
+          fmt: function (v) {
+            var r = s.real && s.real[_i];
+            if (typeof r === 'number' && isFinite(r)) return r.toFixed(1) + (s.unit || '');
+            return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) + '（归一）' : '—';
+          } };
+      }),
       note: '浮层=真实值 · 曲线=归一形状'
     });
   }
@@ -343,14 +350,16 @@
       rngCB = WufuRange.mount('cbRange', { onChange: function (x) { selCB = x; if (quickCB) quickCB.mark(x); if (D && kind === 'cb') drawCbTrend(D); } });
       rngIDX = WufuRange.mount('idxRange', { onChange: function (x) { selIDX = x; if (quickIDX) quickIDX.mark(x); if (D && kind !== 'cb') drawIdxChart(D); } });
       /* v0.69b：看板曲线加同款「展示区间」控件 */
-      quickCB = WufuRange.quick({ anchorId: 'cbRangeInfo',
+      /* v0.69d：旧缓存 range.js 没有 quick，先判存在，避免 TypeError 中断整段 init */
+      var _Q = (window.WufuRange && typeof WufuRange.quick === 'function') ? WufuRange.quick : null;
+      quickCB = _Q ? _Q({ anchorId: 'cbRangeInfo',
         labels: function () { return (((D.trend || {})[String(years)] || {}).labels) || []; },
         get: function () { return selCB; },
-        set: function (x) { selCB = x; if (rngCB) rngCB.set(x, true); if (D && kind === 'cb') drawCbTrend(D); } });
-      quickIDX = WufuRange.quick({ anchorId: 'idxRangeInfo',
+        set: function (x) { selCB = x; if (rngCB) rngCB.set(x, true); if (D && kind === 'cb') drawCbTrend(D); } }) : null;
+      quickIDX = _Q ? _Q({ anchorId: 'idxRangeInfo',
         labels: function () { return (((D.idxTrend || {})[String(years)] || {}).labels) || []; },
         get: function () { return selIDX; },
-        set: function (x) { selIDX = x; if (rngIDX) rngIDX.set(x, true); if (D && kind !== 'cb') drawIdxChart(D); } });
+        set: function (x) { selIDX = x; if (rngIDX) rngIDX.set(x, true); if (D && kind !== 'cb') drawIdxChart(D); } }) : null;
       /* v0.65：首次渲染时条还没 mount，mount 后补一次日期标签 */
       if (D) {
         var tl = kind === 'cb' ? (((D.trend || {})[String(years)] || {}).labels || [])

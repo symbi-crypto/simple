@@ -185,11 +185,13 @@
       rngI = WufuRange.mount('indRange', { onChange: function (x) { isel = x; if (quickI) quickI.mark(x); if (D) renderArea(D); } });
       rngI.setLabels((((D.area || {})[String(years)] || {}).labels) || []);
       /* v0.69b：同款「展示区间」控件 */
-      if (!quickI) quickI = WufuRange.quick({ anchorId: 'indRangeInfo',
-        labels: function () { return (((D.area || {})[String(years)] || {}).labels) || []; },
-        get: function () { return isel; },
-        set: function (x) { isel = x; if (rngI) rngI.set(x, true); renderArea(D); } });
-      else quickI.paint();
+      /* v0.69d：旧缓存 range.js 没有 quick，先判存在，避免 TypeError 或 null.paint() */
+      if (!quickI && window.WufuRange && typeof WufuRange.quick === 'function')
+        quickI = WufuRange.quick({ anchorId: 'indRangeInfo',
+          labels: function () { return (((D.area || {})[String(years)] || {}).labels) || []; },
+          get: function () { return isel; },
+          set: function (x) { isel = x; if (rngI) rngI.set(x, true); renderArea(D); } });
+      else if (quickI) quickI.paint();
     }
   }
   function fail() {
