@@ -1,1 +1,1 @@
-{"warnings":["两市成交额：上证 0 根 / 深证 0 根，不足，本次不叠柱","行业宽度 失败：RuntimeError: 东财板块清单为空，无法生成行业宽度","上海金 Au99.99 失败: RemoteDisconnected: Remote end closed connection without response"],"at":"2026-11-16T12:18:58.857044Z","failed":["行业宽度 失败：RuntimeError: 东财板块清单为空，无法生成行业宽度"]}
+{"warnings":["两市成交额：上证 0 根 / 深证 4095 根，不足，本次不叠柱","上海金 Au99.99 失败: RemoteDisconnected: Remote end closed connection without response"],"at":"2026-11-17T00:35:00.688059Z","failed":[]}
