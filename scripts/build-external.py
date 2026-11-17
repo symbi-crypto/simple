@@ -114,52 +114,57 @@ def save(name, obj):
 # =====================================================================
 
 
+SW_LEVEL1 = [
+    ("801010", "农林牧渔"), ("801030", "基础化工"), ("801040", "钢铁"),
+    ("801050", "有色金属"), ("801080", "电子"), ("801110", "家用电器"),
+    ("801120", "食品饮料"), ("801130", "纺织服饰"), ("801140", "轻工制造"),
+    ("801150", "医药生物"), ("801160", "公用事业"), ("801170", "交通运输"),
+    ("801180", "房地产"), ("801200", "商贸零售"), ("801210", "社会服务"),
+    ("801230", "综合"), ("801710", "建筑材料"), ("801720", "建筑装饰"),
+    ("801730", "电力设备"), ("801740", "国防军工"), ("801750", "计算机"),
+    ("801760", "传媒"), ("801770", "通信"), ("801780", "银行"),
+    ("801790", "非银金融"), ("801880", "汽车"), ("801890", "机械设备"),
+    ("801950", "煤炭"), ("801960", "石油石化"), ("801970", "环保"),
+    ("801980", "美容护理"),
+]
+SW_TREND = "https://www.swsresearch.com/institute-sw/api/index_publish/trend/?swindexcode=%s&period=DAY"
+
+
 def get_sw_boards():
-    """31 个申万一级行业代码与名称。"""
-    import akshare as ak
-    info = ak.sw_index_first_info()
-    out = []
-    for _, row in info.iterrows():
-        code = str(row["行业代码"]).split(".")[0]
-        name = str(row["行业名称"]).strip()
-        if code.isdigit() and len(code) == 6 and name:
-            out.append({"code": code, "name": name})
-    # 去重保序
-    seen, uniq = set(), []
-    for b in out:
-        if b["code"] not in seen:
-            seen.add(b["code"])
-            uniq.append(b)
-    print("申万一级行业清单", len(uniq), flush=True)
-    return uniq
+    """申万 2021 版 31 个一级行业（硬编码，避免再依赖一次官网清单请求）。"""
+    print("申万一级行业清单", len(SW_LEVEL1), flush=True)
+    return [{"code": c, "name": n} for c, n in SW_LEVEL1]
 
 
 def one_sw(b):
-    """逐条抓全历史日线；串行 + 重试，避免官网限流把整批打挂。"""
-    import akshare as ak
+    """直连申万官网 JSON 接口，带硬超时；不用 akshare（其 requests 无 timeout 会挂死无人值守任务）。"""
+    url = SW_TREND % b["code"]
     last = ""
     for k in range(3):
-        try:
-            df = ak.index_hist_sw(symbol=b["code"], period="day")
-            series = {}
-            for _, row in df.iterrows():
-                d = str(row["日期"])[:10]
-                try:
-                    c = float(row["收盘"])
-                    a = float(row.get("成交额") or 0)
-                except (TypeError, ValueError):
-                    continue
-                if c > 0:
-                    series[d] = (c, a)
-            if len(series) >= 220:
-                return {"code": b["code"], "name": b["name"], "series": series, "ok": True}
-            last = "仅 %d 根日线" % len(series)
-        except Exception as e:
-            last = "%s: %s" % (type(e).__name__, str(e)[:120])
-        time.sleep(1.0 * (k + 1))
+        st, txt = get(url, timeout=10, tries=1)
+        if st == 200:
+            try:
+                rows = (jload(txt) or {}).get("data") or []
+                series = {}
+                for row in rows:
+                    d = str(row.get("bargaindate") or "")[:10]
+                    try:
+                        c = float(row.get("closeindex"))
+                        a = float(row.get("bargainsum") or 0)
+                    except (TypeError, ValueError):
+                        continue
+                    if len(d) == 10 and c > 0:
+                        series[d] = (c, a)
+                if len(series) >= 220:
+                    return {"code": b["code"], "name": b["name"], "series": series, "ok": True}
+                last = "仅 %d 根日线" % len(series)
+            except Exception as e:
+                last = "解析失败 %s: %s" % (type(e).__name__, str(e)[:100])
+        else:
+            last = "HTTP %s %s" % (st, str(txt)[:80])
+        time.sleep(0.6 * (k + 1))
     WARN.append("申万 %s %s 抓取失败: %s" % (b["code"], b["name"], last))
     return {"code": b["code"], "name": b["name"], "series": {}, "ok": False}
-
 
 def build_industry():
     boards = get_sw_boards()
