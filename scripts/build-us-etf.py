@@ -73,6 +73,7 @@ def main():
     out = {
         'format': 'us-etf-daily/1',
         'chain': 'A',                       # 三条链统一标识：L 本地 / A 东财+申万 / G Yahoo+CBOE
+        'contract': 'chain/1',
         'source': 'eastmoney/kline fqt=1',  # 单一上游，不混用 Yahoo
         'adjust': '前复权（东财 fqt=1，含分红再投）',
         'cols': COLS,
