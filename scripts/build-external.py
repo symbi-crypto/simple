@@ -100,7 +100,18 @@ def window(days, years):
     return [d for d in days if datetime.date.fromisoformat(d) >= cut]
 
 
+# 三条链统一落库契约：L=本地 gz / A=东财+申万 / G=Yahoo+CBOE
+# 上游源不合并，合并的是"快照带哪条链、哪天、失败是否沿用真值"这套契约。
+CHAIN_OF = {
+    "industry-daily.json": "A", "market-amount.json": "A",
+    "gold-daily.json": "G",
+}
+
 def save(name, obj):
+    if isinstance(obj, dict) and name in CHAIN_OF and "chain" not in obj:
+        obj = dict(obj)
+        obj["chain"] = CHAIN_OF[name]
+        obj["contract"] = "chain/1"
     with open(os.path.join(ROOT, name), "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
     print("写回", name, os.path.getsize(os.path.join(ROOT, name)), "bytes")
@@ -568,9 +579,22 @@ def build_amount():
 
 
 def main():
+    # --chain=A|G|ALL：三条链可独立跑、独立失败、独立写状态；互不牵连。
+    # ALL 只是兼容旧调用的串行模式，编排上已不再使用。
+    chain = "ALL"
+    for a in sys.argv[1:]:
+        if a.startswith("--chain="):
+            chain = a.split("=", 1)[1].upper()
+        elif a.upper() in ("A", "G", "ALL"):
+            chain = a.upper()
+    jobs = []
+    if chain in ("ALL", "A"):
+        jobs += [("两市成交额", build_amount), ("行业宽度", build_industry)]
+    if chain in ("ALL", "G"):
+        jobs += [("黄金看板", build_gold)]
     errs = []
-    for name, fn in [("两市成交额", build_amount), ("行业宽度", build_industry), ("黄金看板", build_gold)]:
-        print("===", name, "===", flush=True)
+    for name, fn in jobs:
+        print("=== [链 %s] %s ===" % (chain, name), flush=True)
         try:
             fn()
         except Exception as e:
@@ -579,13 +603,34 @@ def main():
             WARN.append(msg)
             errs.append(msg)
             print(msg, flush=True)
+
+    at = datetime.datetime.utcnow().isoformat() + "Z"
+    payload = {"warnings": list(WARN), "at": at, "failed": errs,
+               "chain": chain, "ok": not errs}
+    if chain != "ALL":
+        save("external-warnings-%s.json" % chain, payload)
+
+    # 汇总：读取各链自己的状态文件合并，前端 external-warnings.json 结构不变
+    by_chain, all_warn, all_fail = {}, [], []
+    for c in ("L", "A", "G"):
+        p = os.path.join(ROOT, "external-warnings-%s.json" % c)
+        if os.path.exists(p):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    d = json.load(f)
+                by_chain[c] = {"ok": d.get("ok", not d.get("failed")),
+                               "at": d.get("at"), "warnings": d.get("warnings", [])}
+                all_warn += d.get("warnings", [])
+                all_fail += d.get("failed", [])
+            except Exception:
+                pass
+    if not by_chain:
+        all_warn, all_fail = list(WARN), errs
     save("external-warnings.json", {
-        "warnings": list(WARN),
-        "at": datetime.datetime.utcnow().isoformat() + "Z",
-        "failed": errs})
+        "warnings": all_warn, "at": at, "failed": all_fail, "byChain": by_chain})
     print("完成，warnings:", WARN, flush=True)
     if errs:
-        # 单个源失败仍让该步红灯（不绿灯伪装），但其它源已经写回，不牵连
+        # 单链失败只让本步红灯（不绿灯伪装）；其它链已各自写回，不牵连
         sys.exit(1)
 
 

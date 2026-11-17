@@ -5,7 +5,15 @@
 import fs from 'node:fs';
 
 const read = p => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; } };
-const save = (p, o) => fs.writeFileSync(p, JSON.stringify(o));
+/* 三条链统一落库契约：L=本地 gz / A=东财+申万 / G=Yahoo+CBOE。
+   上游源不合并，合并的是快照契约（chain / contract / source / dataAsOf / warnings）。 */
+const CHAIN_OF = { 'cb-daily.json': 'L', 'index-daily.json': 'L' };
+const save = (p, o) => {
+  if (CHAIN_OF[p] && o && typeof o === 'object' && !o.chain) {
+    o = { ...o, chain: CHAIN_OF[p], contract: 'chain/1' };
+  }
+  fs.writeFileSync(p, JSON.stringify(o));
+};
 const med = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); if (!a.length) return null; a.sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 const avg = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
 const pct = (s, v) => { s = s.filter(x => typeof x === 'number' && isFinite(x)); return v == null || !s.length ? null : Math.round(100 * s.filter(x => x <= v).length / s.length); };

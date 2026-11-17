@@ -4,6 +4,12 @@ name: 每周行情同步
 # 选周五收盘后：周末打开站点就是本周完整数据；避开整点，减少 Actions 排队被跳过。
 # 一次点击会把「上次末日 → 今天」之间所有交易日一次补齐，漏跑一周下次也会自动补上。
 # 想换时间只改下面 cron 一行（GitHub cron 用 UTC）；想临时补跑用 Actions 页 Run workflow。
+#
+# 三条链（按资产族收敛，上游源不合并，合并的是落库契约）：
+#   L 本地 gz    → cb-daily.json / index-daily.json                 零抓取、含退市债
+#   A 东财+申万  → industry / market-amount / us-etf-daily.json      A股行业、成交额、美股ETF
+#   G Yahoo+CBOE → gold-daily.json                                  境外商品与波动率
+# 每条链独立跑、独立失败、独立写状态；一条红灯不牵连其它链写回，提交步用 always() 兜底。
 on:
   schedule:
     - cron: '37 9 * * 5'
@@ -43,31 +49,55 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8787/index.html -o /dev/null || { cat /tmp/wufu-http.log; exit 1; }
 
-      - name: 跑取数 → 生成 state.json
+      - name: 跑取数 → 生成 state.json（链 L 的输入）
         env:
           SITE_URL: http://127.0.0.1:8787
           PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
           STEP_TIMEOUT_MS: ${{ vars.STEP_TIMEOUT_MS }}
         run: node scripts/update.mjs
 
-      - name: 生成本地看板快照（可转债 / 指数）
+      # ---------------- 链 L：本地 gz，零抓取 ----------------
+      - name: 链 L · 本地看板快照（可转债 / 指数）
+        if: always()
         run: node scripts/build-dashboards.mjs
 
-      - name: 安装申万行业数据源
+      # ---------------- 链 A：东财 + 申万 ----------------
+      - name: 安装申万行业数据源（链 A 专用）
         run: python3 -m pip install --quiet akshare==1.18.88
 
-      - name: 抓取并计算申万一级行业宽度 + 黄金快照
-        run: python3 scripts/build-external.py
+      - name: 链 A · 申万一级行业宽度 + 两市成交额
+        if: always()
+        id: chain_a_industry
+        run: python3 scripts/build-external.py --chain=A
+
+      - name: 链 A · 美股 ETF 日线（周度只追加新交易日）
+        if: always()
+        id: chain_a_us
+        run: python3 scripts/build-us-etf.py
+
+      # ---------------- 链 G：Yahoo + CBOE ----------------
+      - name: 链 G · 国际金/银/油/铜/BTC + GVZ
+        if: always()
+        id: chain_g
+        run: python3 scripts/build-external.py --chain=G
+
+      # ---------------- 汇总 + 提交：任何链失败都照常收口 ----------------
+      - name: 汇总三条链状态（明确标失败，不绿灯伪装）
+        if: always()
+        run: python3 scripts/merge-chain-status.py || true
 
       - name: 有变化才提交（没变化不触发 Netlify 构建）
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -z "$(git status --porcelain -- state.json sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json)" ]; then
+          FILES="sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json us-etf-daily.json external-warnings.json external-warnings-L.json external-warnings-A.json external-warnings-G.json"
+          CHANGED=""
+          for f in $FILES; do [ -f "$f" ] && git add "$f" && CHANGED="$CHANGED $f"; done
+          if [ -f state.json ]; then git add state.json; fi
+          if git diff --cached --quiet; then
             echo "本周没有任何变化，不提交、不触发构建。"
             exit 0
           fi
-          git add sync-status.json cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json external-warnings.json
-          if [ -f state.json ]; then git add state.json; fi
-          git commit -m "chore: 周度同步 $(date -u +%F)"
+          git commit -m "chore: 周度同步 $(date -u +%F)（三条链 L/A/G）"
           git push

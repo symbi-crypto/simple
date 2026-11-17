@@ -1,7 +1,8 @@
 name: 刷新综合看板快照
 
-# 手动补数：不等周五，直接在 Actions 出口抓申万一级行业与国际金价，算好写回仓库。
-# 抓不到会明确失败（不再 continue-on-error 绿灯），部分板块缺失会写进 warnings 并标注实际数量。
+# 手动补数：不等周五，直接在 Actions 出口分三条链抓数、算好写回仓库。
+# 上游源不合并；每条链独立失败、独立写状态，一条红灯不牵连其它链写回。
+# 抓不到会明确失败（不再 continue-on-error 绿灯），部分缺失写进 warnings 并标注实际数量。
 on:
   workflow_dispatch:
 
@@ -25,38 +26,60 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 生成本地看板快照（可转债 / 指数）
+      # ---------------- 链 L：本地 gz ----------------
+      - name: 链 L · 本地看板快照（可转债 / 指数）
+        if: always()
         run: node scripts/build-dashboards.mjs
 
-      - name: 安装申万行业数据源
+      # ---------------- 链 A：东财 + 申万 ----------------
+      - name: 安装申万行业数据源（链 A 专用）
         run: python3 -m pip install --quiet akshare==1.18.88
 
-      - name: 抓取并计算申万一级行业宽度 + 黄金快照
-        run: python3 scripts/build-external.py
+      - name: 链 A · 申万一级行业宽度 + 两市成交额
+        if: always()
+        id: chain_a_industry
+        run: python3 scripts/build-external.py --chain=A
+
+      - name: 链 A · 美股 ETF 日线（只追加新交易日）
+        if: always()
+        id: chain_a_us
+        run: python3 scripts/build-us-etf.py
+
+      # ---------------- 链 G：Yahoo + CBOE ----------------
+      - name: 链 G · 国际金/银/油/铜/BTC + GVZ
+        if: always()
+        id: chain_g
+        run: python3 scripts/build-external.py --chain=G
+
+      - name: 汇总三条链状态
+        if: always()
+        run: python3 scripts/merge-chain-status.py || true
 
       - name: 打印摘要
         if: always()
         run: |
           python - <<'PY'
           import json, os
-          for f in ['industry-daily.json','gold-daily.json','market-amount.json']:
+          for f in ['industry-daily.json','gold-daily.json','market-amount.json','us-etf-daily.json']:
               if not os.path.exists(f):
                   print(f, '未生成'); continue
               d=json.load(open(f,encoding='utf-8'))
               print('===', f, '字节', os.path.getsize(f), '===')
-              print('dataAsOf', d.get('dataAsOf'), '| source', d.get('source'))
-              print('sampleNote', d.get('sampleNote'))
+              print('chain', d.get('chain'), '| contract', d.get('contract'),
+                    '| dataAsOf', d.get('dataAsOf'), '| source', d.get('source'))
               print('warnings', d.get('warnings'))
-              if f == 'market-amount.json':
-                  print('两市成交额 ok=', d.get('ok'), '| 末日', d.get('dataAsOf'),
-                        '| 5年点数', len(d.get('5',{}).get('amount',[])))
+              if f == 'us-etf-daily.json':
+                  print('标的', [(s['sym'], s['bars'], s['to']) for s in d.get('symbols',[])],
+                        '| 共同交易日', d.get('commonDays'))
+              elif f == 'market-amount.json':
+                  print('两市成交额 ok=', d.get('ok'), '| 5年点数', len(d.get('5',{}).get('amount',[])))
               elif f.startswith('industry'):
                   print('板块数', d.get('boardCount'), '/', d.get('boardTotal'),
                         '| 热力图', len(d['heat']['names']), '行 ×', len(d['heat']['dates']), '列')
-                  print('七指标', [(x['name'], x['value']) for x in d['indicators']])
               else:
-                  print('六卡', [(x['label'], x['value'], x['chg']) for x in d['kpi']])
-                  print('比价', d.get('ratios'))
+                  print('六卡', [(x['label'], x['value']) for x in d['kpi']])
+          st = json.load(open('external-warnings.json',encoding='utf-8'))
+          print('链状态', {c: v.get('ok') for c, v in st.get('byChain',{}).items()})
           PY
 
       - name: 写回仓库
@@ -64,12 +87,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for f in cb-daily.json index-daily.json industry-daily.json gold-daily.json market-amount.json external-warnings.json; do
+          for f in cb-daily.json index-daily.json industry-daily.json gold-daily.json \
+                   market-amount.json us-etf-daily.json external-warnings.json \
+                   external-warnings-L.json external-warnings-A.json external-warnings-G.json; do
             [ -f "$f" ] && git add "$f"
           done
           if git diff --cached --quiet; then
             echo "快照无变化，不提交"
           else
-            git commit -m "chore: 刷新综合看板快照 $(date -u +%F)"
+            git commit -m "chore: 刷新综合看板快照 $(date -u +%F)（三条链 L/A/G）"
             git push
           fi
