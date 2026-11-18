@@ -30,7 +30,12 @@
     '.wr-quick input[type=date]{background:#202E3F;color:#D8E6F2;border:1px solid #33465C;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}',
     '.wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}',
     '.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:#202E3F;color:#9FB0C3;border:1px solid #33465C;white-space:nowrap}',
-    '.wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}'
+    '.wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}',
+  /* v0.71：锁定控件高度，按按钮时说明文字/日期框/卡片数变化不再推动整页 */
+  '.wr-quick{min-height:76px;box-sizing:border-box}',
+  '.wr-info{min-height:36px;line-height:1.45;box-sizing:border-box}',
+  '.wr-quick-btns button{outline:none;-webkit-tap-highlight-color:transparent;font-size:11px;padding:4px 10px}',
+  '.wr-quick-btns button.on{outline:none;-webkit-tap-highlight-color:transparent;font-size:11px;padding:4px 10px}'
   ].join('\n');
 
   function ensureStyle() {
@@ -444,7 +449,7 @@
       mode: cfg.mode || ((cfg.modes && cfg.modes[0] && cfg.modes[0].key) || 'nav'),
       align: !!(cfg['switch'] && cfg['switch'].on),
       labels: cfg.labels || [],
-      key: 'ALL'
+      key: cfg.key || ((cfg.value && cfg.value.length === 2 && !R.isFull(cfg.value)) ? 'CUSTOM' : 'ALL')
     };
 
     modeEl = document.createElement('div');
@@ -545,6 +550,8 @@
     quick.addEventListener('click', function (ev) {
       var b = ev.target;
       if (!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-v')) return;
+      try { b.blur(); } catch (e) { }
+      try { ev.preventDefault(); } catch (e) { }
       var k = b.getAttribute('data-v'), L = state.labels, n = L.length;
       if (n < 2) return;
       if (k === 'ALL') { set([0, 1], 'ALL'); return; }
@@ -600,6 +607,11 @@
         cfg = c2 || {};
         if (cfg.labels) state.labels = cfg.labels;
         if (cfg.mode) state.mode = cfg.mode;
+        if (cfg.key) state.key = cfg.key;
+        if (cfg.value && cfg.value.length === 2) {
+          state.sel = [cfg.value[0], cfg.value[1]];
+          if (rng) rng.set(state.sel, true);
+        }
         if (rng) rng.setLabels(state.labels);
         paintAll();
       },

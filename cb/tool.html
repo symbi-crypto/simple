@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=71"></script>
+<script src="../common/range.js?v=72"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -8126,7 +8126,7 @@ function buildChips() {
     // 曲线：定投市值 / 累计投入 / 一次性买入市值
     var cNavEl = $("cNav"); if (cNavEl) cNavEl.style.height = "340px";   // 防止 ECharts 在容器未布局时 init 写入 0 高
     var cNavCard = document.querySelector("#cNav") ? document.getElementById("cNav").closest(".card") : null;
-    if (cNavCard) cNavCard.querySelector("h2").innerHTML = "定投市值曲线 <span class='n'>定投市值 / 累计投入线 / 同期一次性买入" + (($("dcaDivSel").value === "cash") ? " · 现金分红（一次性对照按红利再投口径）" : " · 红利再投") + "</span>";
+    if (cNavCard) { var _dh = cNavCard.querySelector("h2"); _dh.setAttribute("style", "flex-wrap:wrap"); _dh.innerHTML = "定投市值曲线 <span class='n' style='flex:0 0 100%;white-space:normal;line-height:1.5;margin-top:2px'>定投市值 / 累计投入线 / 同期一次性买入" + (($("dcaDivSel").value === "cash") ? " · 现金分红（一次性对照按红利再投口径）" : " · 红利再投") + "</span>"; }
     renderDCAChart("cNav", R);
 
     // 明细表：买入记录 + 止盈记录
@@ -8555,6 +8555,7 @@ function buildChips() {
         mode: view,
         labels: r.calendar || [],
         value: curSel,
+        key: '1Y',
         zoom: false,
         tip: '拖动下方白色条选时间段 · 双击还原全段',
         hint: function () { return view === 'dd' ? '全段 / 创建后重算 / 基准' : '创建日后为加粗线'; },
@@ -8636,7 +8637,11 @@ function rangeKpi(i0, i1) {
           kcard('区间·卡玛', isFinite(calmar) ? calmar.toFixed(2) : '—', '年化 / 回撤', '') +
           kcard('区间·年化波动', FMT.pct(vol), '日收益标准差 ×√252', '') +
           (btotal == null ? '' : kcard('区间·基准', FMT.pct(btotal), '同期基准累计', btotal >= 0 ? 'up' : 'down'));
-        var box = $('kpis'); if (box) box.innerHTML = html;
+        var box = $('kpis'); if (!box) return;
+        /* v0.71：全段 14 卡 / 区间 7 卡高度差会让下方按钮整块跳动，锁到全段基准高度 */
+        if (!window.__kpiBaseH) { try { renderKpis(r); } catch (e) { } }
+        if (window.__kpiBaseH) box.style.minHeight = window.__kpiBaseH + 'px';
+        box.innerHTML = html;
       }
 
     var busy = false;
@@ -8709,8 +8714,18 @@ function rangeKpi(i0, i1) {
         });
       }
       if (align) {
+        /* v0.71：定投首日市值只有第一笔扣款（≈1000 元），若按「首日市值」归一，
+           后续持续注入的本金会被算成 200× 的倍数，把共用 y 轴撑爆、一次性买入
+           压成贴 0 的直线。改用系统 KPI 已有口径：定投 = 每元累计投入的市值
+           (pv/cum)，一次性买入 = 相对区间首日 (lump/lump[i0])。两条都从约 1.00
+           出发、同在 1~3× 量级，起伏可见；都含本金结构差异，不是收益率。 */
+        var byCum = dates.map(function (d, q) {
+          var c = cum[q], v = pv[q];
+          return [d, (typeof v === 'number' && isFinite(v) && typeof c === 'number' && c > 0)
+            ? +(v / c).toFixed(4) : null];
+        });
         return [
-          { name: '定投市值', type: 'line', showSymbol: false, lineStyle: { width: 2.5, color: '#34D399' }, itemStyle: { color: '#34D399' }, data: scaled(pv, first(pv)) },
+          { name: '定投市值', type: 'line', showSymbol: false, lineStyle: { width: 2.5, color: '#34D399' }, itemStyle: { color: '#34D399' }, data: byCum },
           { name: '一次性买入', type: 'line', showSymbol: false, lineStyle: { width: 2.2, color: '#FBBF24' }, itemStyle: { color: '#FBBF24' }, data: scaled(lump, first(lump)) }
         ];
       }
@@ -8742,7 +8757,7 @@ function rangeKpi(i0, i1) {
       o.dataZoom[0].end = sel[1] * 100;
       o.backgroundColor = 'transparent';
       ch.setOption(o, true);
-      ch.resize();
+      /* v0.71：容器高度由 CSS 固定，initChart 已 resize；每次 onChange 再 resize 会重排跳动 */
     }
     if (window.WufuRange && WufuRange.curve) {
       curve = WufuRange.curve(id, {
@@ -8755,7 +8770,7 @@ function rangeKpi(i0, i1) {
         tip: '拖动下方白色条选时间段 · 双击还原全段',
         info: function (st) {
           return st.align
-            ? '<b>对齐起点</b> · 两条市值线各自按区间首日归一，同从 1.00 出发；含后续本金投入，不是收益率。累计投入已隐藏，浮层为真实金额'
+            ? '<b>对齐起点</b> · 定投按每元累计投入的市值、一次性买入按区间首日归一，同从约 1.00 出发只比形状；含本金投入结构差异，不是收益率。累计投入已隐藏，浮层为真实金额'
             : '<b>绝对金额</b> · 定投市值 / 累计投入 / 一次性买入，单位万元';
         },
         onChange: function (sel, st) { paint(st.align, sel); },
@@ -8792,7 +8807,9 @@ function renderKpis(r) {
     cards.forEach(function (c) {
       html += kcard(c.t, c.v, c.s, c.cls);
     });
-    $("kpis").innerHTML = html;
+    var _kb = $("kpis"); _kb.innerHTML = html;
+    _kb.style.minHeight = "";
+    try { window.__kpiBaseH = _kb.offsetHeight || window.__kpiBaseH || 0; } catch (e) { }
   }
 
   function ts(d) { return new Date(d + "T00:00:00+08:00").getTime(); }
