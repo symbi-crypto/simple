@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=78"></script>
+<script src="../common/range.js?v=79"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -463,7 +463,7 @@ input[type="text"]:focus,input[type="number"]:focus,input[type="date"]:focus,tex
 .runbar2{flex-wrap:wrap !important;row-gap:6px !important}
 /* 基准 label：给足最小宽度，不再被压成 0 */
 .runbar2 > label{flex:1 1 150px !important;min-width:150px !important;overflow:visible !important}
-#benchSel{min-width:110px !important}
+#benchSel,#comboBenchSel{min-width:110px !important}
 /* 状态文字允许换行，避免横向挤占 */
 .runbar .st{white-space:normal !important;flex:1 1 auto !important;min-width:0 !important;line-height:1.35 !important}
 
@@ -508,10 +508,10 @@ input[type="date"]{border:1px solid #8FA3BA !important;border-radius:6px !import
 #startRobNote{margin-bottom:8px !important}
 
 /* ---- D. 基准行：状态文字强制换到下一行，让基准标签与下拉框在同一行对齐 ---- */
-#runState{flex:1 1 100% !important;white-space:normal !important;min-width:0 !important;
+#runState,#comboRunState{flex:1 1 100% !important;white-space:normal !important;min-width:0 !important;
   line-height:1.35 !important;font-size:11px !important}
 .runbar2 > label{flex:1 1 100% !important;min-width:0 !important;overflow:visible !important}
-#benchSel{flex:1 1 auto !important;min-width:0 !important}
+#benchSel,#comboBenchSel{flex:1 1 auto !important;min-width:0 !important}
 
 /* ---- E. 调优维度：输入框列对齐（名称固定 88px，勾选框统一靠左，与筛选/排名条件一致） ---- */
 #psecTune .row > span[style*="width:88px"]{flex:0 0 88px !important}
@@ -1549,7 +1549,13 @@ document.addEventListener("DOMContentLoaded",function(){
             <span style="color:#9FB0C3">个周期调仓</span>
           </span>
         </label>
-        <button id="comboRun" type="button" style="cursor:pointer" class="btn">运行组合回测</button>
+      </div>
+      <div class="runbar" style="background:transparent;border-top:none;padding:2px 0 0;gap:8px">
+        <button id="comboRun" type="button">运行组合回测</button>
+        <div class="runbar2">
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9FB0C3;white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden" title="自定义基准（默认国证2000）">基准<select id="comboBenchSel" style="flex:1;min-width:0;max-width:100%;text-overflow:ellipsis;font-size:11px;padding:3px 4px;border:1px solid #3E4E63;border-radius:4px;color:#F1F5F9;background:#202E3F"><option value="399303.SZ">国证2000</option><option value="000300.SH">沪深300</option><option value="000852.SH">中证1000</option><option value="index_CBALL">转债等权</option></select></label>
+          <span class="st" id="comboRunState"></span>
+        </div>
       </div>
     </div>
     <div id="comboResult" style="display:none;margin-top:14px">
@@ -6820,6 +6826,36 @@ function buildChips() {
     var b = $("benchSel");
     return b && b.value ? b.value : "399303.SZ";
   }
+  /* v0.78：组合页基准，与回测页同一指数池、独立选择互不覆盖 */
+  function comboBenchVal() {
+    var b = $("comboBenchSel");
+    return b && b.value ? b.value : "399303.SZ";
+  }
+  /* 按组合日历把指数原始点位归一到首个有效日 = 1；缺失日沿用前值，不摆断点 */
+  function comboBenchSeries(cal, code) {
+    var arr = null;
+    try { if (D && D.index) arr = D.index[code]; } catch (e) { }
+    if (!arr && typeof RDIDX !== "undefined" && RDIDX && RDIDX.index) arr = RDIDX.index[code];
+    if (!arr && typeof window !== "undefined" && window.RDIDX && window.RDIDX.index) arr = window.RDIDX.index[code];
+    if (!arr && D && D.series && D.series[code] && D.series[code].close) arr = D.series[code].close;
+    var out = new Array(cal.length), z;
+    if (!arr || !D || !D.calendar) { for (z = 0; z < out.length; z++) out[z] = NaN; return out; }
+    var pos = {}, q;
+    for (q = 0; q < D.calendar.length; q++) pos[D.calendar[q]] = q;
+    var base = 0, j0;
+    for (j0 = 0; j0 < cal.length; j0++) {
+      var ix0 = pos[cal[j0]], v0 = (ix0 === undefined) ? null : arr[ix0];
+      if (v0 > 0) { base = v0; break; }
+    }
+    if (!(base > 0)) { for (z = 0; z < out.length; z++) out[z] = NaN; return out; }
+    var last = NaN;
+    for (var j = 0; j < cal.length; j++) {
+      var ix = pos[cal[j]], v = (ix === undefined) ? null : arr[ix];
+      if (v > 0) last = v / base;
+      out[j] = last;
+    }
+    return out;
+  }
   function benchLabel() {
     var b = $("benchSel");
     if (b && b.options && b.selectedIndex >= 0) return b.options[b.selectedIndex].textContent || b.value;
@@ -10316,6 +10352,182 @@ function showStrategyDetail(name) {
   })();
 
   // ---------- 多策略组合视图 ----------
+
+  /* ============ v0.78：系统内部「策略组合」曲线接入统一时间控制器 ============
+     与回测页净值曲线同源：白条 / 日期框 / 六档 / 线性·对数 / 净值·回撤。
+     净值：非全段按段首重定基、KPI 切区间口径；回撤：只裁显示、不重定基且禁用对数。
+     对数轴 min/max 按「可见窗口」自适应，短区间不再被固定 0.1~10 压平。 */
+  function comboLogBoundsTool(series, i0, i1) {
+    var lo = Infinity, hi = -Infinity, j, k, d, p, v;
+    for (j = 0; j < (series || []).length; j++) {
+      d = series[j] && series[j].data;
+      if (!d) continue;
+      for (k = i0; k <= i1 && k < d.length; k++) {
+        p = d[k]; v = (p instanceof Array) ? p[1] : p;
+        if (typeof v === 'number' && isFinite(v) && v > 0) { if (v < lo) lo = v; if (v > hi) hi = v; }
+      }
+    }
+    if (!isFinite(lo) || !isFinite(hi)) return null;
+    var mi = lo / 1.06, ma = hi * 1.06;
+    if (ma / mi < 1.08) { var m = Math.sqrt(lo * hi); mi = m / 1.04; ma = m * 1.04; }
+    return { min: mi, max: ma };
+  }
+  function comboDDTool(arr) {
+    var peak = -Infinity, out = [];
+    arr.forEach(function (v) {
+      if (typeof v === 'number' && isFinite(v) && v > 0) {
+        if (v > peak) peak = v;
+        out.push(+(v / peak - 1).toFixed(5));
+      } else out.push(null);
+    });
+    return out;
+  }
+  function comboKpiCardTool(k, v) {
+    return '<div style="background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px 12px;text-align:center">' +
+      '<div style="font-size:11px;color:#7C8DA1">' + k + '</div>' +
+      '<div style="font-size:17px;color:#4FC3F7;font-weight:600;margin-top:2px">' + v + '</div></div>';
+  }
+  function comboRangeKpiTool(nav, bench, cal, i0, i1, rf) {
+    var a = [], b = [], rets = [], k, nv, bv;
+    for (k = i0; k <= i1; k++) {
+      nv = nav[k]; bv = bench ? bench[k] : null;
+      if (typeof nv === 'number' && isFinite(nv) && nv > 0) a.push(nv);
+      if (typeof bv === 'number' && isFinite(bv) && bv > 0) b.push(bv);
+      if (k > i0 && typeof nav[k - 1] === 'number' && nav[k - 1] > 0 && nv > 0) rets.push(nv / nav[k - 1] - 1);
+    }
+    if (a.length < 2) return null;
+    var total = a[a.length - 1] / a[0] - 1;
+    var days = ((new Date(String(cal[i1]).slice(0, 10)) - new Date(String(cal[i0]).slice(0, 10))) / 86400000) || 1;
+    var cagr = Math.pow(a[a.length - 1] / a[0], 365 / days) - 1;
+    var peak = a[0], mdd = 0;
+    a.forEach(function (v) { if (v > peak) peak = v; var d = v / peak - 1; if (d < mdd) mdd = d; });
+    var mean = rets.reduce(function (x, y) { return x + y; }, 0) / Math.max(1, rets.length);
+    var sd = Math.sqrt(rets.reduce(function (x, y) { return x + (y - mean) * (y - mean); }, 0) / Math.max(1, rets.length));
+    var vol = sd * Math.sqrt(252);
+    var riskF = (rf === undefined || rf === null) ? 0.02 : rf;
+    var sharpe = vol > 0 ? (cagr - riskF) / vol : 0;
+    var calmar = mdd < 0 ? cagr / Math.abs(mdd) : 0;
+    var bt = b.length > 1 ? b[b.length - 1] / b[0] - 1 : null;
+    function pc(x) { return x == null || !isFinite(x) ? '—' : (x * 100).toFixed(2) + '%'; }
+    return [
+      ['区间·累计收益', pc(total)], ['区间·年化', pc(cagr)], ['区间·最大回撤', pc(mdd)],
+      ['区间·夏普', sharpe.toFixed(2)], ['区间·Calmar', isFinite(calmar) ? calmar.toFixed(2) : '—'],
+      ['区间·基准', bt == null ? '—' : pc(bt)],
+      ['区间·超额', bt == null ? '—' : pc(total - bt)],
+      ['区间', String(cal[i0]).slice(0, 10) + ' ~ ' + String(cal[i1]).slice(0, 10)]
+    ].map(function (kv) { return comboKpiCardTool(kv[0], kv[1]); }).join('');
+  }
+  function mountComboCurveTool(ch, cal, series, o) {
+    var R = window.WufuRange, hostId = 'comboChart';
+    var N = cal.length, view = 'nav', curve = null;
+    var raw = series.map(function (s) {
+      return (s.data || []).map(function (p) { return (p instanceof Array) ? p[1] : p; });
+    });
+    var dd = raw.map(comboDDTool);
+    function idx(sel) {
+      var a = Math.round(sel[0] * (N - 1)), b = Math.round(sel[1] * (N - 1));
+      if (b <= a) { a = 0; b = N - 1; }
+      return [a, b];
+    }
+    function seriesOf(sel) {
+      var z = idx(sel), i0 = z[0], i1 = z[1];
+      var full = R.isFull(sel);
+      if (view === 'dd') {
+        var out = [{ name: '组合回撤', type: 'line', showSymbol: false,
+          lineStyle: { width: 2.2, color: '#F87171' }, itemStyle: { color: '#F87171' },
+          data: cal.map(function (t, i) { return [t, dd[0][i]]; }) }];
+        if (o.benchIdx >= 0 && dd[o.benchIdx]) out.push({ name: '基准回撤', type: 'line', showSymbol: false,
+          lineStyle: { width: 1.6, color: '#9FB0C3' }, itemStyle: { color: '#9FB0C3' },
+          data: cal.map(function (t, i) { return [t, dd[o.benchIdx][i]]; }) });
+        return out;
+      }
+      return series.map(function (s, si) {
+        /* 每条线各自按区间首值归一（与回测页净值曲线一致），所有线从 1 出发，
+           对数轴不会被某条绝对水平很高的线拉开；全段视图保留原始值。 */
+        var base = null, k;
+        for (k = i0; k <= i1; k++) if (raw[si][k] > 0) { base = raw[si][k]; break; }
+        var c = {}, key;
+        for (key in s) if (Object.prototype.hasOwnProperty.call(s, key) && key !== 'data') c[key] = s[key];
+        c.data = (s.data || []).map(function (p, i) {
+          var v = (p instanceof Array) ? p[1] : p;
+          if (full || base == null || !(v > 0)) return [cal[i], (typeof v === 'number' && isFinite(v)) ? v : null];
+          return [cal[i], +(v / base).toFixed(5)];
+        });
+        /* 区间视图里 1.00 不再是「持平」，去掉相对净值线的基准虚线 */
+        if (!full && c.markLine) delete c.markLine;
+        return c;
+      });
+    }
+    function optionOf(sel) {
+      var z = idx(sel), s = seriesOf(sel);
+      var isLog = (view === 'nav' && curve && curve.getAxis && curve.getAxis() === 'log');
+      var yax = isLog
+        ? { type: 'log', logBase: 10,
+            axisLabel: { color: '#9FB0C3', fontSize: 10, formatter: function (v) {
+              return v >= 10 ? v.toFixed(0) : (v >= 1 ? v.toFixed(1) : v.toPrecision(2)); } },
+            splitLine: { lineStyle: { color: '#243244' } } }
+        : { type: 'value', scale: true,
+            axisLabel: { color: '#9FB0C3', fontSize: 10, formatter: function (v) { return (+v).toFixed(2); } },
+            splitLine: { lineStyle: { color: '#243244' } } };
+      if (isLog) {
+        var lb = comboLogBoundsTool(s, z[0], z[1]);
+        if (lb) { yax.min = lb.min; yax.max = lb.max; }
+      }
+      if (view === 'dd') { yax.max = 0; yax.scale = false; }
+      return {
+        backgroundColor: 'transparent', tooltip: { trigger: 'axis' },
+        legend: {
+          type: 'plain', bottom: 0, left: 'center', data: s.map(function (x) { return x.name; }),
+          textStyle: { color: '#D8E2EF', fontSize: o.fs || 11 },
+          itemWidth: o.itemW || 14, itemHeight: 8, itemGap: o.itemGap || 10,
+          lineStyle: { width: 0 }
+        },
+        grid: { left: 45, right: 20, top: 16, bottom: (o.legendH || 26) + 30, containLabel: true },
+        xAxis: { type: 'category', data: cal,
+          axisLabel: { color: '#9FB0C3', hideOverlap: true }, axisLine: { lineStyle: { color: '#3E4E63' } } },
+        yAxis: yax,
+        dataZoom: [{ type: 'inside', start: sel[0] * 100, end: sel[1] * 100,
+          zoomOnMouseWheel: false, moveOnMouseMove: false, moveOnMouseWheel: false }],
+        series: s
+      };
+    }
+    function paint(sel, noCtl) {
+      ch.setOption(optionOf(sel), true);
+      try { ch.resize(); } catch (e) { }
+      var inf = R.info(cal, sel), full = R.isFull(sel), kb = o.kpiEl;
+      if (kb) {
+        if (full) kb.innerHTML = o.kpiFullHtml;
+        else {
+          var z = idx(sel);
+          var html = comboRangeKpiTool(o.comboNav, o.benchNav, cal, z[0], z[1], o.rf);
+          kb.innerHTML = html || o.kpiFullHtml;
+        }
+      }
+      if (curve && !noCtl) curve.setInfo(
+        (full ? '<b>全段</b> · ' : '<b>区间</b> · ') + inf.from + ' → ' + inf.to +
+        (full ? ' · 原始净值 · KPI 全段口径'
+              : ' · 起点=1 · KPI 区间口径' + (view === 'dd' ? ' · 回撤只裁显示、不重定基' : '')));
+    }
+    if (!R || !R.curve) { paint([0, 1], true); return; }
+    R.curveDestroy(hostId);
+    var curSel = R.presetValue(cal, '1Y');
+    curve = R.curve(hostId, {
+      kind: 'combo',
+      modes: [{ key: 'nav', label: '净值' }, { key: 'dd', label: '回撤' }],
+      mode: view,
+      labels: cal,
+      value: curSel,
+      zoom: false,
+      tip: '拖动下方白色条选时间段 · 双击还原全段',
+      axis: true,
+      axisWhen: function () { return view === 'nav'; },
+      onAxis: function () { paint(curve.get()); },
+      /* 控制器先 paintMode 再回调 onMode，这里补一次 paint 让 axisWhen 立即生效 */
+      onMode: function (m) { view = m; curve.paint(); paint(curve.get()); },
+      onChange: function (sel) { paint(sel); }
+    });
+    paint(curSel);
+  }
   var _comboCharts = {};
   function _disposeCombo(id) { if (_comboCharts[id]) { try { _comboCharts[id].dispose(); } catch (e) {} delete _comboCharts[id]; } }
   // ---------- 组合保存/加载（独立存储 wufuCb_combos_v1，不混入策略） ----------
@@ -10847,7 +11059,9 @@ function showStrategyDetail(name) {
         resList.forEach(function (r) { r.nav = r.nav.slice(keepFrom); r.calendar = calTrim; });
         rotRes.nav = rotRes.nav.slice(keepFrom);
       }
-      renderComboResult(names, resList, { combo: rotRes.nav, rf: (p2 && p2.risk_free_rate !== undefined) ? p2.risk_free_rate : 0.02 }, null, "rot", rotRes);
+      var _rbCode = comboBenchVal();
+      var _rbNav = comboBenchSeries(resList[0].calendar, _rbCode);
+      renderComboResult(names, resList, { combo: rotRes.nav, rf: (p2 && p2.risk_free_rate !== undefined) ? p2.risk_free_rate : 0.02 }, null, "rot", rotRes, _rbNav, _rbCode);
       showNotice("因子轮动回测完成：最近调仓持仓 " + ((rotRes.trades && rotRes.trades.length) ? rotRes.trades[rotRes.trades.length - 1].to.join("、") : "空仓"));
     });
   }
@@ -10869,6 +11083,7 @@ function showStrategyDetail(name) {
     var sr = document.querySelector('input[name="comboSynth"]:checked');
     if (sr) synth = sr.value;
     if (synth === "rot") {
+      var _cStRot = $("comboRunState"); if (_cStRot) _cStRot.textContent = "计算中…";
       warn.style.display = "none";
       if (!rotFactors().length) { warn.style.display = ""; warn.textContent = "因子轮动请至少启用一个因子"; return; }
       runComboRot(names, start, end, rebKey, rebInt);
@@ -10882,6 +11097,7 @@ function showStrategyDetail(name) {
     var intervalDays = base * rebInt;
     if (names.length < 2) showNotice("相关性需至少 2 个策略；组合净值仍可显示");
     showNotice("正在回测 " + names.length + " 个策略并合成组合，请稍候…");
+    var _cSt0 = $("comboRunState"); if (_cSt0) _cSt0.textContent = "计算中…";
     ensureData(function () {
       var paramsList = [], resList = [];
       names.forEach(function (nm) {
@@ -10899,7 +11115,10 @@ function showStrategyDetail(name) {
         if (comboRf === 0.02 && pp.risk_free_rate !== undefined) comboRf = pp.risk_free_rate;
       });
       var comboRes = buildCombo(resList, w, intervalDays, comboCost, comboRf);
-      renderComboResult(names, resList, comboRes, w);
+      var _cbCode2 = comboBenchVal();
+      var _cbNav2 = comboBenchSeries(resList[0].calendar, _cbCode2);
+      renderComboResult(names, resList, comboRes, w, "fixed", null, _cbNav2, _cbCode2);
+      var _cStDone = $("comboRunState"); if (_cStDone) _cStDone.textContent = "完成 · " + names.length + " 个策略 · 基准 " + (benchNameOf(_cbCode2) || _cbCode2);
       showNotice("组合回测完成");
     });
   }
@@ -10949,7 +11168,7 @@ function showStrategyDetail(name) {
     var den = Math.sqrt(da * db); return den > 0 ? num / den : 0;
   }
   function _pct(x) { return (x * 100).toFixed(2) + "%"; }
-  function renderComboResult(names, resList, comboRes, w, synth, rotRes) {
+  function renderComboResult(names, resList, comboRes, w, synth, rotRes, benchNav, benchCode) {
     $("comboResult").style.display = "";
     var cal = resList[0].calendar;
     var combo = comboRes.combo;
@@ -10965,11 +11184,33 @@ function showStrategyDetail(name) {
     // 净值曲线
     _disposeCombo("comboChart");
     var palette = ["#4FC3F7", "#F59E0B", "#34D399", "#A78BFA", "#F472B6", "#FBBF24", "#60A5FA", "#4ADE80"];
-    var series = [{ name: "组合", type: "line", showSymbol: false, lineStyle: { width: 3, color: "#4FC3F7" }, itemStyle: { color: "#4FC3F7" }, data: cal.map(function (t, i) { return [t, +(combo[i]).toFixed(5)]; }) }];
+    /* v0.78：组合=主蓝 / 基准=回测页灰 / 相对净值=创建日黄，策略线避开这三种主色 */
+    var _mainCols = ["#4FC3F7", "#FBBF24", "#9FB0C3"];
+    var stratPalette = ["#34D399", "#F472B6", "#A78BFA", "#FB7185", "#A3E635", "#F97316", "#22D3EE", "#E879F9", "#2DD4BF", "#F87171", "#818CF8", "#C084FC"].filter(function (c) { return _mainCols.indexOf(c) < 0; });
+    var C_COMBO = "#4FC3F7", C_REL = "#FBBF24", C_BENCH = "#9FB0C3";
+    var series = [{ name: "组合", type: "line", showSymbol: false, z: 10, lineStyle: { width: 3, color: C_COMBO }, itemStyle: { color: C_COMBO }, data: cal.map(function (t, i) { return [t, +(combo[i]).toFixed(5)]; }) }];
     resList.forEach(function (r, idx) {
-      var col = palette[(idx + 1) % palette.length];
+      var col = stratPalette[idx % stratPalette.length];
       series.push({ name: names[idx], type: "line", showSymbol: false, lineStyle: { width: 1.5, color: col }, itemStyle: { color: col }, data: r.nav.map(function (v, i) { return [cal[i], +v.toFixed(5)]; }) });
     });
+    var _cbBench = benchNav || null;
+    var _cbBenchName = (benchCode && typeof benchNameOf === "function" && benchNameOf(benchCode)) || "基准";
+    var benchIdx = -1;
+    if (_cbBench) {
+      benchIdx = series.length;
+      series.push({ name: _cbBenchName, type: "line", showSymbol: false,
+        lineStyle: { width: 1.8, color: C_BENCH }, itemStyle: { color: C_BENCH },
+        data: cal.map(function (t, i) { var b = _cbBench[i]; return (b == null || b !== b || !(b > 0)) ? [t, null] : [t, +b.toFixed(5)]; }) });
+      series.push({ name: "组合相对净值", type: "line", showSymbol: false,
+        lineStyle: { width: 1.8, color: C_REL }, itemStyle: { color: C_REL },
+        data: cal.map(function (t, i) {
+          var _b = _cbBench[i], _n = combo[i];
+          return (_b == null || _b !== _b || !(_b > 0) || _n == null || _n !== _n) ? [t, null] : [t, +(_n / _b).toFixed(5)];
+        }),
+        markLine: { silent: true, symbol: "none", animation: false, label: { show: false },
+          lineStyle: { color: "#7C8DA1", width: 1, type: "dashed", opacity: 0.6 },
+          data: [{ yAxis: 1 }] } });
+    }
     var ch = echarts.init($("comboChart"));
     _comboCharts["comboChart"] = ch;
     // [图例：全部显示 + 自动换行] 上一版用 type:"scroll" 单行翻页，策略名被藏起来需要点箭头翻，
@@ -10989,7 +11230,7 @@ function showStrategyDetail(name) {
       }
       return w;
     }
-    var _lgNames = ["组合"].concat(names);
+    var _lgNames = ["组合"].concat(names, _cbBench ? [_cbBenchName, "组合相对净值"] : []);
     var _rows = 1, _cur = 0;
     _lgNames.forEach(function (nm) {
       var iw = _ITEM_W + 5 + _tw(nm) + _ITEM_GAP;
@@ -11001,18 +11242,13 @@ function showStrategyDetail(name) {
       var _add = Math.max(0, _legendH - 26);
       _chBox.style.height = (340 + _add) + "px";
     }
-    ch.setOption({
-      backgroundColor: "transparent", tooltip: { trigger: "axis" },
-      legend: {
-        type: "plain", bottom: 0, left: "center",
-        textStyle: { color: "#D8E2EF", fontSize: _FS },
-        itemWidth: _ITEM_W, itemHeight: 8, itemGap: _ITEM_GAP,
-        lineStyle: { width: 0 }   // 图例只显示色块+名称，避免长线条占位
-      },
-      grid: { left: 45, right: 20, top: 16, bottom: _legendH + 30, containLabel: true },
-      xAxis: { type: "category", data: cal, axisLabel: { color: "#9FB0C3", hideOverlap: true } },
-      yAxis: { type: "value", scale: true, axisLabel: { color: "#9FB0C3", formatter: function (v) { return v.toFixed(2); } }, splitLine: { lineStyle: { color: "#243244" } } },
-      series: series
+    /* v0.78：组合净值曲线接入统一时间控件（白条 / 日期框 / 六档 / 线性·对数 / 净值·回撤） */
+    mountComboCurveTool(ch, cal, series, {
+      comboNav: combo, benchNav: _cbBench || null, rf: comboRes.rf,
+      benchIdx: benchIdx, benchName: _cbBenchName,
+      kpiEl: kpi, kpiFullHtml: kpi.innerHTML,
+      legendNames: _lgNames, legendH: _legendH,
+      fs: _FS, itemW: _ITEM_W, itemGap: _ITEM_GAP
     });
     // 相关矩阵（日收益率相关）
     var rets = resList.map(function (r) {
@@ -11114,6 +11350,13 @@ function showStrategyDetail(name) {
     }
   }
   $("comboRun").addEventListener("click", function () { runCombo(); });
+  (function () {
+    var cbs = $("comboBenchSel");
+    if (cbs) cbs.addEventListener("change", function () {
+      var st = $("comboRunState");
+      if (st) st.textContent = "基准已改为「" + (typeof benchNameOf === "function" ? benchNameOf(this.value) : this.value) + "」，点「运行组合回测」生效";
+    });
+  })();
 
   // ---------- 回测参数面板分区折叠（按视图独立记忆展开状态） ----------
   // 修复要点：
@@ -11780,7 +12023,7 @@ function showStrategyDetail(name) {
   }
   function fillIdxSelects() {
     if (!RDIDX || !RDIDX.pool) return;
-    [["benchSel", benchSelVal()], ["stSmallSel", stSmallIdx], ["stLargeSel", stLargeIdx]].forEach(function (pair) {
+    [["benchSel", benchSelVal()], ["comboBenchSel", comboBenchVal()], ["stSmallSel", stSmallIdx], ["stLargeSel", stLargeIdx]].forEach(function (pair) {
       var sel = $(pair[0]); if (!sel) return;
       var cur = pair[1];
       sel.innerHTML = "";
