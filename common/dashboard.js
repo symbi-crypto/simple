@@ -301,7 +301,7 @@
     var ri = $('idxRangeInfo');
     if (ri && window.WufuRange) {
       var inf = WufuRange.info(t.labels || [], selIDX);
-      ri.textContent = WufuRange.isFull(selIDX)
+      ri.innerHTML = WufuRange.isFull(selIDX)
         ? '拖动下方时间条，以所选区间开头为起点重算收益 · 双线各自归一 100 · 周频'
         : '<b>' + inf.from + ' → ' + inf.to + '</b> · 起点=100 · 沪深300 ' +
           (rb1.ret === null ? '—' : (rb1.ret >= 0 ? '+' : '') + rb1.ret.toFixed(1) + '%') +

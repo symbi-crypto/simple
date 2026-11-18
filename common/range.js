@@ -220,12 +220,26 @@
     return [i0 / (n - 1), 1];
   };
 
-  /* 年份刻度：labels 形如 YYYY-MM / YYYY-MM-DD，每年只保留第一次出现的那个 */
-  R.yearTicks = function (labels) {
-    var out = [], last = null;
-    (labels || []).forEach(function (L, i) {
-      var y = String(L).slice(0, 4);
-      if (y && y !== last) { out.push({ i: i, text: y }); last = y; }
+  /* 年份刻度：labels 形如 YYYY-MM / YYYY-MM-DD，每年只保留第一次出现的那个。
+     v0.73：再加「最小像素间距」过滤。数据常从 11 月起，首年与下一年第一次出现
+     只隔几个点（5 年约 11px、10 年约 5px），而 4 位年份在 360 viewBox 里约 20px，
+     必然叠字。按可见点数把 28px 换算成索引间距，太近就整年跳过；
+     每个年份只在第一次出现处判断一次，避免同年中段又冒出一个标签。
+     opts: { minPx: 28, width: 310 } —— 调用方都是 34..344 的 310px 绘图区。 */
+  R.yearTicks = function (labels, opts) {
+    opts = opts || {};
+    var L = labels || [], n = L.length;
+    var width = opts.width || 310, minPx = opts.minPx || 28;
+    var stepPx = n > 1 ? width / (n - 1) : width;
+    var minGap = Math.max(1, Math.ceil(minPx / Math.max(stepPx, 0.0001)));
+    var out = [], lastI = -1e9, seen = {};
+    L.forEach(function (v, i) {
+      var y = String(v).slice(0, 4);
+      if (!y || seen[y]) return;
+      seen[y] = true;
+      if (i - lastI < minGap) return;
+      out.push({ i: i, text: y });
+      lastI = i;
     });
     return out;
   };

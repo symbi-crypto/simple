@@ -75,7 +75,10 @@
       var e = document.createElement('div');
       e.className = 'mcard' + (i === active ? ' on' : '');
       e.innerHTML = '<div class="mn">' + esc(it.name) + '</div><div class="mv">' + (it.value == null ? '—' : Math.round(it.value) + '<span style="font-size:10px;color:#9FB0C3">%</span>') + '</div>';
-      e.onclick = function () { active = i; isel = [0, 1]; if (rngI) rngI.reset(); renderCards(d); renderArea(d); };
+      /* v0.73：切指标卡也会把区间还原全段；必须通知 quickI，
+         否则按钮仍高亮「1年」、日期框仍是旧值，与曲线脱钩。 */
+      e.onclick = function () { active = i; isel = [0, 1]; if (rngI) rngI.reset();
+        if (quickI) quickI.mark([0, 1]); renderCards(d); renderArea(d); };
       box.appendChild(e);
     });
   }

@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=73"></script>
+<script src="../common/range.js?v=74"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded",function(){
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 <div id="viewDashboard" style="display:none">
-  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=70" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=74" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
 </div>
 <div id="viewRotation" style="display:none">
 <div id="step1">
@@ -10170,8 +10170,11 @@ function showStrategyDetail(name) {
     if (all) all.addEventListener("click", function () { var L = (window.ICView && ICView.poolList) ? ICView.poolList() : []; L.forEach(function (p) { icSelAll(p.code, true); }); if (window.ICView) ICView.render(); });
     if (none) none.addEventListener("click", function () { var L = (window.ICView && ICView.poolList) ? ICView.poolList() : []; L.forEach(function (p) { icSelAll(p.code, false); }); if (window.ICView) ICView.render(); });
     var facAll = document.getElementById("icFacAll"), facNone = document.getElementById("icFacNone");
-    if (facAll) facAll.addEventListener("click", function () { var c = document.querySelectorAll("#icFactors input"); for (var i = 0; i < c.length; i++) c[i].checked = true; });
-    if (facNone) facNone.addEventListener("click", function () { var c = document.querySelectorAll("#icFactors input"); for (var i = 0; i < c.length; i++) c[i].checked = false; });
+    /* v0.73：只改 DOM 不写回闭包 fSel，随后点「标的全选」触发 renderSetup()
+       -> renderFactorBox() 会用旧 fSel 重建，把刚勾的因子清成 0。
+       dispatchEvent(change) 让 renderFactorBox 自带的监听同步 fSel。 */
+    if (facAll) facAll.addEventListener("click", function () { var c = document.querySelectorAll("#icFactors input[type=checkbox]"); for (var i = 0; i < c.length; i++) { c[i].checked = true; c[i].dispatchEvent(new Event("change")); } });
+    if (facNone) facNone.addEventListener("click", function () { var c = document.querySelectorAll("#icFactors input[type=checkbox]"); for (var i = 0; i < c.length; i++) { c[i].checked = false; c[i].dispatchEvent(new Event("change")); } });
     var run = document.getElementById("icRun");
     if (run) run.addEventListener("click", function () { if (window.ICView) ICView.run(); });
   })();
