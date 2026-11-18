@@ -419,5 +419,203 @@
     return { mark: mark, paint: paintInputs, el: q };
   };
 
+
+  /* ---------------- 统一曲线控制器（v0.70） ----------------
+     一个图表 id 对应唯一一个控制器：唯一 DOM、唯一 sel 状态、唯一一组监听。
+     kind 相同（净值/回撤内部重绘）只 update 回调，不重建、不重置 window；
+     kind 变化（净值 ⇄ 定投）才 destroy → 重建，即「注销 → 设 mode → 重绘」。
+     这样切页不会再留下两条白条、两行快捷按钮或绑在旧闭包上的监听。         */
+  var CURVES = {};
+  var QK = ['1M', '3M', '6M', '1Y', '2Y', 'ALL'];
+  var QN = { '1M': '1个月', '3M': '3个月', '6M': '6个月', '1Y': '1年', '2Y': '2年', 'ALL': '全部' };
+  R.curve = function (id, cfg) {
+    cfg = cfg || {};
+    var kind = cfg.kind || 'nav';
+    var old = CURVES[id];
+    if (old && old.kind === kind) { old.update(cfg); return old; }
+    if (old) old.destroy();
+    var el = document.getElementById(id);
+    if (!el || !el.parentNode) return null;
+    ensureStyle();
+    var parent = el.parentNode, modeEl, root, host, quick, info, tipEl, rng = null;
+    var timer = null, expect = null, dead = false;
+    var state = {
+      sel: (cfg.value && cfg.value.length === 2) ? [cfg.value[0], cfg.value[1]] : [0, 1],
+      mode: cfg.mode || ((cfg.modes && cfg.modes[0] && cfg.modes[0].key) || 'nav'),
+      align: !!(cfg['switch'] && cfg['switch'].on),
+      labels: cfg.labels || [],
+      key: 'ALL'
+    };
+
+    modeEl = document.createElement('div');
+    modeEl.id = '__navMode_' + id;
+    modeEl.className = 'wr-modebar';
+    modeEl.setAttribute('style', 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px');
+    parent.insertBefore(modeEl, el);
+
+    root = document.createElement('div');
+    root.id = '__wrCurve_' + id;
+    root.className = 'wr-curve';
+    parent.insertBefore(root, el.nextSibling);
+    tipEl = document.createElement('div'); tipEl.className = 'wr-tip'; root.appendChild(tipEl);
+    host = document.createElement('div'); host.id = '__wr_' + id; root.appendChild(host);
+    quick = document.createElement('div'); quick.id = '__navQuick_' + id; quick.className = 'wr-quick'; root.appendChild(quick);
+    info = document.createElement('div'); info.id = '__navRangeInfo_' + id; info.className = 'wr-info'; root.appendChild(info);
+    quick.innerHTML = '<div class="wr-quick-row"><span class="wr-quick-lab">展示区间</span>' +
+      '<input type="date" data-q="from" aria-label="起始日期" /><span class="wr-quick-sep">-</span>' +
+      '<input type="date" data-q="to" aria-label="结束日期" /></div>' +
+      '<div class="wr-quick-btns">' + QK.map(function (k) {
+        return '<button type="button" data-v="' + k + '">' + QN[k] + '</button>';
+      }).join('') + '</div>';
+
+    function btnStyle(on) {
+      return 'cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;' +
+        (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
+            : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;');
+    }
+    function paintMode() {
+      var html = '';
+      (cfg.modes || []).forEach(function (m) {
+        html += '<button type="button" data-mode="' + m.key + '" style="' + btnStyle(m.key === state.mode) + '">' + m.label + '</button>';
+      });
+      if (cfg['switch'])
+        html += '<span class="wr-quick-sep" style="margin-left:8px"></span>' +
+          '<button type="button" data-switch="1" style="' + btnStyle(state.align) + '">' + cfg['switch'].label + '</button>';
+      if ((cfg.modes || []).length)
+        html += '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
+      modeEl.innerHTML = html;
+      var hint = document.getElementById('__navModeHint_' + id);
+      if (hint && typeof cfg.hint === 'function') { try { hint.textContent = cfg.hint(state) || ''; } catch (e) { } }
+    }
+    function day(i) { return String(state.labels[i] || '').slice(0, 10); }
+    function infoOf(sel) {
+      var L = state.labels, n = L.length;
+      if (!n) return { from: '', to: '', i0: 0, i1: 0 };
+      var i0 = Math.round(sel[0] * (n - 1)), i1 = Math.round(sel[1] * (n - 1));
+      if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+      return { from: day(i0), to: day(i1), i0: i0, i1: i1 };
+    }
+    function paintQuick() {
+      var bs = quick.getElementsByTagName('button'), j;
+      for (j = 0; j < bs.length; j++)
+        bs[j].className = (bs[j].getAttribute('data-v') === state.key) ? 'on' : '';
+      var inf = infoOf(state.sel);
+      var fi = quick.querySelector('[data-q="from"]'), ti = quick.querySelector('[data-q="to"]');
+      if (fi && document.activeElement !== fi) fi.value = inf.from;
+      if (ti && document.activeElement !== ti) ti.value = inf.to;
+      var lab = quick.querySelector('.wr-quick-lab');
+      if (lab) lab.textContent = state.key === 'CUSTOM' ? '展示区间 · 自定义' : '展示区间';
+    }
+    function paintInfo() {
+      if (typeof cfg.info === 'function') {
+        try { info.innerHTML = cfg.info(state) || ''; } catch (e) { }
+      }
+    }
+    function paintAll() {
+      tipEl.textContent = cfg.tip || '';
+      paintMode(); paintQuick(); paintInfo();
+    }
+    function fireChange() {
+      if (cfg.zoom !== false && window.echarts && echarts.getInstanceByDom) {
+        var ch = echarts.getInstanceByDom(el);
+        if (ch && ch.dispatchAction)
+          ch.dispatchAction({ type: 'dataZoom', dataZoomIndex: 0, start: state.sel[0] * 100, end: state.sel[1] * 100 });
+      }
+      paintQuick(); paintInfo();
+      if (typeof cfg.onChange === 'function') cfg.onChange(state.sel.slice(), state);
+    }
+    rng = R.mount(host.id, {
+      value: state.sel,
+      onChange: function (x) {
+        state.sel = [x[0], x[1]];
+        if (expect && Math.abs(x[0] - expect[0]) < 1e-6 && Math.abs(x[1] - expect[1]) < 1e-6) { /* keep key */ }
+        else state.key = R.isFull(x) ? 'ALL' : 'CUSTOM';
+        expect = null;
+        fireChange();
+      }
+    });
+    if (rng) rng.setLabels(state.labels);
+
+    function set(x, k) {
+      expect = [x[0], x[1]];
+      state.key = k || 'CUSTOM';
+      if (rng) rng.set(x); else { state.sel = [x[0], x[1]]; fireChange(); }
+      paintQuick();
+    }
+    quick.addEventListener('click', function (ev) {
+      var b = ev.target;
+      if (!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-v')) return;
+      var k = b.getAttribute('data-v'), L = state.labels, n = L.length;
+      if (n < 2) return;
+      if (k === 'ALL') { set([0, 1], 'ALL'); return; }
+      var months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12, '2Y': 24 }[k];
+      if (!months) return;
+      var d = new Date(day(n - 1) + 'T00:00:00+08:00');
+      d.setMonth(d.getMonth() - months);
+      var p2 = function (x) { return ('0' + x).slice(-2); };
+      var cut = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), i0 = 0;
+      for (var z = 0; z < n; z++) if (day(z) >= cut) { i0 = z; break; }
+      set([i0 / (n - 1), 1], k);
+    });
+    quick.addEventListener('change', function (ev) {
+      if (!ev.target || !ev.target.getAttribute || !ev.target.getAttribute('data-q')) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        timer = null;
+        var fi = quick.querySelector('[data-q="from"]'), ti = quick.querySelector('[data-q="to"]');
+        var f = fi && fi.value, t = ti && ti.value, n = state.labels.length;
+        if (!f || !t || f > t || n < 2) return;
+        var i0 = 0, i1 = n - 1, z;
+        for (z = 0; z < n; z++) if (day(z) >= f) { i0 = z; break; }
+        for (z = n - 1; z >= 0; z--) if (day(z) <= t) { i1 = z; break; }
+        if (i1 <= i0) { state.key = 'CUSTOM'; paintQuick(); return; }
+        set([i0 / (n - 1), Math.min(1, i1 / (n - 1))], 'CUSTOM');
+      }, 140);
+    });
+    modeEl.addEventListener('click', function (ev) {
+      var b = ev.target;
+      if (!b || b.tagName !== 'BUTTON') return;
+      if (b.getAttribute('data-switch')) {
+        state.align = !state.align; paintMode(); paintInfo();
+        if (typeof cfg.onSwitch === 'function') cfg.onSwitch(state.align, state);
+        return;
+      }
+      var m = b.getAttribute('data-mode');
+      if (!m) return;
+      state.mode = m; paintMode();
+      if (typeof cfg.onMode === 'function') cfg.onMode(m, state);
+    });
+
+    paintAll();
+    var api = {
+      kind: kind, state: state, rng: rng,
+      get: function () { return state.sel.slice(); },
+      set: set,
+      setLabels: function (ls) { state.labels = ls || []; if (rng) rng.setLabels(state.labels); paintQuick(); },
+      setMode: function (m) { state.mode = m; paintMode(); },
+      setSwitch: function (on) { state.align = !!on; paintMode(); paintInfo(); },
+      setInfo: function (html) { info.innerHTML = html || ''; },
+      paint: paintAll,
+      update: function (c2) {
+        cfg = c2 || {};
+        if (cfg.labels) state.labels = cfg.labels;
+        if (cfg.mode) state.mode = cfg.mode;
+        if (rng) rng.setLabels(state.labels);
+        paintAll();
+      },
+      destroy: function () {
+        if (dead) return; dead = true;
+        if (timer) clearTimeout(timer);
+        if (modeEl && modeEl.parentNode) modeEl.parentNode.removeChild(modeEl);
+        if (root && root.parentNode) root.parentNode.removeChild(root);
+        delete CURVES[id];
+      }
+    };
+    CURVES[id] = api;
+    return api;
+  };
+  R.curveOf = function (id) { return CURVES[id] || null; };
+  R.curveDestroy = function (id) { if (CURVES[id]) CURVES[id].destroy(); };
+
   window.WufuRange = R;
 })();
