@@ -201,6 +201,25 @@
   };
   R.isFull = function (sel) { return !sel || (sel[0] <= 0.0001 && sel[1] >= 0.9999); };
 
+  /* v0.72：快捷档窗口的唯一算法。默认 1 年、点按钮、由 sel 反推高亮，三处共用，
+     不再各写一份日期计算。labels 是 'YYYY-MM-DD' 字符串数组。 */
+  R.presetValue = function (labels, key) {
+    var n = (labels || []).length;
+    if (n < 2 || !key || key === 'ALL') return [0, 1];
+    var months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12, '2Y': 24 }[key];
+    if (!months) return [0, 1];
+    var last = String(labels[n - 1] || '').slice(0, 10);
+    var d = new Date(last + 'T00:00:00+08:00');
+    if (isNaN(d.getTime())) return [0, 1];
+    d.setMonth(d.getMonth() - months);
+    var p2 = function (x) { return ('0' + x).slice(-2); };
+    var cut = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+    var i0 = 0;
+    for (var z = 0; z < n; z++)
+      if (String(labels[z] || '').slice(0, 10) >= cut) { i0 = z; break; }
+    return [i0 / (n - 1), 1];
+  };
+
   /* 年份刻度：labels 形如 YYYY-MM / YYYY-MM-DD，每年只保留第一次出现的那个 */
   R.yearTicks = function (labels) {
     var out = [], last = null;
@@ -443,13 +462,15 @@
     if (!el || !el.parentNode) return null;
     ensureStyle();
     var parent = el.parentNode, modeEl, root, host, quick, info, tipEl, rng = null;
-    var timer = null, expect = null, dead = false;
+    var timer = null, dead = false;
     var state = {
       sel: (cfg.value && cfg.value.length === 2) ? [cfg.value[0], cfg.value[1]] : [0, 1],
       mode: cfg.mode || ((cfg.modes && cfg.modes[0] && cfg.modes[0].key) || 'nav'),
       align: !!(cfg['switch'] && cfg['switch'].on),
       labels: cfg.labels || [],
-      key: cfg.key || ((cfg.value && cfg.value.length === 2 && !R.isFull(cfg.value)) ? 'CUSTOM' : 'ALL')
+      /* v0.72：key 不再独立存真值，由 sel 通过 keyOf() 反推；此处仅占位，
+         paintQuick() 会立即覆盖。避免 update() 把高亮写死成某一档。 */
+      key: 'ALL'
     };
 
     modeEl = document.createElement('div');
@@ -492,6 +513,19 @@
       var hint = document.getElementById('__navModeHint_' + id);
       if (hint && typeof cfg.hint === 'function') { try { hint.textContent = cfg.hint(state) || ''; } catch (e) { } }
     }
+    /* v0.72：由当前窗口反推该高亮哪个按钮。拖条后的任意窗口 -> CUSTOM，
+       全段 -> ALL，与某个快捷档窗口重合(±2 个索引) -> 对应档。 */
+    function keyOf(sel, labels) {
+      var n = (labels || []).length;
+      if (n < 2 || R.isFull(sel)) return 'ALL';
+      var ks = ['1M', '3M', '6M', '1Y', '2Y'], i, v;
+      for (i = 0; i < ks.length; i++) {
+        v = R.presetValue(labels, ks[i]);
+        if (Math.abs(v[0] - sel[0]) * (n - 1) <= 2 && Math.abs(v[1] - sel[1]) <= 0.0001)
+          return ks[i];
+      }
+      return 'CUSTOM';
+    }
     function day(i) { return String(state.labels[i] || '').slice(0, 10); }
     function infoOf(sel) {
       var L = state.labels, n = L.length;
@@ -501,9 +535,11 @@
       return { from: day(i0), to: day(i1), i0: i0, i1: i1 };
     }
     function paintQuick() {
+      var k = keyOf(state.sel, state.labels);
+      state.key = k;
       var bs = quick.getElementsByTagName('button'), j;
       for (j = 0; j < bs.length; j++)
-        bs[j].className = (bs[j].getAttribute('data-v') === state.key) ? 'on' : '';
+        bs[j].className = (bs[j].getAttribute('data-v') === k) ? 'on' : '';
       var inf = infoOf(state.sel);
       var fi = quick.querySelector('[data-q="from"]'), ti = quick.querySelector('[data-q="to"]');
       if (fi && document.activeElement !== fi) fi.value = inf.from;
@@ -533,36 +569,24 @@
       value: state.sel,
       onChange: function (x) {
         state.sel = [x[0], x[1]];
-        if (expect && Math.abs(x[0] - expect[0]) < 1e-6 && Math.abs(x[1] - expect[1]) < 1e-6) { /* keep key */ }
-        else state.key = R.isFull(x) ? 'ALL' : 'CUSTOM';
-        expect = null;
         fireChange();
       }
     });
     if (rng) rng.setLabels(state.labels);
 
     function set(x, k) {
-      expect = [x[0], x[1]];
-      state.key = k || 'CUSTOM';
-      if (rng) rng.set(x); else { state.sel = [x[0], x[1]]; fireChange(); }
-      paintQuick();
+      state.sel = [x[0], x[1]];
+      if (rng) rng.set(state.sel, true);
+      fireChange();
     }
     quick.addEventListener('click', function (ev) {
       var b = ev.target;
       if (!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-v')) return;
       try { b.blur(); } catch (e) { }
       try { ev.preventDefault(); } catch (e) { }
-      var k = b.getAttribute('data-v'), L = state.labels, n = L.length;
+      var k = b.getAttribute('data-v'), n = state.labels.length;
       if (n < 2) return;
-      if (k === 'ALL') { set([0, 1], 'ALL'); return; }
-      var months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12, '2Y': 24 }[k];
-      if (!months) return;
-      var d = new Date(day(n - 1) + 'T00:00:00+08:00');
-      d.setMonth(d.getMonth() - months);
-      var p2 = function (x) { return ('0' + x).slice(-2); };
-      var cut = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), i0 = 0;
-      for (var z = 0; z < n; z++) if (day(z) >= cut) { i0 = z; break; }
-      set([i0 / (n - 1), 1], k);
+      set(R.presetValue(state.labels, k), k);
     });
     quick.addEventListener('change', function (ev) {
       if (!ev.target || !ev.target.getAttribute || !ev.target.getAttribute('data-q')) return;
@@ -607,7 +631,8 @@
         cfg = c2 || {};
         if (cfg.labels) state.labels = cfg.labels;
         if (cfg.mode) state.mode = cfg.mode;
-        if (cfg.key) state.key = cfg.key;
+        /* v0.72：刻意不读 cfg.key。高亮一律由 sel 派生，
+           否则任何一次重绘都会把按钮写回初始档，与曲线窗口脱钩。 */
         if (cfg.value && cfg.value.length === 2) {
           state.sel = [cfg.value[0], cfg.value[1]];
           if (rng) rng.set(state.sel, true);

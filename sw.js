@@ -6,9 +6,9 @@
      兼容「服务器自动二次压缩」与「原样返回」两种托管行为
    · 导航请求离线时才回首页；静态资源失败原样抛错，不把 gz 伪装成 HTML
    · 先装小文件再串行装大 gz；单个大文件带超时 + 重试，失败不拖垮整批
-   改任何页面或数据文件后请把 CACHE 末段 +1（v0.71 → v0.72）；1.0 之前一律用 v0.x。
+   改任何页面或数据文件后请把 CACHE 末段 +1（v0.72 → v0.73）；1.0 之前一律用 v0.x。
    ============================================================ */
-var CACHE = "wufu-all-v0.72";
+var CACHE = "wufu-all-v0.73";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
@@ -114,7 +114,7 @@ self.addEventListener("fetch", function (e) {
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
     /* v0.69d：主文档、看板 HTML 与 common 下 4 个看板脚本均 network-first。
-       u.pathname 不含 query，所以带 ?v=72 的请求同样命中本分支并回写无 query 的缓存键。 */
+       u.pathname 不含 query，所以带 ?v=73 的请求同样命中本分支并回写无 query 的缓存键。 */
     if (/\/(etf|cb)\/tool\.html$/.test(u.pathname) || /\/(etf|cb)\/(dashboard|gold)\.html$/.test(u.pathname) || /\/common\/(range|dashboard|gold|industry)\.js$/.test(u.pathname)) {
       try {
         var fresh2 = await fetch(req);

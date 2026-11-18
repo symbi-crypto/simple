@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=72"></script>
+<script src="../common/range.js?v=73"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -8403,7 +8403,7 @@ function buildChips() {
       tooltip: baseChart().tooltip,
       legend: { data: legend, top: 4, textStyle: { fontSize: 12 } },
       grid: { left: 56, right: 20, top: 36, bottom: 40, containLabel: true },
-      xAxis: { type: "time", minInterval: 365 * 24 * 3600 * 1000, axisLabel: { fontSize: 11, hideOverlap: false, formatter: function (v) { return "" + new Date(v).getFullYear(); } } },
+      xAxis: { type: "time", minInterval: 365 * 24 * 3600 * 1000, axisLabel: { fontSize: 11, hideOverlap: true, formatter: function (v) { return "" + new Date(v).getFullYear(); } } },
       yAxis: { type: "value", scale: true, axisLabel: { fontSize: 11, formatter: opts.yFmt || function (v) { return v.toFixed(1); } } },
       dataZoom: [{ type: "inside", start: 0, end: 100, zoomOnMouseWheel: false, moveOnMouseMove: false, moveOnMouseWheel: false }],
       series: series
@@ -8515,14 +8515,12 @@ function buildChips() {
     // v0.70：切换键由 WufuRange.curve 统一渲染，这里只留模式状态
     var view = "nav", active = null, baseSeries = null;
     // ---- 统一白色透明时间条：选区初始定位在最近 1 年，与手动拖条同一套逻辑（v0.66）----
+    /* v0.72：与快捷按钮共用同一套窗口算法；按钮高亮由 sel 反推，不再各存一份 key。
+       旧写法依赖 dates 为毫秒时间戳，遇到字符串日历会静默退化成全段。 */
     var oneYearA = 0;
-    (function () {
-      if (N < 2) return;
-      var cut = dates[N - 1] - 365 * 86400000, i0 = 0;
-      for (var q = 0; q < N; q++) { if (dates[q] >= cut) { i0 = q; break; } }
-      oneYearA = i0 / (N - 1);
-      if (!isFinite(oneYearA) || oneYearA < 0) oneYearA = 0;
-    })();
+    if (window.WufuRange && typeof WufuRange.presetValue === 'function')
+      oneYearA = WufuRange.presetValue(r.calendar || [], '1Y')[0];
+    if (!isFinite(oneYearA) || oneYearA < 0 || oneYearA > 1) oneYearA = 0;
     var curSel = [oneYearA, 1], curve = null;
     function syncZoom(x) {
       var ch = charts[id];
@@ -8555,7 +8553,6 @@ function buildChips() {
         mode: view,
         labels: r.calendar || [],
         value: curSel,
-        key: '1Y',
         zoom: false,
         tip: '拖动下方白色条选时间段 · 双击还原全段',
         hint: function () { return view === 'dd' ? '全段 / 创建后重算 / 基准' : '创建日后为加粗线'; },
@@ -8567,6 +8564,18 @@ function buildChips() {
       });
       paintInfo();
     }
+    /* v0.72：按可见跨度决定年份密度，>=4 年时每 2 年一个标签，390 宽不再叠字。
+       抽成函数是因为拖条 / 点快捷档走 apply() 而非 draw()，不重设就会沿用上一次的 step。 */
+    function yearFmt() {
+      var i0 = Math.round(curSel[0] * (N - 1));
+      var y0 = parseInt(String(r.calendar[i0] || '').slice(0, 4), 10);
+      var y1 = parseInt(String(r.calendar[N - 1] || '').slice(0, 4), 10);
+      var step = (isFinite(y0) && isFinite(y1) && (y1 - y0) >= 4) ? 2 : 1;
+      return function (v) {
+        var y = new Date(v).getFullYear();
+        return (y % step === 0) ? '' + y : '';
+      };
+    }
     function zoomPct() { return [curSel[0] * 100, curSel[1] * 100]; }
     function draw(keepZoom) {
       var vz = zoomPct();
@@ -8575,6 +8584,7 @@ function buildChips() {
       var opt = lineTimeOption(active.legend, active.series,
         { yFmt: active.yFmt, yMax: active.yMax, gridTop: active.gridTop, graphic: active.tip ? gfx(active.tip) : null });
       opt.dataZoom[0].start = vz[0]; opt.dataZoom[0].end = vz[1];
+      opt.xAxis.axisLabel.formatter = yearFmt();
       opt.tooltip.formatter = function (ps) {
         return WufuRange.tipFormatter(ps, function (v) {
           if (typeof v !== "number" || !isFinite(v)) return "—";
@@ -8650,6 +8660,8 @@ function rangeKpi(i0, i1) {
       try {
         var ch = charts[id];
         if (!ch || typeof ch.setOption !== "function") return;
+        /* v0.72：窗口一变就同步年份密度，不等下一次 draw */
+        ch.setOption({ xAxis: { axisLabel: { formatter: yearFmt() } } });
         var z = idxFromZoom(), i0 = z[0], i1 = z[1];
         var full = window.WufuRange ? WufuRange.isFull(curSel) : (i0 <= 0 && i1 >= N - 1);
         if (view === "dd" || full) {
@@ -8880,7 +8892,7 @@ function renderKpis(r) {
       tooltip: baseChart().tooltip,
       legend: { data: ["策略回撤", benchNameOfRes(r) + ((function () { for (var _z = 0; _z < r.bench_drawdown.length; _z++) { if (r.bench_drawdown[_z] === r.bench_drawdown[_z]) return _z > 0 ? ("（数据自" + r.calendar[_z] + "起）回撤") : "回撤"; } return "回撤"; })())], top: 4, textStyle: { fontSize: 12 } },
       grid: { left: 56, right: 20, top: 34, bottom: 24, containLabel: true },
-      xAxis: { type: "time", minInterval: 365 * 24 * 3600 * 1000, axisLabel: { fontSize: 11, hideOverlap: false, formatter: function (v) { return "" + new Date(v).getFullYear(); } } },
+      xAxis: { type: "time", minInterval: 365 * 24 * 3600 * 1000, axisLabel: { fontSize: 11, hideOverlap: true, formatter: function (v) { return "" + new Date(v).getFullYear(); } } },
       yAxis: { type: "value", max: 0, axisLabel: { fontSize: 11, formatter: function (v) { return (v * 100).toFixed(0) + "%"; } } },
       series: [
         { name: "策略回撤", type: "line", showSymbol: false, lineStyle: { width: 2, color: COLOR.dd }, itemStyle: { color: COLOR.dd }, areaStyle: { color: "rgba(239,68,68,0.10)" }, data: dates.map(function (t, i) { return [t, +r.drawdown[i].toFixed(5)]; }) },
