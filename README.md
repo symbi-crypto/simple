@@ -1,3 +1,38 @@
+# v0.76 · 可转债补「成交口径」 + 净值曲线「线性 / 对数」坐标轴
+
+**① 可转债成交口径对齐 ETF**：可转债 `psecCost` 一直只有佣金/滑点/最低佣金/成本分档，
+没有 ETF 那档 `成交口径` 下拉，引擎收益腿也写死 `open_open`。本轮把三档口径补齐：
+
+- UI 三档：`open_open`（默认）、`close_close`、`close_open`，含 T 日/下单日说明
+- 引擎：入口 `tMode`；开盘价缺失顺延在 `close_close` 跳过；三分解卖出/买入腿按口径切换；
+  逐笔成交记录 `raw_px` 按口径取 `raw_open`/`raw_close`；`buy_i` 初始价按口径取开/收盘
+- 参数：`getParams` 收集、策略存档回填、引擎返回值带 `exec_timing`、结果区显示本次口径
+- 两套都给下拉绑 `scheduleRun`（ETF 原来也漏绑）
+- 定投 / 组合回测仍用默认 `open_open`（引擎兜底），不受本次影响
+
+**② 净值曲线坐标轴**：曲线卡片右上角加「坐标轴 线性 / 对数」，与「净值 / 回撤」同一套
+控制器 `WufuRange.curve` 的状态，不新增实例、不新增控件组。仅净值视图生效；
+回撤含负值，切回撤时自动禁用对数并强制线性，切回净值恢复上次选择。
+`lineTimeOption` 支持 `opts.log`：ECharts `yAxis.type = 'log'`，并把所有 `<=0` 的点置 `null`
+（log 轴要求严格正值）；`apply()` 的区间重定基只输出正值，与对数轴兼容。
+定投市值、看板曲线未加——前者含 0 与现金流，后者多量纲共轴。
+
+**版本**：对外 v0.76；内部缓存 `wufu-all-v0.77`（`sw.js` / `common/header.js` 同步），
+脚本 query `?v=77`。11 个 `.gz`、数据快照、策略参数一个字节没动。
+
+# v0.75 · 可转债「参数调优」整块对齐 ETF 系统
+
+- 上轮只把维度生成逻辑（factorDimDefs / fd: 前缀）移植进 CB 的旧壳子，面板仍是「约束版」：
+  有「调优维度 / tuneDynDims」，缺「停止 / 查看调优报告（弹窗）/ 样本上限 / 种子·换一批 /
+  测速 / 组合数·预计耗时」，也缺固定种子分层抽样、等价权重去重、Top5 邻居验证。
+- 本轮把 ETF 的 `psecTune` 面板与整个 `js_tune.js` 脚本块搬到 CB；仅把依赖 CB 因子口径的
+  4 处换回 CB 已验证实现：NO_WIN_KINDS/DEAD_WIN（KIND_CAT.base 22 项）、factorDimDefs
+  （thrDisp）、applyCombo（thrStore + 旧 fN_* 存档兼容）、describeCombo 旧 key 显示。
+  metric 两边逐字相同，winUsed 函数体相同，WufuUI 接口 CB 全都有。
+- 另暴露 `window.WufuTune`，保住 CB 主系统因子面板的维度刷新钩子。
+- 对外版本 **v0.75**；内部缓存 `wufu-all-v0.76`（`sw.js` / `common/header.js` 同步），
+  脚本 query `?v=76`。11 个 `.gz`、回测引擎、策略参数、数据快照一个字节没动。
+
 # v0.74 · 可转债「参数调优 / 调优维度」按 ETF 系统同一套规则放开
 
 **修的是什么**：ETF 系统在早前那轮「调优面板维度修复」里已换成按因子逐个调参；可转债系统的

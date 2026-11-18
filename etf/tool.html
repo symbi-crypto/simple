@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=75"></script>
+<script src="../common/range.js?v=77"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -6171,6 +6171,7 @@ function buildChips() {
   });
   if ($("hwSel")) $("hwSel").addEventListener("change", scheduleRun);
   if ($("tierSw")) $("tierSw").addEventListener("change", scheduleRun);
+  if ($("execTimingSel")) $("execTimingSel").addEventListener("change", scheduleRun);
   if ($("rebWeightMode")) $("rebWeightMode").addEventListener("change", function () { applyModeUI(); scheduleRun(); });
   if ($("rebStyleSel")) $("rebStyleSel").addEventListener("change", function () { applyModeUI(); scheduleRun(); });
 
@@ -8395,7 +8396,30 @@ function buildChips() {
   // [统一] 时间轴折线图公共配置（净值曲线 / 定投市值曲线共用一套标准）
   function lineTimeOption(legend, series, opts) {
     opts = opts || {};
-    var _yMain = { type: "value", scale: true, axisLabel: { fontSize: 11, formatter: opts.yFmt || function (v) { return v.toFixed(1); } } };
+    /* v0.76 坐标轴：线性 / 对数。log 轴要求所有值 > 0，统一把 <=0 的点置 null；
+       对数轴不设 scale（ECharts 忽略），刻度用自适应位数。 */
+    var _log = !!opts.log;
+    var _yFmt = opts.yFmt || function (v) { return v.toFixed(1); };
+    var _logFmt = function (v) {
+      if (!isFinite(v) || v <= 0) return '';
+      if (v >= 10) return v.toFixed(0);
+      if (v >= 1) return v.toFixed(1);
+      return v.toPrecision(2);
+    };
+    var _yMain = _log
+      ? { type: "log", logBase: 10, axisLabel: { fontSize: 11, formatter: _logFmt } }
+      : { type: "value", scale: true, axisLabel: { fontSize: 11, formatter: _yFmt } };
+    if (_log) series = series.map(function (s0) {
+      var d0 = s0.data;
+      if (!d0 || !d0.map) return s0;
+      var nd = d0.map(function (v) {
+        if (v == null) return v;
+        if (Object.prototype.toString.call(v) === '[object Array]')
+          return (typeof v[1] === 'number' && isFinite(v[1]) && v[1] > 0) ? v : [v[0], null];
+        return (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
+      });
+      var q = {}; for (var k in s0) q[k] = s0[k]; q.data = nd; return q;
+    });
     // 相对净值 = 策略净值 ÷ 基准净值；与净值同量纲、同起点(1)，故共用左轴。
     // 1.00 处画持平参考线：>1 跑赢、<1 跑输（复利口径，非收益差 pp）。
     var o = {
@@ -8569,6 +8593,9 @@ function buildChips() {
         zoom: false,
         tip: '拖动下方白色条选时间段 · 双击还原全段',
         hint: function () { return view === 'dd' ? '全段 / 创建后重算 / 基准' : '创建日后为加粗线'; },
+        axis: true,
+        axisWhen: function () { return view === 'nav'; },
+        onAxis: function () { draw(true); },
         onChange: function (sel) {
           if (!alive()) return;
           curSel = sel; syncZoom(sel); apply(); paintInfo();
@@ -8590,12 +8617,18 @@ function buildChips() {
       };
     }
     function zoomPct() { return [curSel[0] * 100, curSel[1] * 100]; }
+    /* v0.76：坐标轴由统一控制器持有；回撤含负值，只在净值视图生效 */
+    function axisLog() {
+      var cr = (window.WufuRange && WufuRange.curveOf) ? WufuRange.curveOf(id) : null;
+      return !!(cr && cr.getAxis && cr.getAxis() === 'log');
+    }
     function draw(keepZoom) {
       var vz = zoomPct();
       active = view === "nav" ? navView() : ddView();
       baseSeries = active.series.map(function (s) { return s.data; });
       var opt = lineTimeOption(active.legend, active.series,
-        { yFmt: active.yFmt, yMax: active.yMax, gridTop: active.gridTop, graphic: active.tip ? gfx(active.tip) : null });
+        { yFmt: active.yFmt, yMax: active.yMax, gridTop: active.gridTop,
+          log: (view === "nav" && axisLog()), graphic: active.tip ? gfx(active.tip) : null });
       opt.dataZoom[0].start = vz[0]; opt.dataZoom[0].end = vz[1];
       opt.xAxis.axisLabel.formatter = yearFmt();
       opt.tooltip.formatter = function (ps) {

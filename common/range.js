@@ -481,6 +481,8 @@
       sel: (cfg.value && cfg.value.length === 2) ? [cfg.value[0], cfg.value[1]] : [0, 1],
       mode: cfg.mode || ((cfg.modes && cfg.modes[0] && cfg.modes[0].key) || 'nav'),
       align: !!(cfg['switch'] && cfg['switch'].on),
+      /* v0.76：坐标轴用户选择（value / log）；getAxis 直接回它，是否生效由调用方按 mode 决定 */
+      axis: cfg.axis ? (cfg.axisDefault || 'value') : null,
       labels: cfg.labels || [],
       /* v0.72：key 不再独立存真值，由 sel 通过 keyOf() 反推；此处仅占位，
          paintQuick() 会立即覆盖。避免 update() 把高亮写死成某一档。 */
@@ -513,6 +515,14 @@
         (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
             : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;');
     }
+    /* v0.76：坐标轴按钮只在允许对数时出现（回撤含负值 → 禁用并强制线性） */
+    function axisWhen(st) {
+      try { return cfg.axisWhen ? !!cfg.axisWhen(st) : (st.mode === 'nav'); }
+      catch (e) { return st.mode === 'nav'; }
+    }
+    function axisEff() {
+      return (cfg.axis && axisWhen(state) && state.axis === 'log') ? 'log' : 'value';
+    }
     function paintMode() {
       var html = '';
       (cfg.modes || []).forEach(function (m) {
@@ -521,11 +531,21 @@
       if (cfg['switch'])
         html += '<span class="wr-quick-sep" style="margin-left:8px"></span>' +
           '<button type="button" data-switch="1" style="' + btnStyle(state.align) + '">' + cfg['switch'].label + '</button>';
+      if (cfg.axis) {
+        var aw = axisWhen(state), eff = axisEff();
+        var dis = aw ? '' : ' disabled';
+        var ds = aw ? '' : 'opacity:.45;cursor:not-allowed;';
+        html += '<span class="wr-quick-sep" style="margin-left:auto">坐标轴</span>' +
+          '<button type="button" data-axis="value"' + dis + ' style="' + btnStyle(eff === 'value') + ds + '">线性</button>' +
+          '<button type="button" data-axis="log"' + dis + ' style="' + btnStyle(eff === 'log') + ds + '">对数</button>';
+      }
       if ((cfg.modes || []).length)
         html += '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
       modeEl.innerHTML = html;
       var hint = document.getElementById('__navModeHint_' + id);
       if (hint && typeof cfg.hint === 'function') { try { hint.textContent = cfg.hint(state) || ''; } catch (e) { } }
+      if (hint && cfg.axis && !axisWhen(state))
+        hint.textContent = (hint.textContent ? hint.textContent + ' · ' : '') + '回撤含负值，仅线性';
     }
     /* v0.72：由当前窗口反推该高亮哪个按钮。拖条后的任意窗口 -> CUSTOM，
        全段 -> ALL，与某个快捷档窗口重合(±2 个索引) -> 对应档。 */
@@ -620,6 +640,13 @@
     modeEl.addEventListener('click', function (ev) {
       var b = ev.target;
       if (!b || b.tagName !== 'BUTTON') return;
+      if (b.getAttribute('data-axis')) {
+        if (b.disabled) return;
+        state.axis = b.getAttribute('data-axis');
+        paintMode();
+        if (typeof cfg.onAxis === 'function') cfg.onAxis(state.axis, state);
+        return;
+      }
       if (b.getAttribute('data-switch')) {
         state.align = !state.align; paintMode(); paintInfo();
         if (typeof cfg.onSwitch === 'function') cfg.onSwitch(state.align, state);
@@ -639,6 +666,8 @@
       setLabels: function (ls) { state.labels = ls || []; if (rng) rng.setLabels(state.labels); paintQuick(); },
       setMode: function (m) { state.mode = m; paintMode(); },
       setSwitch: function (on) { state.align = !!on; paintMode(); paintInfo(); },
+      getAxis: function () { return state.axis || 'value'; },
+      setAxis: function (v) { state.axis = (v === 'log') ? 'log' : 'value'; paintMode(); },
       setInfo: function (html) { info.innerHTML = html || ''; },
       paint: paintAll,
       update: function (c2) {
