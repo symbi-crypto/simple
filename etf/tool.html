@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=74"></script>
+<script src="../common/range.js?v=75"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -683,7 +683,7 @@ document.addEventListener("DOMContentLoaded",function(){
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 <div id="viewDashboard" style="display:none">
-  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=74" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=75" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
 </div>
 <div id="viewGold" style="display:none">
   <iframe data-dash id="goldFrame" title="黄金看板" src="about:blank" data-src="gold.html?embed=1&amp;v=70" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
@@ -1151,7 +1151,7 @@ document.addEventListener("DOMContentLoaded",function(){
 <div class="sfold">
 <button type="button" class="sfold-h" data-g="tune"><b>参数调优与策略验证</b><span class="sf-a">点击展开</span></button>
 <div class="sfold-b hide" id="sfg-tune"><div class="psec" id="psecTune">
-        <h3>参数调优 <span style="font-size:11px;font-weight:400;color:#7C8DA1">约束版 · 固定因子结构</span></h3>
+        <h3>参数调优 <span style="font-size:11px;font-weight:400;color:#7C8DA1">按因子逐个调参 · 公式/组合/多窗口分别列出</span></h3>
         <div style="font-size:12px;color:#9FB0C3;margin:2px 0 6px">先选优化目标，再勾选要调的参数并填取值；后台分片搜索，结果可一键应用再「保存」。当日截面因子、技术因子里不参与计算的窗口参数、以及仅有 1 个排名因子时的权重，都不生成无效维度。</div>
 
         <div class="row" style="display:flex;align-items:center;margin:3px 0;gap:6px">
@@ -12560,7 +12560,7 @@ function showStrategyDetail(name) {
 <script>// js_tune.js — 参数调优（全空间穷举 / 固定种子随机抽样）
 // ==========================================
 // 基于当前回测参数搜索：全空间不超过样本上限则穷举，超过则固定种子分层随机抽样
-// （等价组合去重），跑完对 Top5 做 ±1 档邻居验证；固定因子结构，只调用户勾选的维度
+// （等价组合去重），跑完对 Top5 做 ±1 档邻居验证；按因子逐个调参，只调用户勾选的维度
 // （逐因子参数与各因子权重 / 持有排名区间 / 调仓周期），在页面主线程分片
 // 后台运行（每批让出 UI，不卡界面），结果按优化目标排序，可一键应用并保存。
 // 依赖 js_ui.js 暴露的 window.WufuUI（getParams/applyParams/run/getData）。

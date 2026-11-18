@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=74"></script>
+<script src="../common/range.js?v=75"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded",function(){
     </div>
 <div id="pageErr" style="display:none;background:#3F1D1D;color:#FECACA;font-size:13px;padding:10px 16px;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 <div id="viewDashboard" style="display:none">
-  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=74" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
+  <iframe data-dash id="dbFrame" title="综合看板" src="about:blank" data-src="dashboard.html?embed=1&amp;v=75" scrolling="no" style="display:block;width:100%;border:0;min-height:360px;background:#1B2634"></iframe>
 </div>
 <div id="viewRotation" style="display:none">
 <div id="step1">
@@ -1111,8 +1111,8 @@ document.addEventListener("DOMContentLoaded",function(){
 <div class="sfold">
 <button type="button" class="sfold-h" data-g="tune"><b>参数调优与策略验证</b><span class="sf-a">点击展开</span></button>
 <div class="sfold-b hide" id="sfg-tune"><div class="psec" id="psecTune">
-        <h3>参数调优 <span style="font-size:11px;font-weight:400;color:#7C8DA1">约束版 · 固定因子结构</span></h3>
-        <div style="font-size:12px;color:#9FB0C3;margin:2px 0 6px">基于当前参数做受限网格搜索：勾选要调优的维度并填取值网格，后台分片运行不卡页面；结果按目标排序，可一键应用到当前参数再「保存」。</div>
+        <h3>参数调优 <span style="font-size:11px;font-weight:400;color:#7C8DA1">按因子逐个调参 · 公式/组合/多窗口分别列出</span></h3>
+        <div style="font-size:12px;color:#9FB0C3;margin:2px 0 6px">基于当前参数做网格搜索：每个因子的每个真实参数各自一组维度，勾选后填取值网格，后台分片运行不卡页面；结果按目标排序，可一键应用到当前参数再「保存」。</div>
 
         <h3>调优维度 <span style="font-size:11px;font-weight:400;color:#7C8DA1">数值维度按 最小/最大/步长 自动生成取值序列</span></h3>
         <div class="row" style="display:flex;align-items:center;margin:3px 0;gap:6px">
@@ -1156,7 +1156,7 @@ document.addEventListener("DOMContentLoaded",function(){
           </span>
         </div>
         <div id="tuneDynDims"></div>
-        <div style="font-size:11px;color:#7C8DA1;margin:3px 0 5px;line-height:1.6">以下维度按当前筛选条件 / 排名条件里的因子数量实时生成，每个因子独立可调。基础因子取当日截面值，窗口不参与计算，故不生成窗口维度；排名因子仅 1 个时权重不改变排序，也不生成权重维度。</div>
+        <div style="font-size:11px;color:#7C8DA1;margin:3px 0 5px;line-height:1.6">维度按当前因子的真实参数实时生成：排名/筛选因子的 A/B/C 窗口、公式里每处数字、组合因子每个成分的窗口与系数，各自独立可调并默认不勾选。当日截面因子不生成窗口维度，仅 1 个排名因子时不生成权重维度（这两类维度扫出来的结果会一模一样）。灰字说明标出被跳过的参数。</div>
 
         <div class="row" style="display:flex;align-items:center;margin:6px 0;gap:6px">
           <button id="tuneBtn" type="button" style="cursor:pointer" class="btn">开始调优</button>
@@ -11832,6 +11832,152 @@ function showStrategyDetail(name) {
     return out;
   }
 
+  // ===== 按因子逐个调参：与 ETF 系统同一套规则，按 CB 因子量纲适配 =====
+  var TD_DEFS = [], TD_INPUT = {}, TD_NOTES = [];
+  function tdId(k) { return 'tdC_' + k.replace(/[^A-Za-z0-9_]/g, '_'); }
+  function tdSeq(lo, hi, st, dec) {
+    if (!isFinite(lo) || !isFinite(hi) || !isFinite(st) || !(hi >= lo) || !(st > 0)) return [];
+    var out = [], n = Math.round((hi - lo) / st) + 1;
+    if (n > 60 || n < 2) return [];
+    for (var i = 0; i < n; i++) {
+      var v = lo + i * st;
+      if (v > hi + 1e-9) break;
+      out.push(+v.toFixed(dec));
+    }
+    return out;
+  }
+  function tdRange(cur, step, loB, hiB, dec) {
+    var st = (step > 0 ? step : 1);
+    var lo = +(cur - 2 * st).toFixed(dec), hi = +(cur + 2 * st).toFixed(dec);
+    if (loB !== null && loB !== undefined && lo < loB) lo = loB;
+    if (hiB !== null && hiB !== undefined && hi > hiB) hi = hiB;
+    return { min: lo, max: hi, step: st, dec: dec };
+  }
+  // 公式数字扫描（与条件行参数框同源）：函数(数字,…)里的每个参数、比较符阈值都单独成组
+  function tdScanNums(src) {
+    src = src || '';
+    var out = [], m;
+    var reCall = /([\u4e00-\u9fa5A-Za-z_][\u4e00-\u9fa5A-Za-z0-9_]*)\s*\(([^()]*)\)/g;
+    while ((m = reCall.exec(src))) {
+      var inner = m[2], base = m.index + m[0].indexOf('(') + 1;
+      var reN = /-?\d+(?:\.\d+)?/g, n, k = 0;
+      while ((n = reN.exec(inner))) {
+        k++;
+        out.push({ s: base + n.index, e: base + n.index + n[0].length,
+                   v: n[0], t: 'arg', lab: m[1] + '·' + k });
+      }
+    }
+    var reCmp = /(>=|<=|==|!=|>|<)\s*(-?\d+(?:\.\d+)?)/g, c;
+    while ((c = reCmp.exec(src))) {
+      var off = c[0].lastIndexOf(c[2]);
+      out.push({ s: c.index + off, e: c.index + off + c[2].length,
+                 v: c[2], t: 'thr', lab: '阈值' });
+    }
+    out.sort(function (a, b) { return a.s - b.s; });
+    var res = [], last = -1;
+    out.forEach(function (x) { if (x.s >= last) { res.push(x); last = x.e; } });
+    return res;
+  }
+  // 当日截面因子：引擎不读 window，生成窗口维度只会扫出一模一样的结果。
+  // 用 CB 自己的因子分类表（比 ETF 的 6 个更全），并补上两个同类技术因子。
+  var NO_WIN_BASE = ((window.KIND_CAT && window.KIND_CAT.base) ? window.KIND_CAT.base.slice() :
+    ["prem_now", "close", "dbl_low", "bond_floor", "bond_prem", "issue_scale", "prev_close",
+     "open", "high", "low", "amount_now", "volume_now", "conv_val", "chg_pct", "turnover_now",
+     "list_days", "remain_y", "redeem_ratio", "zt_flag", "dt_flag", "remain_scale", "ytm"])
+    .concat(["amplitude", "position", "close", "open", "high", "low", "remain_scale", "ytm"]);
+  var NO_WIN_KINDS = {}, _nwi;
+  for (_nwi = 0; _nwi < NO_WIN_BASE.length; _nwi++) NO_WIN_KINDS[NO_WIN_BASE[_nwi]] = 1;
+  // CB 引擎里 5 个多窗口因子（c_vs_ma_lag / ma_vs_ma / ma_vs_ma_lag / ma_lag / vol_ratio）
+  // 都真实读取 window2 / window3，没有 ETF 那类「个别参数不参与指标」的死窗口。
+  var DEAD_WIN = {};
+  function winUsed(kind, j) {
+    if (NO_WIN_KINDS[kind]) return false;
+    var d = DEAD_WIN[kind];
+    return !(d && d[j + 1]);
+  }
+  function factorDimDefs(base) {
+    var defs = [], KI = window.KIND_INFO || {}, fs = (base && base.factors) || [];
+    TD_NOTES = [];
+    var nRank = fs.filter(function (x) { return (x.usage || "rank") !== "filter" && x.enabled !== false; }).length;
+    fs.forEach(function (f, fi) {
+      var usage = (f.usage || "rank") === "filter" ? "筛选" : "排名";
+      var nm = f.name || (KI[f.kind] && KI[f.kind].label) || f.kind || ("因子" + (fi + 1));
+      var pre = "f" + fi + ".";
+      var head = "#" + (fi + 1) + usage + "·" + nm;
+      function push(key, short, cur, step, loB, hiB, dec) {
+        var r = tdRange(cur, step, loB, hiB, dec);
+        defs.push({ key: pre + key, id: tdId(pre + key), label: head + " · " + short,
+                    short: head + "·" + short, cur: cur,
+                    min: r.min, max: r.max, step: r.step, dec: r.dec });
+      }
+      function note(t) { TD_NOTES.push(nm + "：" + t); }
+      if (f.kind === "expr") {
+        var nums = tdScanNums(f.expr || "");
+        nums.forEach(function (it, ni) {
+          var v = parseFloat(it.v);
+          if (isNaN(v)) return;
+          var isThr = it.t === "thr";
+          var st = (it.v.indexOf(".") >= 0) ? 0.5 : (Math.abs(v) >= 20 ? 5 : 1);
+          var r = tdRange(v, st, isThr ? null : 1, null, st < 1 ? 1 : 0);
+          defs.push({ key: pre + "e" + ni, id: tdId(pre + "e" + ni),
+                      label: head + " · 公式第" + (ni + 1) + "处(" + (isThr ? "阈值" : it.lab) + ")",
+                      short: "#" + (fi + 1) + "公式" + (ni + 1), cur: v,
+                      min: r.min, max: r.max, step: r.step, dec: r.dec });
+        });
+        if (!nums.length) note("公式里没有可扫描的数值参数");
+      } else if (f.kind === "custom") {
+        var ps = f.formula_parts || [];
+        ps.forEach(function (pp, pi) {
+          var ki2 = KI[pp.kind] || {}, nw = ki2.nwin || 1, skipped = 0;
+          for (var j = 0; j < nw; j++) {
+            if (!winUsed(pp.kind, j)) { skipped++; continue; }
+            var fld = ["window", "window2", "window3"][j];
+            var cv = +(pp[fld] !== undefined ? pp[fld] : (j === 0 ? ki2.def : ki2["def" + (j + 1)])) || 0;
+            if (!cv) continue;
+            var stp = j === 0 ? (ki2.wStep || 5) : (ki2["wStep" + (j + 1)] || 1);
+            // key 必须是 cN.w1/w2/w3：applyCombo 用 /^c(\d+)\.w([123])$/ 回写 formula_parts
+            push("c" + pi + ".w" + (j + 1), "成分" + (pi + 1) + "·" + ["A", "B", "C"][j], cv, stp,
+                 j === 0 ? (ki2.wMin || 2) : (ki2["wMin" + (j + 1)] || 1),
+                 j === 0 ? (ki2.wMax || 250) : (ki2["wMax" + (j + 1)] || 60), stp < 1 ? 1 : 0);
+          }
+          if (skipped) note("成分" + (pi + 1) + "「" + (ki2.label || pp.kind) + "」有 " + skipped + " 个窗口不参与计算，已不生成维度");
+          push("c" + pi + ".coef", "成分" + (pi + 1) + "·系数", +(pp.coef || 1), 0.5, null, null, 2);
+        });
+      } else {
+        var ki = KI[f.kind] || {}, nw2 = ki.nwin || 1, skipped2 = 0;
+        for (var j2 = 0; j2 < nw2; j2++) {
+          if (!winUsed(f.kind, j2)) { skipped2++; continue; }
+          var fld2 = ["window", "window2", "window3"][j2];
+          var cv2 = +(f[fld2] !== undefined ? f[fld2] : (j2 === 0 ? ki.def : ki["def" + (j2 + 1)])) || 0;
+          if (!cv2) continue;
+          var stp2 = j2 === 0 ? (ki.wStep || 5) : (ki["wStep" + (j2 + 1)] || 1);
+          push(fld2 === "window" ? "w1" : (fld2 === "window2" ? "w2" : "w3"),
+               ["A", "B", "C"][j2] + "(" + ((ki.winTitles && ki.winTitles[j2]) || fld2) + ")", cv2, stp2,
+               j2 === 0 ? (ki.wMin || 2) : (ki["wMin" + (j2 + 1)] || 1),
+               j2 === 0 ? (ki.wMax || 250) : (ki["wMax" + (j2 + 1)] || 60), stp2 < 1 ? 1 : 0);
+        }
+        if (skipped2) note(skipped2 === nw2 ? "当日截面值，窗口不参与计算" : ("有 " + skipped2 + " 个窗口参数不参与该指标计算，已不生成维度"));
+      }
+      if ((f.usage || "rank") !== "filter") {
+        if (nRank >= 2) push("weight", "权重", +(f.weight !== undefined ? f.weight : 1), 0.5, 0, null, 2);
+        else note("仅 1 个排名因子：权重只缩放得分、不改变排序（权重=0 会全程空仓）");
+      } else {
+        // CB v2 阈值按因子量纲显示/存储（ratio / pct / 原值），比 ETF 的统一 % 口径更准
+        var tc = (window.thrCfg ? window.thrCfg(f.kind) : null) || { u: "", lo: -2, hi: 4, st: 1 };
+        var stored = (f.threshold !== undefined ? f.threshold : 0);
+        var disp = window.thrDisp ? window.thrDisp(f.kind, stored) : stored * 100;
+        push("thr", "阈值" + (tc.u ? "(" + tc.u + ")" : ""), +(+disp).toFixed(2),
+             tc.st || 1, tc.lo, tc.hi, 2);
+      }
+    });
+    return defs;
+  }
+  function fdLabel(key) {
+    var hit = null;
+    TD_DEFS.forEach(function (d) { if (d.key === key) hit = d; });
+    return hit ? hit.short : key;
+  }
+
   // 采集用户勾选的维度与取值，做笛卡尔积（固定项 + 按当前因子实时生成的维度）
   function buildGrid() {
     var dims = [];
@@ -11874,6 +12020,21 @@ function showStrategyDetail(name) {
   function applyCombo(base, combo) {
     var p = JSON.parse(JSON.stringify(base));
     var fs = p.factors || [];
+    // 同一公式可能同时改多处数字：统一收集后按位置倒序替换，避免数字变长导致后续偏移
+    var exprReps = {};
+    Object.keys(combo).forEach(function (k) {
+      if (k.indexOf("fd:") !== 0) return;
+      var m0 = /^fd:f(\d+)\.e(\d+)$/.exec(k); if (!m0) return;
+      (exprReps[m0[1]] = exprReps[m0[1]] || []).push({ n: +m0[2], v: combo[k] });
+    });
+    Object.keys(exprReps).forEach(function (fi) {
+      var fx = fs[+fi]; if (!fx || fx.kind !== "expr") return;
+      var src = fx.expr || "", nums = tdScanNums(src), reps = [];
+      exprReps[fi].forEach(function (e) { if (nums[e.n]) reps.push({ it: nums[e.n], v: e.v }); });
+      reps.sort(function (a, b) { return b.it.s - a.it.s; });
+      reps.forEach(function (r) { src = src.slice(0, r.it.s) + String(r.v) + src.slice(r.it.e); });
+      fx.expr = src;
+    });
     Object.keys(combo).forEach(function (k) {
       var v = combo[k];
       if (k === "rank") {
@@ -11883,13 +12044,37 @@ function showStrategyDetail(name) {
         p.rebalance_mode = v.mode;
         p.rebalance_interval = Math.max(1, parseInt(v.n, 10) || 1);
         p.rebalance_anchor = anchorMap[v.mode];
-      } else {
-        var mm = /^f(\d+)_(win|thr|wgt)$/.exec(k);
-        if (!mm) return;
+      } else if (k.indexOf("fd:") === 0) {
+        var mm = /^fd:f(\d+)\.(.*)$/.exec(k); if (!mm) return;
         var f = fs[+mm[1]]; if (!f) return;
-        if (mm[2] === "win") f.window = Math.max(1, parseInt(v, 10) || 1);
-        else if (mm[2] === "thr") f.threshold = window.thrStore ? window.thrStore(f.kind, v) : (+v || 0);
-        else f.weight = +v || 0;
+        var key = mm[2], m2;
+        if (key === "weight") { f.weight = +v || 0; return; }
+        if (key === "thr") {
+          f.threshold = window.thrStore ? window.thrStore(f.kind, v) : (+v || 0);
+          return;
+        }
+        if ((m2 = /^w([123])$/.exec(key))) {
+          f[["", "window", "window2", "window3"][+m2[1]]] = +v; return;
+        }
+        if ((m2 = /^c(\d+)\.w([123])$/.exec(key))) {
+          var pp = (f.formula_parts || [])[+m2[1]];
+          if (pp) pp[["", "window", "window2", "window3"][+m2[2]]] = +v;
+          return;
+        }
+        if ((m2 = /^c(\d+)\.coef$/.exec(key))) {
+          var pp2 = (f.formula_parts || [])[+m2[1]];
+          if (pp2) pp2.coef = +v;
+          return;
+        }
+        if (/^e\d+$/.test(key)) return;   // 公式数字已在上方统一倒序替换
+      } else {
+        // 旧版 fN_win / fN_thr / fN_wgt 存档兼容
+        var mm2 = /^f(\d+)_(win|thr|wgt)$/.exec(k);
+        if (!mm2) return;
+        var f2 = fs[+mm2[1]]; if (!f2) return;
+        if (mm2[2] === "win") f2.window = Math.max(1, parseInt(v, 10) || 1);
+        else if (mm2[2] === "thr") f2.threshold = window.thrStore ? window.thrStore(f2.kind, v) : (+v || 0);
+        else f2.weight = +v || 0;
       }
     });
     return p;
@@ -11935,68 +12120,82 @@ function showStrategyDetail(name) {
     };
   }
 
-  // 按当前筛选/排名条件的因子数量实时生成调优维度（签名不变则不动 DOM，避免输入时丢焦点）
+  // 按当前因子实时生成调优维度（签名不变则不动 DOM，避免输入时丢焦点）
   var _tuneSig = "", tuneDimState = {};
-  // 兜底：当日截面值（基础因子）与自定义公式，窗口参数不参与计算
-  var NO_WIN_FALLBACK = ["prem_now", "close", "dbl_low", "bond_floor", "bond_prem", "issue_scale",
-    "prev_close", "open", "high", "low", "amount_now", "volume_now", "conv_val", "chg_pct",
-    "turnover_now", "list_days", "remain_y", "redeem_ratio", "zt_flag", "dt_flag"];
   function renderTuneDims() {
     var host = $("tuneDynDims"); if (!host || !W) return;
-    var p; try { p = W.getParams(); } catch (e) { return; }
-    var fs = p.factors || [];
-    var sig = JSON.stringify(fs.map(function (f) { return [f.kind, f.usage || "rank", f.name || "", f.enabled !== false]; }));
+    // 先把用户当前填的取值收回来，重建 DOM 时不丢输入
+    Array.prototype.forEach.call(host.querySelectorAll(".tuneDim"), function (row) {
+      var dk = row.getAttribute("data-key"); if (!dk) return;
+      var stt = tuneDimState[dk] = tuneDimState[dk] || {};
+      var cbx = row.querySelector("input[type=checkbox]");
+      stt.chk = cbx ? cbx.checked : false;
+      [["tmin", "min"], ["tmax", "max"], ["tstep", "step"]].forEach(function (q) {
+        var el = row.querySelector("." + q[0]); if (el && el.value !== "") stt[q[1]] = +el.value;
+      });
+    });
+    var base = null;
+    try { base = W.getParams(); } catch (e) { return; }
+    var fs = base.factors || [];
+    var sig = JSON.stringify(fs.map(function (f) {
+      return [f.kind, f.usage || "rank", f.name || "", f.enabled !== false,
+              f.expr || "", JSON.stringify(f.formula_parts || [])];
+    }));
     if (sig === _tuneSig && host.children.length) return;
     _tuneSig = sig;
+    TD_DEFS = factorDimDefs(base);
     host.innerHTML = "";
-    if (!fs.length) { host.innerHTML = '<div style="font-size:11px;color:#7C8DA1;padding:4px 0">当前无因子，只有持有排名区间 / 调仓周期两个固定维度。</div>'; return; }
-    var noWin = {};
-    ((window.KIND_CAT && window.KIND_CAT.base) || NO_WIN_FALLBACK).forEach(function (k) { noWin[k] = 1; });
-    noWin.expr = 1; noWin.custom = 1;
-    var nRank = fs.filter(function (f) { return (f.usage || "rank") !== "filter" && f.enabled !== false; }).length;
-    fs.forEach(function (f, idx) {
-      var ki = (window.KIND_INFO && KIND_INFO[f.kind]) || {};
-      var nm = f.name || ki.label || ("因子" + (idx + 1));
-      var isRank = (f.usage || "rank") !== "filter";
-      var winOK = !noWin[f.kind];
-      var defs = [], notes = [];
-      // 窗口维度只对真正按 N 日序列计算的因子生成（基础因子/公式给假维度会扫出一模一样的结果）
-      if (winOK) defs.push({ key: "f" + idx + "_win", label: nm + " · 窗口", lo: Math.max(1, (ki.def || 20) - 10), hi: (ki.def || 20) + 10, st: 5 });
-      else notes.push("当日截面值，窗口不参与计算");
-      if (isRank) {
-        // 单因子排名时权重只缩放得分、不改变排序，不生成无效维度
-        if (nRank >= 2) defs.push({ key: "f" + idx + "_wgt", label: nm + " · 权重", lo: 0, hi: 2, st: 0.5 });
-        else notes.push("仅 1 个排名因子：权重只缩放得分、不改变排序");
-      } else {
-        var tc = (window.thrCfg ? window.thrCfg(f.kind) : null) || { u: "", lo: -2, hi: 4, st: 1 };
-        defs.push({ key: "f" + idx + "_thr", label: nm + " · 阈值" + (tc.u ? "（" + tc.u + "）" : ""),
-                    lo: tc.lo, hi: tc.hi, st: tc.st });
-      }
-      if (notes.length) {
-        var note = document.createElement("div");
-        note.style.cssText = "font-size:11px;color:#7C8DA1;padding:2px 0 3px 22px;line-height:1.5";
-        note.textContent = nm + "：" + notes.join("；");
-        host.appendChild(note);
-      }
-      defs.forEach(function (d) {
-        var stt = tuneDimState[d.key] || {};
-        var row = document.createElement("div");
-        row.className = "tuneDim"; row.setAttribute("data-key", d.key);
-        var line1 = document.createElement("div"); line1.className = "td1";
-        var cb = document.createElement("input"); cb.type = "checkbox";
-        cb.checked = !!stt.chk; cb.title = "勾选后参与网格搜索";
-        var sp = document.createElement("span"); sp.textContent = d.label + (isRank ? "（排名）" : "（筛选）");
-        line1.appendChild(cb); line1.appendChild(sp);
-        var line2 = document.createElement("div"); line2.className = "td2";
-        [["tmin", "从", stt.min !== undefined ? stt.min : d.lo], ["tmax", "到", stt.max !== undefined ? stt.max : d.hi], ["tstep", "步长", stt.step !== undefined ? stt.step : d.st]].forEach(function (q) {
-          var lb = document.createElement("label"); lb.textContent = q[1];
-          var inp = document.createElement("input"); inp.type = "number"; inp.className = q[0]; inp.step = "any"; inp.value = q[2];
-          inp.addEventListener("input", function () { (tuneDimState[d.key] = tuneDimState[d.key] || {}); tuneDimState[d.key][{tmin:"min",tmax:"max",tstep:"step"}[q[0]]] = +this.value; });
-          lb.appendChild(inp); line2.appendChild(lb);
+    (TD_NOTES || []).forEach(function (t) {
+      var nt = document.createElement("div");
+      nt.style.cssText = "font-size:11px;color:#7C8DA1;padding:2px 0 3px 22px;line-height:1.5";
+      nt.textContent = "· " + t;
+      host.appendChild(nt);
+    });
+    if (!TD_DEFS.length) {
+      var empty = document.createElement("div");
+      empty.style.cssText = "font-size:11px;color:#7C8DA1;padding:4px 0";
+      empty.textContent = fs.length
+        ? "这些因子没有可调参数（当日截面值 / 单排名因子权重不改变排序）；只有「持有排名区间 / 调仓周期」两个固定维度可勾选。"
+        : "当前无因子，只有持有排名区间 / 调仓周期两个固定维度。";
+      host.appendChild(empty);
+      return;
+    }
+    var nR = fs.filter(function (x) { return (x.usage || "rank") !== "filter"; }).length;
+    var nF = fs.filter(function (x) { return (x.usage || "rank") === "filter"; }).length;
+    var hd = document.createElement("div");
+    hd.style.cssText = "font-size:11px;color:#7C8DA1;margin:0 0 4px;line-height:1.5;padding-left:22px";
+    hd.textContent = "当前 " + nR + " 个排名因子 / " + nF + " 个筛选因子 · 共 " + TD_DEFS.length + " 组可调参数；公式里每处数字、组合里每个因子的参数都单独列出，默认不勾选。";
+    host.appendChild(hd);
+    TD_DEFS.forEach(function (d) {
+      var dk = "fd:" + d.key, stt = tuneDimState[dk] || {};
+      var row = document.createElement("div");
+      row.className = "tuneDim"; row.setAttribute("data-key", dk);
+      var line1 = document.createElement("div"); line1.className = "td1";
+      var cb = document.createElement("input"); cb.type = "checkbox";
+      cb.checked = !!stt.chk; cb.title = "勾选后参与网格搜索";
+      var sp = document.createElement("span"); sp.textContent = d.label; sp.title = d.label;
+      line1.appendChild(cb); line1.appendChild(sp);
+      var cur = document.createElement("span");
+      cur.textContent = "当前 " + d.cur;
+      cur.style.cssText = "font-size:10px;color:#7C8DA1;flex:0 0 auto";
+      line1.appendChild(cur);
+      var line2 = document.createElement("div"); line2.className = "td2";
+      [["tmin", "从", stt.min !== undefined ? stt.min : d.min],
+       ["tmax", "到", stt.max !== undefined ? stt.max : d.max],
+       ["tstep", "步长", stt.step !== undefined ? stt.step : d.step]].forEach(function (q) {
+        var lb = document.createElement("label"); lb.textContent = q[1];
+        var inp = document.createElement("input"); inp.type = "number";
+        inp.className = q[0]; inp.step = "any"; inp.value = q[2];
+        inp.addEventListener("input", function () {
+          (tuneDimState[dk] = tuneDimState[dk] || {});
+          tuneDimState[dk][{ tmin: "min", tmax: "max", tstep: "step" }[q[0]]] = +this.value;
         });
-        cb.addEventListener("change", function () { (tuneDimState[d.key] = tuneDimState[d.key] || {}).chk = this.checked; });
-        row.appendChild(line1); row.appendChild(line2); host.appendChild(row);
+        lb.appendChild(inp); line2.appendChild(lb);
       });
+      cb.addEventListener("change", function () {
+        (tuneDimState[dk] = tuneDimState[dk] || {}).chk = this.checked;
+      });
+      row.appendChild(line1); row.appendChild(line2); host.appendChild(row);
     });
   }
   try { renderTuneDims(); } catch (e) { }
@@ -12004,6 +12203,7 @@ function showStrategyDetail(name) {
   var running = false;
   function runTune() {
     if (running) { $("tuneState").textContent = "调优进行中…"; return; }
+    renderTuneDims();
     var grid = buildGrid();
     if (grid.err) { $("tuneState").textContent = grid.err; return; }
     var base = W.getParams();
@@ -12168,7 +12368,9 @@ function showStrategyDetail(name) {
     var parts = [], fs = (W.getParams().factors || []);
     Object.keys(c).forEach(function (k) {
       var v = c[k], mm = /^f(\d+)_(win|thr|wgt)$/.exec(k);
-      if (mm) {
+      if (k.indexOf("fd:") === 0) {
+        parts.push(fdLabel(k.slice(3)) + " " + v);
+      } else if (mm) {
         var f = fs[+mm[1]] || {}, nm = (window.KIND_INFO && KIND_INFO[f.kind] ? KIND_INFO[f.kind].label : (f.name || ("因子" + (+mm[1] + 1))));
         parts.push(nm + "·" + ({ win: "窗口", thr: "阈值", wgt: "权重" }[mm[2]]) + " " + v);
       } else if (k === "rank") parts.push("结束名次 " + v);
