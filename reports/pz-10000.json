@@ -1,0 +1,11 @@
+{
+  "pz": 10000,
+  "status": null,
+  "sec": 1.76,
+  "err": "RemoteDisconnected: Remote end closed connection without response",
+  "probe_at": "2026-11-19T07:21:49Z",
+  "exit_ip": "135.119.237.77",
+  "rows": 0,
+  "declared_total": null,
+  "first3": []
+}
