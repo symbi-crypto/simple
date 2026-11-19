@@ -41,12 +41,14 @@ jobs:
           for k, v in d.get('fields', {}).items():
               print('   %-6s present=%-6s nonnull=%-6s missing=%s' % (k, v['present'], v['nonnull'], v['missing']))
           s = d.get('snapshot') or {}
-          print('快照: rows=%s total=%s cap_ok=%s cap_missing=%s price_missing=%s' % (
+          print('快照: rows=%s total=%s cap_ok=%s cap_missing=%s price_missing=%s ST=%s date_ok=%s eqret=%s' % (
               s.get('rows'), s.get('declared_total'), s.get('cap_nonnull'),
-              s.get('cap_zero_or_missing'), s.get('price_missing_suspended')))
+              s.get('cap_missing_or_zero'), s.get('price_missing_suspended'),
+              s.get('st_name_count'), s.get('listing_date_ok'), s.get('equal_weight_daily_return_pct')))
           print('小市值400:', s.get('small400'))
           print('昨收市值口径重合:', s.get('prevclose_cap_overlap_with_small400'))
-          print('重复请求:', d.get('repeat'))
+          print('pz上限探测:', d.get('pz_limit_test'))
+          print('分页:', d.get('pages', {}).get('count'), '页 / 失败页', d.get('pages', {}).get('fail_pages'))
           print('历史截面测试:')
           for h in d.get('history', []):
               print('   ', h.get('test'), 'status=', h.get('status'), 'same_as_today=', h.get('same_as_today'),
