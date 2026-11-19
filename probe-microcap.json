@@ -1,288 +1,82 @@
 {
-  "probe_at": "2026-11-19T07:01:46Z",
+  "probe_at": "2026-11-19T07:04:13Z",
+  "version": "v2-paged",
   "question": "按万得微盘股规则自制指数，东财全A截面数据齐不齐",
-  "sources": [
+  "exit_ip": "20.119.103.59",
+  "pz_limit_test": [
     {
-      "id": "82.push2.eastmoney.com",
-      "status": 200,
-      "sec": 2.4,
-      "err": null,
-      "total": 5565,
-      "rows": 100,
-      "sample": {
-        "f2": 21.66,
-        "f3": 20.0,
-        "f6": 783987798.33,
-        "f8": 19.41,
-        "f12": "301348",
-        "f13": 0,
-        "f14": "蓝箭电子",
-        "f20": 5198400000,
-        "f21": 4190746064,
-        "f26": 20230810,
-        "f124": 1795071663
-      }
-    },
-    {
-      "id": "push2.eastmoney.com",
-      "status": 200,
-      "sec": 2.72,
-      "err": null,
-      "total": 5565,
-      "rows": 100,
-      "sample": {
-        "f2": 21.66,
-        "f3": 20.0,
-        "f6": 783987798.33,
-        "f8": 19.41,
-        "f12": "301348",
-        "f13": 0,
-        "f14": "蓝箭电子",
-        "f20": 5198400000,
-        "f21": 4190746064,
-        "f26": 20230810,
-        "f124": 1795071663
-      }
-    },
-    {
-      "id": "16.push2.eastmoney.com",
-      "status": 200,
-      "sec": 3.93,
-      "err": null,
-      "total": 5565,
-      "rows": 100,
-      "sample": {
-        "f2": 21.66,
-        "f3": 20.0,
-        "f6": 783987798.33,
-        "f8": 19.41,
-        "f12": "301348",
-        "f13": 0,
-        "f14": "蓝箭电子",
-        "f20": 5198400000,
-        "f21": 4190746064,
-        "f26": 20230810,
-        "f124": 1795071663
-      }
-    }
-  ],
-  "snapshot": {
-    "rows": 100,
-    "declared_total": 5565,
-    "cap_nonnull": 100,
-    "cap_zero_or_missing": 0,
-    "float_nonnull": 100,
-    "price_nonnull": 100,
-    "price_missing_suspended": 0,
-    "cap_min": 582863990.0,
-    "cap_median": 5515293280.5,
-    "cap_max": 1046758200758.0,
-    "st_name_count": 10,
-    "tui_name_count": 0,
-    "prefix_dist": {
-      "00": 31,
-      "60": 24,
-      "68": 23,
-      "30": 22
-    },
-    "listing_date_ok": 0,
-    "small400": {
-      "count": 100,
-      "cap_min": 582863990.0,
-      "cap_median": 5515293280.5,
-      "cap_max": 1046758200758.0,
-      "st_or_delist": 10,
-      "listed_lt_60d": 1,
-      "suspended": 0,
-      "sample_first5": [
-        [
-          "301030",
-          "*ST仕净",
-          "582863990.0"
-        ],
-        [
-          "300338",
-          "*ST开元",
-          "628094520.0"
-        ],
-        [
-          "000010",
-          "*ST美丽",
-          "1184141861.0"
-        ],
-        [
-          "000838",
-          "*ST发展",
-          "1320554604.0"
-        ],
-        [
-          "002514",
-          "*ST宝馨",
-          "1476070241.0"
-        ]
-      ],
-      "sample_last2": [
-        [
-          "688347",
-          "华虹宏力",
-          "385428969529.0"
-        ],
-        [
-          "688981",
-          "中芯国际",
-          "1046758200758.0"
-        ]
-      ]
-    },
-    "prevclose_cap_overlap_with_small400": 100,
-    "prevclose_cap_note": "用 f20/(1+f3) 近似昨收总市值；与当日市值排序前400的重合数"
-  },
-  "repeat": [
-    {
-      "seq": 1,
+      "pz": 100,
       "status": 200,
       "rows": 100,
       "total": 5565,
-      "sec": 2.87,
+      "sec": 2.93,
       "err": null
     },
     {
-      "seq": 2,
-      "status": 200,
-      "rows": 100,
-      "total": 5565,
-      "sec": 3.75,
-      "err": null
-    },
-    {
-      "seq": 3,
+      "pz": 200,
       "status": null,
       "rows": 0,
       "total": null,
-      "sec": 1.05,
-      "err": "RemoteDisconnected: Remote end closed connection without response"
-    }
-  ],
-  "history": [
-    {
-      "test": "clist&date=20261118",
-      "status": null,
-      "first_code": null,
-      "total": null,
-      "same_as_today": false,
-      "sec": 1.07,
+      "sec": 1.94,
       "err": "RemoteDisconnected: Remote end closed connection without response"
     },
     {
-      "test": "clist&trade_date=20261118",
-      "status": 200,
-      "first_code": "301348",
-      "total": 5565,
-      "same_as_today": true,
-      "sec": 3.64,
-      "err": null
-    },
-    {
-      "test": "clist&as_of=20261118",
+      "pz": 500,
       "status": null,
-      "first_code": null,
+      "rows": 0,
       "total": null,
-      "same_as_today": false,
-      "sec": 1.05,
-      "err": "RemoteDisconnected: Remote end closed connection without response"
-    },
-    {
-      "test": "clist&end_date=20261118",
-      "status": null,
-      "first_code": null,
-      "total": null,
-      "same_as_today": false,
-      "sec": 2.36,
+      "sec": 3.31,
       "err": "HTTPError: HTTP Error 502: Bad Gateway"
     },
     {
-      "test": "push2his kline 单只历史",
-      "status": 200,
+      "pz": 1000,
+      "status": null,
       "rows": 0,
-      "sample": null,
-      "note": "只有 OHLCV，没有历史总市值/股本，无法还原历史市值截面",
-      "sec": 4.38,
-      "err": null
+      "total": null,
+      "sec": 1.1,
+      "err": "RemoteDisconnected: Remote end closed connection without response"
     },
     {
-      "test": "datacenter RPT_DMSK_TS_STOCK",
-      "status": 200,
-      "sample": "{\"version\":null,\"result\":null,\"success\":false,\"message\":\"报表配置不存在,RPT_DMSK_TS_STOCK\",\"code\":9501}",
-      "sec": 0.95,
-      "err": null
+      "pz": 5000,
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "sec": 2.18,
+      "err": "RemoteDisconnected: Remote end closed connection without response"
     }
   ],
-  "exit_ip": "20.98.143.83",
-  "fields": {
-    "f12": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f14": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f2": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f3": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f20": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f21": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f6": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f8": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f26": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f124": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    },
-    "f13": {
-      "present": 100,
-      "nonnull": 100,
-      "missing": 0
-    }
+  "pages": {
+    "count": 3,
+    "declared_total": null,
+    "rows_fetched": 0,
+    "pz_used": 100,
+    "fail_pages": 3,
+    "log_tail": [
+      {
+        "pn": 1,
+        "status": null,
+        "rows": 0,
+        "fresh": 0,
+        "err": "RemoteDisconnected: Remote end closed connection without response"
+      },
+      {
+        "pn": 2,
+        "status": null,
+        "rows": 0,
+        "fresh": 0,
+        "err": "HTTPError: HTTP Error 502: Bad Gateway"
+      },
+      {
+        "pn": 3,
+        "status": null,
+        "rows": 0,
+        "fresh": 0,
+        "err": "RemoteDisconnected: Remote end closed connection without response"
+      }
+    ]
   },
   "summary": {
     "ok": false,
-    "rows": 100,
-    "cap_coverage": 1.0,
-    "st_identified_by_name": true,
-    "listing_date_available": false,
-    "repeat_all_ok": false,
-    "history_backfill_possible": false,
-    "verdict": "当日全A快照齐，可支撑「从今天起逐日累积」；历史逐日市值截面补不回来（clist 忽略日期参数，单只K线无市值字段）。"
+    "reason": "分页未拿到任何数据"
   }
 }
