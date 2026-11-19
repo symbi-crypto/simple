@@ -15,7 +15,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: 检出仓库
         uses: actions/checkout@v4
@@ -47,8 +47,10 @@ jobs:
               s.get('st_name_count'), s.get('listing_date_ok'), s.get('equal_weight_daily_return_pct')))
           print('小市值400:', s.get('small400'))
           print('昨收市值口径重合:', s.get('prevclose_cap_overlap_with_small400'))
-          print('pz上限探测:', d.get('pz_limit_test'))
-          print('分页:', d.get('pages', {}).get('count'), '页 / 失败页', d.get('pages', {}).get('fail_pages'))
+          print('此前观察:', d.get('prior_observations'))
+          pg = d.get('pages', {})
+          print('分页: 尝试 %s 页 / 失败 %s 页 / 耗时 %ss / 实拉 %s' % (
+              pg.get('pages_attempted'), pg.get('fail_pages'), pg.get('elapsed_sec'), pg.get('rows_fetched')))
           print('历史截面测试:')
           for h in d.get('history', []):
               print('   ', h.get('test'), 'status=', h.get('status'), 'same_as_today=', h.get('same_as_today'),
