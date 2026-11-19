@@ -1,77 +1,49 @@
 {
-  "probe_at": "2026-11-19T07:04:13Z",
-  "version": "v2-paged",
+  "probe_at": "2026-11-19T07:07:05Z",
+  "version": "v3-gentle-paging",
   "question": "按万得微盘股规则自制指数，东财全A截面数据齐不齐",
-  "exit_ip": "20.119.103.59",
-  "pz_limit_test": [
-    {
-      "pz": 100,
-      "status": 200,
-      "rows": 100,
-      "total": 5565,
-      "sec": 2.93,
-      "err": null
-    },
-    {
-      "pz": 200,
-      "status": null,
-      "rows": 0,
-      "total": null,
-      "sec": 1.94,
-      "err": "RemoteDisconnected: Remote end closed connection without response"
-    },
-    {
-      "pz": 500,
-      "status": null,
-      "rows": 0,
-      "total": null,
-      "sec": 3.31,
-      "err": "HTTPError: HTTP Error 502: Bad Gateway"
-    },
-    {
-      "pz": 1000,
-      "status": null,
-      "rows": 0,
-      "total": null,
-      "sec": 1.1,
-      "err": "RemoteDisconnected: Remote end closed connection without response"
-    },
-    {
-      "pz": 5000,
-      "status": null,
-      "rows": 0,
-      "total": null,
-      "sec": 2.18,
-      "err": "RemoteDisconnected: Remote end closed connection without response"
-    }
+  "prior_observations": [
+    "v1: pz=10000 被截断为 100 行，total 报 5565；连续第3次请求 RemoteDisconnected",
+    "v2: pz=200/500/1000/5000 全被断连或 502，随后该出口连续 3 页全失败",
+    "结论: 单次上限 100 行，且同出口高频请求会临时封禁，必须低频分页"
   ],
+  "exit_ip": "4.149.237.177",
   "pages": {
-    "count": 3,
-    "declared_total": null,
+    "declared_total": 5565,
     "rows_fetched": 0,
-    "pz_used": 100,
-    "fail_pages": 3,
+    "pages_attempted": 6,
+    "fail_pages": 6,
+    "elapsed_sec": 341,
     "log_tail": [
       {
         "pn": 1,
-        "status": null,
-        "rows": 0,
-        "fresh": 0,
-        "err": "RemoteDisconnected: Remote end closed connection without response"
-      },
-      {
-        "pn": 2,
-        "status": null,
-        "rows": 0,
-        "fresh": 0,
+        "ok": false,
         "err": "HTTPError: HTTP Error 502: Bad Gateway"
       },
       {
-        "pn": 3,
-        "status": null,
-        "rows": 0,
-        "fresh": 0,
+        "pn": 2,
+        "ok": false,
         "err": "RemoteDisconnected: Remote end closed connection without response"
+      },
+      {
+        "pn": 3,
+        "ok": false,
+        "err": "HTTPError: HTTP Error 502: Bad Gateway"
+      },
+      {
+        "pn": 4,
+        "ok": false,
+        "err": "RemoteDisconnected: Remote end closed connection without response"
+      },
+      {
+        "pn": 5,
+        "ok": false,
+        "err": "RemoteDisconnected: Remote end closed connection without response"
+      },
+      {
+        "pn": 6,
+        "ok": false,
+        "err": "HTTPError: HTTP Error 502: Bad Gateway"
       }
     ]
   },
