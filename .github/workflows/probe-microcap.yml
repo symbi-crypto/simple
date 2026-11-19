@@ -46,3 +46,36 @@ jobs:
           name: probe-pz-${{ matrix.pz }}
           path: probe-pz-${{ matrix.pz }}.json
           retention-days: 14
+
+      - name: 回写报告（各job独立路径，无git冲突）
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PZ: ${{ matrix.pz }}
+        run: |
+          python - <<'PY'
+          import json, base64, urllib.request, urllib.error, os
+          pz = os.environ['PZ']; tok = os.environ['GH_TOKEN']
+          repo = os.environ['GITHUB_REPOSITORY']
+          api = 'https://api.github.com/repos/%s/contents/reports/pz-%s.json' % (repo, pz)
+          hdr = {'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json',
+                 'User-Agent': 'probe', 'X-GitHub-Api-Version': '2022-11-28'}
+          sha = None
+          try:
+              with urllib.request.urlopen(urllib.request.Request(api, headers=hdr), timeout=20) as r:
+                  sha = json.loads(r.read().decode()).get('sha')
+          except Exception:
+              pass
+          body = {'message': 'chore: pz=%s 单请求探针报告' % pz,
+                  'content': base64.b64encode(open('probe-pz-%s.json' % pz, 'rb').read()).decode(),
+                  'branch': 'main'}
+          if sha:
+              body['sha'] = sha
+          req = urllib.request.Request(api, data=json.dumps(body).encode(), method='PUT',
+                                       headers=dict(hdr, **{'Content-Type': 'application/json'}))
+          try:
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  print('PUT', pz, r.status)
+          except urllib.error.HTTPError as e:
+              print('PUT', pz, 'HTTP', e.code, e.read().decode()[:200])
+          PY
