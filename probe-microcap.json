@@ -1,54 +1,180 @@
 {
-  "probe_at": "2026-11-19T07:07:05Z",
-  "version": "v3-gentle-paging",
-  "question": "按万得微盘股规则自制指数，东财全A截面数据齐不齐",
-  "prior_observations": [
-    "v1: pz=10000 被截断为 100 行，total 报 5565；连续第3次请求 RemoteDisconnected",
-    "v2: pz=200/500/1000/5000 全被断连或 502，随后该出口连续 3 页全失败",
-    "结论: 单次上限 100 行，且同出口高频请求会临时封禁，必须低频分页"
+  "probe_at": "2026-11-19T07:14:57Z",
+  "version": "v4-diagnose",
+  "question": "东财全A截面：pn>1 是否被挡 / 是否IP限流 / 有无批量备选",
+  "prior": [
+    "v1 pz=10000 被截断为100行(total 5565)，连续第3次请求断连",
+    "v2 pz>100 全被断连或502，随后连续3页全失败",
+    "v3 预请求拿到 total=5565，但 pn=1..6 六页全 502/断连，耗时341s"
   ],
-  "exit_ip": "4.149.237.177",
-  "pages": {
-    "declared_total": 5565,
-    "rows_fetched": 0,
-    "pages_attempted": 6,
-    "fail_pages": 6,
-    "elapsed_sec": 341,
-    "log_tail": [
-      {
-        "pn": 1,
-        "ok": false,
-        "err": "HTTPError: HTTP Error 502: Bad Gateway"
-      },
-      {
-        "pn": 2,
-        "ok": false,
-        "err": "RemoteDisconnected: Remote end closed connection without response"
-      },
-      {
-        "pn": 3,
-        "ok": false,
-        "err": "HTTPError: HTTP Error 502: Bad Gateway"
-      },
-      {
-        "pn": 4,
-        "ok": false,
-        "err": "RemoteDisconnected: Remote end closed connection without response"
-      },
-      {
-        "pn": 5,
-        "ok": false,
-        "err": "RemoteDisconnected: Remote end closed connection without response"
-      },
-      {
-        "pn": 6,
-        "ok": false,
-        "err": "HTTPError: HTTP Error 502: Bad Gateway"
-      }
-    ]
+  "exit_ip": "52.160.226.232",
+  "seq_pn": [
+    {
+      "tag": "A1 pn=1 82.push2.eastmoney.com",
+      "status": 200,
+      "rows": 100,
+      "total": 5565,
+      "first": "301348",
+      "sec": 2.53,
+      "err": null,
+      "raw_head": ""
+    },
+    {
+      "tag": "A2 pn=2 push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.1,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "A3 pn=1 16.push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.79,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    },
+    {
+      "tag": "A4 pn=10 82.push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.93,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    },
+    {
+      "tag": "A5 pn=1 push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.98,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "A6 pn=30 16.push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.44,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    },
+    {
+      "tag": "A7 pn=1 82.push2.eastmoney.com",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.96,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    }
+  ],
+  "ulist": {
+    "tag": "B ulist.np 批量5只",
+    "status": 200,
+    "rows": 5,
+    "total": 5,
+    "first": "600000",
+    "sec": 1.93,
+    "err": null,
+    "raw_head": ""
   },
-  "summary": {
-    "ok": false,
-    "reason": "分页未拿到任何数据"
+  "fs_split": [
+    {
+      "tag": "C 沪主板",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 0.91,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "C 深主板",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.07,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "C 创业板",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.12,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "C 科创板",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.1,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    }
+  ],
+  "seq_repeat": [
+    {
+      "tag": "D1 pn=1 重复",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.86,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    },
+    {
+      "tag": "D2 pn=1 重复",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.01,
+      "err": "HTTPError: HTTP Error 502: Bad Gateway",
+      "raw_head": ""
+    },
+    {
+      "tag": "D3 pn=1 重复",
+      "status": null,
+      "rows": 0,
+      "total": null,
+      "first": null,
+      "sec": 1.01,
+      "err": "RemoteDisconnected: Remote end closed connection without response",
+      "raw_head": ""
+    }
+  ],
+  "akshare": {
+    "available": false,
+    "err": "东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+  },
+  "diagnosis": {
+    "pn1_success": 1,
+    "pn1_total": 4,
+    "pngt1_success": 0,
+    "pngt1_total": 3,
+    "repeat_success": 0,
+    "ulist_ok": true,
+    "akshare_ok": false
   }
 }
