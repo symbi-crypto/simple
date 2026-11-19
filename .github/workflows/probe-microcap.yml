@@ -25,9 +25,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 安装可选依赖（AKShare，用于验证现成接口）
-        run: python -m pip install -q akshare || echo "akshare 安装失败，跳过现成接口验证"
-
       - name: 真拉东财全A截面并逐项统计
         env:
           PYTHONIOENCODING: utf-8
@@ -39,22 +36,19 @@ jobs:
           python - <<'PY'
           import json
           d = json.load(open('probe-microcap.json', encoding='utf-8'))
-          print('出口 IP:', d.get('exit_ip'))
-          print('此前观察:', d.get('prior'))
-          print('--- pn 交替序列 ---')
-          for x in d.get('seq_pn', []):
-              print('   %-38s status=%-5s rows=%-4s total=%-6s first=%-8s err=%s' % (
-                  x['tag'], x['status'], x['rows'], x['total'], x['first'], str(x['err'])[:50]))
-          print('--- 批量备选 / fs切分 / 重复 ---')
-          print('ulist.np:', d.get('ulist'))
-          for x in d.get('fs_split', []):
-              print('   %-14s status=%-5s rows=%-4s total=%s err=%s' % (
-                  x['tag'], x['status'], x['rows'], x['total'], str(x['err'])[:50]))
-          for x in d.get('seq_repeat', []):
-              print('   %-14s status=%-5s rows=%s err=%s' % (x['tag'], x['status'], x['rows'], str(x['err'])[:50]))
-          print('AKShare:', d.get('akshare'))
-          print('--- 诊断 ---')
-          print(json.dumps(d.get('diagnosis'), ensure_ascii=False, indent=2))
+          print('出口IP:', d.get('exit_ip'), ' 请求 pz=', d.get('request_pz'),
+                ' status=', d.get('status'), ' 耗时=', d.get('sec'), ' err=', d.get('err'))
+          print('行数:', d.get('rows'), ' 声明total:', d.get('declared_total'), ' 前三:', d.get('first3'))
+          print('字段非空:', {k: v['nonnull'] for k, v in d.get('fields', {}).items()})
+          s = d.get('snapshot') or {}
+          print('总市值有效:', s.get('cap_nonnull'), '/', s.get('rows'),
+                ' 停牌:', s.get('price_missing_suspended'),
+                ' ST:', s.get('st_name_count'), ' 上市日期有效:', s.get('listing_date_ok'))
+          print('最小400只:', s.get('small400'))
+          print('昨收市值口径重合:', s.get('prevclose_cap_overlap_with_small400'))
+          print('全市场等权当日涨跌:', s.get('equal_weight_daily_return_pct'))
+          print('--- 结论 ---')
+          print(json.dumps(d.get('summary'), ensure_ascii=False, indent=2))
           PY
 
       - name: 上传报告
