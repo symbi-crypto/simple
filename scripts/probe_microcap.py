@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""v6 矩阵：每个独立 runner 只发 1 个东财请求，测不同 pz 能返回几行"""
+"""v7：每个独立 runner 只发 1 个东财请求，VARIANT = pz_withut / pz_nout"""
 import json, time, urllib.request, urllib.error, os
 
-PZ = int(os.environ.get('PZ', '100'))
-OUT = 'probe-pz-%d.json' % PZ
+VARIANT = os.environ.get('VARIANT', '10000_nout')
+parts = VARIANT.split('_')
+PZ = int(parts[0])
+USE_UT = len(parts) > 1 and parts[1] == 'withut'
+OUT = 'probe-var-%s.json' % VARIANT
 UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
       'Chrome/122.0.0.0 Safari/537.36')
 HDR = {
     'User-Agent': UA, 'Referer': 'https://quote.eastmoney.com/center/gridlist.html',
     'Accept': '*/*', 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-    'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24"', 'sec-ch-ua-platform': '"Windows"',
 }
 FIELDS = 'f12,f14,f2,f3,f20,f21,f6,f8,f26,f124,f13'
 FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'
 UT = 'fa5fd1943c7b386f172d6893dbfba10b'
-url = ('https://82.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=%d&po=1&np=1'
-       '&fltt=2&invt=2&fid=f3&ut=%s&fs=%s&fields=%s') % (PZ, UT, FS, FIELDS)
+base = ('https://82.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=%d&po=1&np=1'
+        '&fltt=2&invt=2&fid=f3&fs=%s&fields=%s') % (PZ, FS, FIELDS)
+url = base + ('&ut=' + UT if USE_UT else '')
 
 t0 = time.time()
 try:
@@ -27,7 +30,8 @@ try:
 except Exception as e:
     st, body, el, err = None, '', round(time.time() - t0, 2), '%s: %s' % (type(e).__name__, str(e)[:160])
 
-res = {'pz': PZ, 'status': st, 'sec': el, 'err': err,
+res = {'variant': VARIANT, 'pz': PZ, 'use_ut': USE_UT,
+       'status': st, 'sec': el, 'err': err,
        'probe_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
 try:
     r = urllib.request.Request('https://api.ipify.org?format=json', headers={'User-Agent': UA})
@@ -43,21 +47,17 @@ if st == 200:
         diff, total = d.get('diff') or [], d.get('total')
     except Exception as e:
         res['parse_err'] = str(e)
-
 res['rows'] = len(diff)
 res['declared_total'] = total
 res['first3'] = [str(x.get('f12')) + ' ' + str(x.get('f14')) for x in diff[:3]]
 if diff:
-    nn = {}
-    for k in FIELDS.split(','):
-        nn[k] = sum(1 for r in diff if k in r and r[k] not in (None, '-', '', 'null'))
-    res['field_nonnull'] = nn
+    res['field_nonnull'] = {k: sum(1 for r in diff if k in r and r[k] not in (None, '-', '', 'null'))
+                            for k in FIELDS.split(',')}
     res['sample'] = diff[0]
     caps = []
     for r in diff:
-        v = r.get('f20')
         try:
-            c = float(v)
+            c = float(r.get('f20'))
             if c > 0:
                 caps.append(c)
         except (TypeError, ValueError):
@@ -66,7 +66,7 @@ if diff:
     res['st_count'] = sum(1 for r in diff if 'ST' in str(r.get('f14', '')).upper())
     res['date_ok'] = sum(1 for r in diff
                          if len(str(r.get('f26', ''))) == 8 and str(r.get('f26', '')).isdigit())
-print('PZ=%s status=%s rows=%s total=%s cap=%s st=%s date_ok=%s err=%s' % (
-    PZ, st, len(diff), total, res.get('cap_nonnull'), res.get('st_count'),
-    res.get('date_ok'), err), flush=True)
+print('VARIANT=%s pz=%s ut=%s status=%s rows=%s total=%s cap=%s st=%s date_ok=%s err=%s' % (
+    VARIANT, PZ, USE_UT, st, len(diff), total, res.get('cap_nonnull'),
+    res.get('st_count'), res.get('date_ok'), err), flush=True)
 json.dump(res, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
