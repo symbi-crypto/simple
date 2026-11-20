@@ -1,26 +1,26 @@
 {
   "chain": "R",
   "contract": "wufu-patch-v1",
-  "dataAsOf": "2026-11-17",
-  "goal": "2026-11-17",
+  "dataAsOf": "2026-11-20",
+  "goal": "2026-11-20",
   "source": "浏览器代点「一键更新行情」→ 东财 push2his 主源(f51-f61) / 腾讯 newfqkline 失败兜底 / 新浪美股(待探针)",
-  "validatedAt": "2026-11-17T11:48:42.379Z",
+  "validatedAt": "2026-11-20T18:00:54.930Z",
   "targets": {
     "wufuCbQPatch_v1": {
       "name": "可转债",
-      "goal": "2026-11-17",
+      "goal": "2026-11-20",
       "ok": true,
-      "rows": 1599,
-      "last": "2026-11-17",
-      "days": 13
+      "rows": 1604,
+      "last": "2026-11-20",
+      "days": 16
     },
     "wufuQPatch_v1": {
       "name": "ETF",
-      "goal": "2026-11-17",
+      "goal": "2026-11-20",
       "ok": true,
-      "rows": 757,
-      "last": "2026-11-17",
-      "days": 12
+      "rows": 737,
+      "last": "2026-11-20",
+      "days": 27
     }
   },
   "warnings": []
