@@ -26,7 +26,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=80"></script>
+<script src="../common/range.js?v=81"></script>
 <style>
 :root{
   --bg:#1B2634; --card:#202E3F; --line:#243244;
@@ -2145,7 +2145,7 @@ window.WufuExpr = (function () {
   // ---------- 主回测 ----------
   // D: 导出数据对象；params: 参数对象（见 README / UI）
   function backtest(D, params) {
-    if (typeof window !== "undefined") { window.__WUFU_NO_OPEN_SKIP = 0; window.__CB_SCALE_FILL_ISSUE = 0; window.__CB_SCALE_FILL_FIRST = 0; }
+    if (typeof window !== "undefined") { window.__WUFU_NO_OPEN_SKIP = 0; window.__WUFU_NO_REAL_CLOSE_SKIP = 0; window.__CB_SCALE_FILL_ISSUE = 0; window.__CB_SCALE_FILL_FIRST = 0; }
     // ---- 策略配置对象化：兼容 mode 字符串（老调用）与 strategy 配置对象（新 UI），行为等价 ----
     var ST = (params.strategy && typeof params.strategy === "object") ? params.strategy : { mode: params.mode || "rotation" };
     var isReb = ST.mode === "rebalance";
@@ -3504,22 +3504,36 @@ window.WufuExpr = (function () {
       var executed = false, r = 0;
       if (pending) {
         var wNew = pending[0], costPct = pending[1], pendDf = pending[2] || 0;
-        // v0.79 P1-5a：执行日任一需交易腿「无有效开盘价」→ 整期跳过。
-        // 不再回退到（前向填充的）收盘价，也不再逐日顺延、不排队到下一期：
-        // 丢弃本次指令，持仓原样按当日收盘估值，等下一个调仓日重新出信号、重新选债。
-        var openOk = true, k2, code2, o1, c0b, c1b;
-        /* v0.76：close_close 收盘买卖不依赖开盘价，跳过缺失检查 */
-        if (tMode !== "close_close") {
-        for (k2 = 0; k2 < nAssets; k2++) {
-          if (wOld[k2] > 0 || wNew[k2] > 0) {
+        // v0.79 P1-5a：执行日任一需交易腿「无可成交价」→ 整期跳过。
+        // v0.80：close_close 档补「当日有真实成交」判断。CB 的 close 是前向填充的，
+        //   停牌日照样有值；现要求当日原始 open 有效，或 high/low 同时有效（确有盘中成交），
+        //   且 close 有效，才允许按收盘价记账成交。成交额字段 CB 数据不提供，故不作硬判据。
+        //   其余口径仍按原始开盘价判定；两套引擎同一份实现。
+        // 不满足即丢弃本次指令：不顺延、不排队，持仓原样按当日收盘估值，
+        // 等下一个调仓日重新出信号、重新选债。
+        var openOk = true, k2, code2, o1, c0b, c1b, skipWhy = "no_open";
+        if (tMode === "close_close") {
+          skipWhy = "no_real_close";
+          for (k2 = 0; k2 < nAssets; k2++) {
+            if (!(wOld[k2] > 0 || wNew[k2] > 0)) continue;
             code2 = codes[k2];
-            o1 = (opens[code2] && !isMiss(opens[code2][i])) ? opens[code2][i] : NaN;
-            if (isMiss(o1) || !(o1 > 0)) { openOk = false; break; }
+            var oR = (opens[code2] && !isMiss(opens[code2][i])) ? opens[code2][i] : NaN;
+            var hR = (highs[code2] && !isMiss(highs[code2][i])) ? highs[code2][i] : NaN;
+            var lR = (lows[code2] && !isMiss(lows[code2][i])) ? lows[code2][i] : NaN;
+            var cR = (closes[code2] && !isMiss(closes[code2][i])) ? closes[code2][i] : NaN;
+            if (!(cR > 0) || !((oR > 0) || (hR > 0 && lR > 0))) { openOk = false; break; }
+          }
+        } else {
+          for (k2 = 0; k2 < nAssets; k2++) {
+            if (wOld[k2] > 0 || wNew[k2] > 0) {
+              code2 = codes[k2];
+              o1 = (opens[code2] && !isMiss(opens[code2][i])) ? opens[code2][i] : NaN;
+              if (isMiss(o1) || !(o1 > 0)) { openOk = false; break; }
+            }
           }
         }
-        }
         if (!openOk) {
-          /* v0.79：无有效开盘价 → 不记账成交、不扣成本、不写成交记录、不排队。
+          /* v0.79/v0.80：无可成交价 → 不记账成交、不扣成本、不写成交记录、不排队。
              当日仍按持仓收盘价估值（填充 close 也能撑住净值），避免 r=0 漏掉真实涨跌。 */
           var rHold = 0, c0h, c1h;
           for (k2 = 0; k2 < nAssets; k2++) {
@@ -3531,10 +3545,13 @@ window.WufuExpr = (function () {
           r = rHold;
           pending = null;
           executed = false;
-          if (typeof window !== "undefined") window.__WUFU_NO_OPEN_SKIP = (window.__WUFU_NO_OPEN_SKIP || 0) + 1;
+          if (typeof window !== "undefined") {
+            window.__WUFU_NO_OPEN_SKIP = (window.__WUFU_NO_OPEN_SKIP || 0) + 1;
+            if (skipWhy === "no_real_close") window.__WUFU_NO_REAL_CLOSE_SKIP = (window.__WUFU_NO_REAL_CLOSE_SKIP || 0) + 1;
+          }
           if (tradeRecords.length) {
             var trS = tradeRecords[tradeRecords.length - 1];
-            if (trS && !trS.exec_date) trS.skipped = "no_open";
+            if (trS && !trS.exec_date) trS.skipped = skipWhy;
           }
         } else {
           // P1-5b 一字涨跌停（可转债 ±20% 口径，未复权价）：开盘封板且收盘仍在板价 → 对应买卖腿标记不可成交
@@ -3580,6 +3597,8 @@ window.WufuExpr = (function () {
               if (tMode === "close_open" && wBuy > 0 && blk2 !== "buy" && okO && okC1) rLegs += wBuy * (c1b / o1 - 1);
             }
             // 逐笔成交记录（未复权价；金额=引擎记账口径不含成本；数量由渲染层按未复权价整手取整）
+            // v0.80：上面的整期闸门已保证当日存在真实行情行，故 raw_* 缺失时回退到 closes[i]
+            // 取到的是真实收盘价，不再是前向填充值；CB 数据不含 raw_close，此回退必须保留。
             var fundNow = nav * params.initial_capital;
             var pxSellArr = (tMode === "open_open") ? rawOpens : rawCloses;
             var pxBuyArr = (tMode === "close_close") ? rawCloses : rawOpens;
