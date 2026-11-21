@@ -1,11 +1,20 @@
-/* dashboard.js — 综合看板渲染器（v0.59）
-   数据只来自同目录的 cb-daily.json / index-daily.json，指数侧全部由本地真实日线计算，缺数一律显示「—」，不写示意值。 */
+/* dashboard.js — 综合看板渲染器（v0.59 / v0.83 取数改造）
+   v0.83：取数统一走 common/dash-source.js（远端优先 + 包内副本兜底）；
+   index-daily.json 是静态基线，仍只读包内。缺数一律显示「—」，不写示意值。 */
 (function () {
   'use strict';
   var wrap = document.getElementById('dashWrap');
   if (!wrap) return;
   var kind = wrap.getAttribute('data-kind') || 'cb';
   var url = wrap.getAttribute('data-json') || '../cb-daily.json';
+  /* dash-source.js 未加载时退化为原来的同源 fetch，看板不会整块变白 */
+  var loadJSON = (window.WufuDash && WufuDash.load) ? WufuDash.load
+    : function (u, ok, ko) {
+        fetch(u, { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(ok).catch(ko);
+      };
+  var badgeOf = (window.WufuDash && WufuDash.badge) ? WufuDash.badge : function () { return ''; };
   var D = null, years = 5, distKey = '价格';
   var selCB = [0, 1], selIDX = [0, 1], AMT = null, rngCB = null, rngIDX = null, quickCB = null, quickIDX = null;
   function SL(a, sel) { return window.WufuRange ? WufuRange.slice(a, sel) : a; }
@@ -110,7 +119,7 @@
   /* ===================== 可转债看板 ===================== */
   function renderCB() {
     var d = D || {}, s = d.summary || {};
-    var hd = document.querySelector('#c1 .hd span'); if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf);
+    var hd = document.querySelector('#c1 .hd span'); if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf) + badgeOf(d);
     var strip = document.querySelector('#c1 .strip');
     if (strip) strip.innerHTML = '在市 <b>' + T(d.count) + '</b> · 中位价 <b>' + T(s.medianPrice) + '</b> · 溢价率 <b>' + T(s.medianPremium) + '%</b> · 涨 <span class="u">' + T(s.up) + '</span>/跌 <span class="d">' + T(s.down) + '</span>';
     /* 六卡 */
@@ -211,7 +220,7 @@
   function renderIDX() {
     var d = D || {};
     var hd = document.querySelector('#c2 .hd span');
-    if (hd) hd.textContent = '指数基线 ' + T(d.dataAsOf);
+    if (hd) hd.textContent = '指数基线 ' + T(d.dataAsOf) + badgeOf(d);
     function findChg(name) {
       var A = (d.idx || {}).A || [];
       for (var i = 0; i < A.length; i++) if (A[i][0] === name) return A[i][1];
@@ -224,10 +233,9 @@
     drawIdxChart(d);
     if (!AMT && !window.__amtTried) {
       window.__amtTried = true;
-      fetch('../market-amount.json', { cache: 'no-store' })
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(function (j) { AMT = j; if (D) drawIdxChart(D); })
-        .catch(function () { AMT = null; if (D) drawIdxChart(D); });
+      loadJSON('../market-amount.json',
+        function (j) { AMT = j; if (D) drawIdxChart(D); },
+        function () { AMT = null; if (D) drawIdxChart(D); });
     }
     var sn = $('idxSampleNote');
     if (sn) sn.textContent = ((d.trendNote || {})[String(years)]) || d.sampleNote || '样本 —';
@@ -374,7 +382,5 @@
     if (strip) strip.innerHTML = '暂无快照 · 数据文件尚未生成（周五同步后自动出现）';
     boot();
   }
-  fetch(url, { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (d) { D = d; boot(); })
-    .catch(fail);
+  loadJSON(url, function (d) { D = d; boot(); }, fail);
 })();

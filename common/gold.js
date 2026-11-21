@@ -1,10 +1,17 @@
-/* gold.js — 黄金看板渲染器（v0.59）
-   只读 ../gold-daily.json（Actions 算好的快照），缺数显示「—」，绝不写示意值。
+/* gold.js — 黄金看板渲染器（v0.59 / v0.83 取数改造）
+   取数走 common/dash-source.js（远端优先 + 包内副本兜底），缺数显示「—」，绝不写示意值。
    本版按用户要求不含「相对强弱 / 20 日动量」区块。 */
 (function () {
   'use strict';
   var wrap = document.getElementById('goldWrap');
   if (!wrap) return;
+  var loadJSON = (window.WufuDash && WufuDash.load) ? WufuDash.load
+    : function (u, ok, ko) {
+        fetch(u, { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(ok).catch(ko);
+      };
+  var badgeOf = (window.WufuDash && WufuDash.badge) ? WufuDash.badge : function () { return ''; };
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, mode = 'price';
   var gsel = [0, 1], rngG = null, quickG = null;
@@ -47,7 +54,7 @@
         ? '上海金 暂无数据 · 不参与比价</span>'
         : '上海金 <b>' + fmt(sh.value, 2) + '</b> 元/克 ' + chgHtml(sh.chg) + ' · 人民币对照</span>');
     var hd = document.querySelector('#g1 .hd span');
-    if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf);
+    if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf) + badgeOf(d);
   }
 
   /* ---------- 六卡 ---------- */
@@ -247,8 +254,6 @@
     };
   });
 
-  fetch(wrap.getAttribute('data-json') || '../gold-daily.json', { cache: 'no-store' })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (d) { D = d; renderAll(); })
-    .catch(fail);
+  loadJSON(wrap.getAttribute('data-json') || '../gold-daily.json',
+    function (d) { D = d; renderAll(); }, fail);
 })();

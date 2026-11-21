@@ -1,3 +1,37 @@
+# v0.83 · 看板数据自动同步（打包流程修好 + 取数直连 GitHub）
+
+**问题**：GitHub 周度同步已把快照推到 11-20，但整包仍带 11-17 的本地副本；
+花生壳是拖拽发布的静态托管，看板 JSON 走同源相对路径、network-first 只能保证
+「包换了就能拿到」，不能把 GitHub 的新文件变出来。于是顶部实时链显示 11-20，
+CB / 黄金看板标签与曲线末点还停在 11-17。
+
+**做了两层**（方案 C = A + B）：
+
+- **A · 打包流程**：新增 `scripts/pull-snapshots.py`，作为每次打包的第一步，
+  从 `symbi-crypto/simple@main` 拉最新快照并校验 `dataAsOf` 不倒退、`ok !== false`、
+  结构完整（trend / count / boardCount / 5.labels 等）。校验不过就沿用包内
+  「上次成功真值」并写警告，绝不摆空壳；`index-daily.json` 是静态基线，明确排除。
+- **B · 取数链路**：新增 `common/dash-source.js`，`cb-daily.json` /
+  `gold-daily.json` / `industry-daily.json` / `market-amount.json` 优先读
+  jsDelivr（备 raw.githubusercontent.com），失败或拉到空壳回退包内副本；
+  跨域请求由 SW 同源判断直接放行。远端若因 CDN 缓存比包内旧，取两者较新者。
+  回退时标题追加「· 离线副本」，数据照常显示真值，不写示意值。
+
+**本次数据**：包内兜底副本同步到 **2026-11-20**（cb / gold / industry / state /
+sync-status / chain-R-status / 4 份 warnings，共 10 份）。
+`market-amount.json`、`us-etf-daily.json` 远端是失败态空壳，按既有纪律保留包内
+11-17 / 11-16 真值；`index-daily.json` 仍是 10-30 静态基线——这三处不是滞后。
+
+**效果**：以后周度同步推完，用户**强刷即可看到新看板，不必重拖整包**；
+包内副本仍作冷启动与断网兜底。已知限制：jsDelivr 对 `@main` 有缓存，新快照可能
+晚几小时；国内移动侧若两个远端都不可达，会回退包内副本并标注。
+
+**版本**：对外 v0.83；内部缓存 `wufu-all-v0.84`（`sw.js` / `common/header.js` 同步），
+脚本 `?v=84`；`common/dash-source.js` 已加入 SW 预缓存清单与 network-first 分支。
+整包重拖后强刷一次即可。7 个 `.gz`、回测引擎、策略参数、UI 控件一个字节未动。
+
+---
+
 # v0.82 · 颜色与样式单一真源（零视觉变化）
 
 **做了什么**：全站颜色收成一份 `common/theme.css` 的 `--c-*` 变量表（值逐字取自改造前），

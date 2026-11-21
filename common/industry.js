@@ -1,8 +1,15 @@
-/* industry.js — A股行业宽度全景（v0.59）
-   数据只读 ../industry-daily.json，且仅在指数看板展开后才拉，不进首屏。
+/* industry.js — A股行业宽度全景（v0.59 / v0.83 取数改造）
+   取数走 common/dash-source.js（远端优先 + 包内副本兜底），仍在指数看板展开后才拉，不进首屏。
    口径由数据文件的 source 字段决定，前端不写死分类名。 */
 (function () {
   'use strict';
+  var loadJSON = (window.WufuDash && WufuDash.load) ? WufuDash.load
+    : function (u, ok, ko) {
+        fetch(u, { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(ok).catch(ko);
+      };
+  var badgeOf = (window.WufuDash && WufuDash.badge) ? WufuDash.badge : function () { return ''; };
   var NS = 'http://www.w3.org/2000/svg';
   var D = null, years = 5, active = 0, hmode = 'chg', loaded = false;
   var isel = [0, 1], rngI = null, quickI = null;
@@ -34,7 +41,7 @@
     var s = $('indSource');
     if (s) s.textContent = d.source + ' · ' + d.boardCount + '/' + d.boardTotal + ' 个板块 · ' + d.sampleNote;
     var n = $('indSample');
-    if (n) n.textContent = '最新交易日 ' + T(d.dataAsOf);
+    if (n) n.textContent = '最新交易日 ' + T(d.dataAsOf) + badgeOf(d);
   }
 
   /* ---------- 七边形雷达 ---------- */
@@ -206,10 +213,8 @@
   }
   function load() {
     if (loaded) return; loaded = true;
-    fetch('../industry-daily.json', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (d) { D = d; renderAll(); })
-      .catch(fail);
+    loadJSON('../industry-daily.json',
+      function (d) { D = d; renderAll(); }, fail);
   }
 
   /* 展开才拉；切 5/10 年、切热力图模式 */
