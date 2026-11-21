@@ -1,0 +1,1014 @@
+{
+ "contract": "数据方法与契约.md",
+ "contractSha1": "4ed72fc15601",
+ "gate": "pass",
+ "summary": {
+  "blocking": {
+   "total": 51,
+   "passed": 51,
+   "failed": 0
+  },
+  "advisory": {
+   "total": 10,
+   "gaps": 10
+  },
+  "fixtures": {
+   "total": 9,
+   "passed": 9,
+   "failed": 0
+  },
+  "snapshots": 16
+ },
+ "failedBlocking": [],
+ "failedFixtures": [],
+ "gaps": [
+  {
+   "id": "A1",
+   "rule": "§4.1 source",
+   "detail": "2/8 份数据快照缺 source：cb-daily.json, index-daily.json"
+  },
+  {
+   "id": "A2",
+   "rule": "§4.1 warnings",
+   "detail": "2/8 份数据快照缺 warnings：cb-daily.json, index-daily.json"
+  },
+  {
+   "id": "A3",
+   "rule": "§4.1 basis",
+   "detail": "8/8 份数据快照缺 basis：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+  },
+  {
+   "id": "A4",
+   "rule": "§2.5 / §4.1 availableAt",
+   "detail": "8/8 份数据快照缺 availableAt：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+  },
+  {
+   "id": "A5",
+   "rule": "§4.3 contract 格式版本",
+   "detail": "8/8 份仍为链标识（contract: chain/1），缺 {formatVersion,minClient}"
+  },
+  {
+   "id": "A5b",
+   "rule": "§4.1 asOf 与 at 分离",
+   "detail": "5 份状态文件用 at（ISO 时间戳）代替 dataAsOf：external-warnings-A.json, external-warnings-G.json, external-warnings-I.json, external-warnings-L.json, external-warnings.json"
+  },
+  {
+   "id": "A6",
+   "rule": "§2.1–2.3 双源标注与冷却",
+   "detail": "生成端缺 sourceRole / 两源价差标注 / 失败冷却窗口"
+  },
+  {
+   "id": "A7",
+   "rule": "§6 留一份可回退副本",
+   "detail": "未发现 previous 完整副本目录/标记"
+  },
+  {
+   "id": "A8",
+   "rule": "§3.6 部分降级退出码",
+   "detail": "warnings 尚未接入打包流程的「部分降级」退出码（P2）"
+  },
+  {
+   "id": "A9",
+   "rule": "§6 回前台重取",
+   "detail": "页面回到前台时未重取快照（P3，边际收益最小）"
+  }
+ ],
+ "assertions": [
+  {
+   "id": "B1.cb-daily.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.cb-daily.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.cb-daily.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-dash-cb-v1"
+  },
+  {
+   "id": "B1.gold-daily.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.gold-daily.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.gold-daily.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-dash-gold-v1"
+  },
+  {
+   "id": "B1.industry-daily.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.industry-daily.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.industry-daily.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-dash-industry-v2"
+  },
+  {
+   "id": "B1.index-daily.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.index-daily.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.index-daily.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-dash-idx-v2"
+  },
+  {
+   "id": "B1.index-gz2000.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.index-gz2000.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.index-gz2000.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-index-patch-v1"
+  },
+  {
+   "id": "B1.index-csi-patch.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.index-csi-patch.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.index-csi-patch.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-index-csi-patch-v1"
+  },
+  {
+   "id": "B1.market-amount.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.market-amount.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B3.market-amount.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=wufu-dash-amount-v1"
+  },
+  {
+   "id": "B1.us-etf-daily.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.us-etf-daily.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-16"
+  },
+  {
+   "id": "B3.us-etf-daily.json",
+   "rule": "§4.1 format 存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "format=us-etf-daily/1"
+  },
+  {
+   "id": "B1.state.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.state.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.sync-status.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.sync-status.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.chain-R-status.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.chain-R-status.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.external-warnings.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.external-warnings.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-21"
+  },
+  {
+   "id": "B1.external-warnings-L.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.external-warnings-L.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.external-warnings-A.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.external-warnings-A.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.external-warnings-G.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.external-warnings-G.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-20"
+  },
+  {
+   "id": "B1.external-warnings-I.json",
+   "rule": "§3.2 空壳拒收",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "valid() 通过"
+  },
+  {
+   "id": "B2.external-warnings-I.json",
+   "rule": "§4.1 dataAsOf 合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "asOf=2026-11-21"
+  },
+  {
+   "id": "B5",
+   "rule": "§3.4 截止日一致性护栏",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "index=2026-11-20 amount=2026-11-20 guard=True"
+  },
+  {
+   "id": "A1",
+   "rule": "§4.1 source",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "2/8 份数据快照缺 source：cb-daily.json, index-daily.json"
+  },
+  {
+   "id": "A2",
+   "rule": "§4.1 warnings",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "2/8 份数据快照缺 warnings：cb-daily.json, index-daily.json"
+  },
+  {
+   "id": "A3",
+   "rule": "§4.1 basis",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "8/8 份数据快照缺 basis：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+  },
+  {
+   "id": "A4",
+   "rule": "§2.5 / §4.1 availableAt",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "8/8 份数据快照缺 availableAt：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+  },
+  {
+   "id": "A5",
+   "rule": "§4.3 contract 格式版本",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "8/8 份仍为链标识（contract: chain/1），缺 {formatVersion,minClient}"
+  },
+  {
+   "id": "A5b",
+   "rule": "§4.1 asOf 与 at 分离",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "5 份状态文件用 at（ISO 时间戳）代替 dataAsOf：external-warnings-A.json, external-warnings-G.json, external-warnings-I.json, external-warnings-L.json, external-warnings.json"
+  },
+  {
+   "id": "B4",
+   "rule": "§3.3 不倒退保护",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "pull-snapshots.py 含倒退分支"
+  },
+  {
+   "id": "B7",
+   "rule": "§3.6 失败回退不摆空壳",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "dash-source.js 含离线副本/较新/ok=false：True"
+  },
+  {
+   "id": "B9",
+   "rule": "§7 缺失显示占位符",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "dashboard.js 含「—」与「不写示意值」"
+  },
+  {
+   "id": "B6.CB",
+   "rule": "§3.5 可成交闸门 / §9 逐笔留痕",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "cb/tool.html 含整期跳过标记与 tradeRecords：True"
+  },
+  {
+   "id": "B10.CB",
+   "rule": "§9 逐笔留痕",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "cb/tool.html 跳过原因可导出"
+  },
+  {
+   "id": "B6.ETF",
+   "rule": "§3.5 可成交闸门 / §9 逐笔留痕",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "etf/tool.html 含整期跳过标记与 tradeRecords：True"
+  },
+  {
+   "id": "B10.ETF",
+   "rule": "§9 逐笔留痕",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "etf/tool.html 跳过原因可导出"
+  },
+  {
+   "id": "B8",
+   "rule": "§5.4 静态基线不得写回",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "index.gz sha1=75b1118148bd 与基线一致=True 生成端写回=False"
+  },
+  {
+   "id": "B12",
+   "rule": "§6 发布门禁存在",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "release-gate.py 存在"
+  },
+  {
+   "id": "B11",
+   "rule": "§11 规则 / 台账 / 版本日志三分离",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "规则纯度 OK=True 三分离 OK=True"
+  },
+  {
+   "id": "A6",
+   "rule": "§2.1–2.3 双源标注与冷却",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "生成端缺 sourceRole / 两源价差标注 / 失败冷却窗口"
+  },
+  {
+   "id": "A7",
+   "rule": "§6 留一份可回退副本",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "未发现 previous 完整副本目录/标记"
+  },
+  {
+   "id": "A8",
+   "rule": "§3.6 部分降级退出码",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "warnings 尚未接入打包流程的「部分降级」退出码（P2）"
+  },
+  {
+   "id": "A9",
+   "rule": "§6 回前台重取",
+   "severity": "advisory",
+   "status": "gap",
+   "detail": "页面回到前台时未重取快照（P3，边际收益最小）"
+  }
+ ],
+ "fixtures": [
+  {
+   "id": "R1",
+   "case": "「指数基线按设计不追加」→ 实为看板未接入日更链",
+   "rule": "§5.4",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "基线指纹未被写回",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "不同截止日有护栏才放行",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "不同截止日无护栏必须拒",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R2",
+   "case": "「成交额链跑不通，等下次同步」→ 空壳不得覆盖真值",
+   "rule": "§3.2 / §6",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "失败态空壳拒收",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "空 dataAsOf 拒收",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "结构完整的真值放行",
+     "actual": "accept",
+     "expect": "accept"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R3",
+   "case": "「用首点值 back-fill 初期余额」→ 发行规模才是静态真值",
+   "rule": "§5.3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "上市时已知发行规模允许",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "首个事件点及其后真值允许",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "未来首点值反填过去必须拒",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R4",
+   "case": "「qt 昨收跨日跌幅是口径偏差」→ 漏跑多日的正常跌幅不得误杀",
+   "rule": "§2.3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "跨 3 日 1.214% 放行",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "同日 40% 仍按紧邻阈值拦",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "跨 3 日 40% 按量级拦",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R5",
+   "case": "「收盘价交易就没有整期跳过」→ 填充 close 不得记账成交",
+   "rule": "§3.5",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "停牌日填充 close 拒",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "有原始 open 放行",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "仅有 high/low 也放行",
+     "actual": "accept",
+     "expect": "accept"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R6",
+   "case": "「单日大涨是撮合 bug」→ 成交价须落当日区间",
+   "rule": "§3.1 / §9",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "价在区间内放行",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "价高于 high 拒",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "缺 high/low 拒",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R7",
+   "case": "「health 壳没纳入系统化」类表述失误 → 文档须自证边界",
+   "rule": "§11",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "README 顶部明确不是规则",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "台账含历史改判记录",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "README 不得内嵌规则正文",
+     "actual": false,
+     "expect": false
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R8",
+   "case": "「其次才加 contract」→ 链标识不等于格式版本契约",
+   "rule": "§4.3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "chain/1 判为 gap",
+     "actual": "gap",
+     "expect": "gap"
+    },
+    {
+     "name": "缺 contract 判为 gap",
+     "actual": "gap",
+     "expect": "gap"
+    },
+    {
+     "name": "含 formatVersion/minClient 放行",
+     "actual": "accept",
+     "expect": "accept"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R9",
+   "case": "「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离",
+   "rule": "§11",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "实际三份文件判定通过",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "规则里混进版本号必须拒",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "README 内嵌规则必须拒",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  }
+ ],
+ "files": {
+  "cb-daily.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-dash-cb-v1",
+   "bytes": 33487,
+   "sha1": "b32236bc4785",
+   "fields": [
+    "chain",
+    "contract",
+    "count",
+    "dataAsOf",
+    "dist",
+    "extra",
+    "format",
+    "kpi",
+    "note",
+    "quantiles",
+    "sampleNote",
+    "summary",
+    "trend",
+    "trendNote"
+   ]
+  },
+  "gold-daily.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-dash-gold-v1",
+   "bytes": 59313,
+   "sha1": "133c49ac731a",
+   "fields": [
+    "chain",
+    "contract",
+    "dataAsOf",
+    "format",
+    "kpi",
+    "note",
+    "pos",
+    "ratioColors",
+    "ratios",
+    "sampleNote",
+    "shGold",
+    "source",
+    "trend",
+    "warnings"
+   ]
+  },
+  "industry-daily.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-dash-industry-v2",
+   "bytes": 31304,
+   "sha1": "6d62d3b073be",
+   "fields": [
+    "area",
+    "boardCount",
+    "boardTotal",
+    "chain",
+    "contract",
+    "dataAsOf",
+    "format",
+    "heat",
+    "heatbar",
+    "indicators",
+    "keys",
+    "note",
+    "radar",
+    "sampleDays",
+    "sampleFrom",
+    "sampleNote",
+    "source",
+    "warnings"
+   ]
+  },
+  "index-daily.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-dash-idx-v2",
+   "bytes": 21551,
+   "sha1": "9741e3fc5bd0",
+   "fields": [
+    "chain",
+    "contract",
+    "coverage",
+    "dataAsOf",
+    "format",
+    "idx",
+    "idxTrend",
+    "note",
+    "sampleNote",
+    "trendNote"
+   ]
+  },
+  "index-gz2000.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-index-patch-v1",
+   "bytes": 958,
+   "sha1": "8c20805b127d",
+   "fields": [
+    "baselineLastDate",
+    "chain",
+    "contract",
+    "dataAsOf",
+    "days",
+    "format",
+    "note",
+    "source",
+    "warnings"
+   ]
+  },
+  "index-csi-patch.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-index-csi-patch-v1",
+   "bytes": 765,
+   "sha1": "119eb303a933",
+   "fields": [
+    "chain",
+    "codes",
+    "contract",
+    "dataAsOf",
+    "format",
+    "missingDates",
+    "note",
+    "series",
+    "source",
+    "warnings"
+   ]
+  },
+  "market-amount.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-dash-amount-v1",
+   "bytes": 16117,
+   "sha1": "f2076f45e056",
+   "fields": [
+    "10",
+    "5",
+    "chain",
+    "contract",
+    "dataAsOf",
+    "format",
+    "note",
+    "ok",
+    "source",
+    "warnings"
+   ]
+  },
+  "us-etf-daily.json": {
+   "status": "pass",
+   "asOf": "2026-11-16",
+   "format": "us-etf-daily/1",
+   "bytes": 1122249,
+   "sha1": "3c1293e32d3d",
+   "fields": [
+    "adjust",
+    "chain",
+    "cols",
+    "commonDays",
+    "contract",
+    "dataAsOf",
+    "format",
+    "note",
+    "ok",
+    "sampleNote",
+    "series",
+    "source",
+    "symbols",
+    "warnings"
+   ]
+  },
+  "state.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": "wufu-offline-state-v2",
+   "bytes": 2817863,
+   "sha1": "fe58f5e71b53",
+   "fields": [
+    "dataAsOf",
+    "exportedAt",
+    "format",
+    "localStorage",
+    "note",
+    "origin"
+   ]
+  },
+  "sync-status.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": null,
+   "bytes": 312,
+   "sha1": "e684afc31fb3",
+   "fields": [
+    "cbNewSeries",
+    "dataAsOf",
+    "etfExtra",
+    "goal",
+    "overrideFixPoints",
+    "site",
+    "targets"
+   ]
+  },
+  "chain-R-status.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": null,
+   "bytes": 664,
+   "sha1": "08d7f7206f0e",
+   "fields": [
+    "chain",
+    "contract",
+    "dataAsOf",
+    "goal",
+    "source",
+    "targets",
+    "validatedAt",
+    "warnings"
+   ]
+  },
+  "external-warnings.json": {
+   "status": "pass",
+   "asOf": "2026-11-21",
+   "format": null,
+   "bytes": 862,
+   "sha1": "7798b3041c54",
+   "fields": [
+    "at",
+    "byChain",
+    "failed",
+    "warnings"
+   ]
+  },
+  "external-warnings-L.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": null,
+   "bytes": 143,
+   "sha1": "c37477dda843",
+   "fields": [
+    "at",
+    "chain",
+    "files",
+    "ok",
+    "warnings"
+   ]
+  },
+  "external-warnings-A.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": null,
+   "bytes": 158,
+   "sha1": "eec30590b757",
+   "fields": [
+    "at",
+    "chain",
+    "failed",
+    "ok",
+    "warnings"
+   ]
+  },
+  "external-warnings-G.json": {
+   "status": "pass",
+   "asOf": "2026-11-20",
+   "format": null,
+   "bytes": 177,
+   "sha1": "509de2ed2577",
+   "fields": [
+    "at",
+    "chain",
+    "failed",
+    "ok",
+    "warnings"
+   ]
+  },
+  "external-warnings-I.json": {
+   "status": "pass",
+   "asOf": "2026-11-21",
+   "format": null,
+   "bytes": 180,
+   "sha1": "c436b13af612",
+   "fields": [
+    "at",
+    "chain",
+    "failed",
+    "ok",
+    "warnings"
+   ]
+  }
+ },
+ "note": "内容确定（无当前时间/机器路径），可直接提交留痕；advisory gaps 对应台账 P1/P2 待补，不阻断发布。"
+}

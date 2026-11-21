@@ -48,8 +48,15 @@ jobs:
                   print('  CSI', len(d.get('codes',[])), '只 · 缺口日', d.get('missingDates'))
           PY
 
-      - name: 写回仓库
+      - name: 数据契约门禁（失败不绿灯）
+        id: gate
         if: always()
+        run: |
+          python3 scripts/validate-contract.py --root . --write
+          python3 scripts/release-gate.py --root .
+
+      - name: 写回仓库
+        if: always() && steps.gate.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
