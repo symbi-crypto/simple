@@ -5,31 +5,31 @@
    不再各自维护 .hd / <header> / .homestrip 三套实现。
    ============================================================ */
 .wh{font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  color:#fff;width:100%;box-sizing:border-box;flex:none}
+  color:var(--c-white);width:100%;box-sizing:border-box;flex:none}
 .wh *{box-sizing:border-box}
-.wh-top{background:linear-gradient(135deg,#1B2634 0%,#0E7490 130%);padding:24px 24px 15px;
+.wh-top{background:linear-gradient(135deg,var(--c-bg) 0%,var(--c-h0e7490) 130%);padding:24px 24px 15px;
   display:flex;align-items:center;gap:12px;min-height:78px}
 .wh-top h1{margin:0!important;font-size:20px!important;font-weight:700!important;letter-spacing:.5px;
-  color:#fff!important;line-height:1.35!important;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wh-top h1 .fu{color:#22D3EE!important}
-.wh-row{background:#16202E;border-bottom:1px solid #243244;padding:8px 24px;
+  color:var(--c-white)!important;line-height:1.35!important;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wh-top h1 .fu{color:var(--c-accent-2)!important}
+.wh-row{background:var(--c-h16202e);border-bottom:1px solid var(--c-line);padding:8px 24px;
   display:flex;align-items:center;gap:10px;min-height:46px}
 .wh-home{display:inline-flex!important;align-items:center;justify-content:center;
   font-size:12px!important;padding:6px 12px!important;min-height:30px!important;height:auto!important;
-  border-radius:6px!important;border:1px solid #4FC3F7!important;background:#202E3F!important;
-  color:#D8E2EF!important;text-decoration:none!important;cursor:pointer;white-space:nowrap;line-height:1.6!important}
-.wh-home:hover{background:#2A3B50!important;border-color:#7DD3FC!important;color:#F1F5F9!important}
+  border-radius:6px!important;border:1px solid var(--c-accent)!important;background:var(--c-surface)!important;
+  color:var(--c-text-2)!important;text-decoration:none!important;cursor:pointer;white-space:nowrap;line-height:1.6!important}
+.wh-home:hover{background:var(--c-h2a3b50)!important;border-color:var(--c-accent-soft)!important;color:var(--c-text)!important}
 .wh-export{display:inline-flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
-.wh-export #exportMsg{font-size:11px;color:#9FB0C3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wh-export #exportMsg{font-size:11px;color:var(--c-muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wh-badge{margin-left:auto;display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;line-height:1.25;
-  color:#9FB0C3;background:rgba(14,116,144,.16);border:1px solid rgba(79,195,247,.3);
+  color:var(--c-muted);background:var(--c-r003);border:1px solid var(--c-r002);
   border-radius:6px;padding:5px 9px;white-space:nowrap;min-width:0;flex:none;overflow:visible}
-.wh-badge b{color:#4FC3F7;font-weight:600}
-.wh-badge .db-date{color:#9FB0C3}
+.wh-badge b{color:var(--c-accent);font-weight:600}
+.wh-badge .db-date{color:var(--c-muted)}
 .wh-badge span{white-space:nowrap;overflow:visible;text-overflow:clip}
 .wh-slot{margin-left:8px;display:inline-flex;align-items:center;flex:none}
-.wh-update{display:inline-flex;align-items:center;font-size:11px;color:#FCD34D;
-  background:#3A2A12;border:1px solid #F59E0B;border-radius:6px;padding:5px 9px;
+.wh-update{display:inline-flex;align-items:center;font-size:11px;color:var(--c-warn-ink);
+  background:var(--c-h3a2a12);border:1px solid var(--c-warn-2);border-radius:6px;padding:5px 9px;
   cursor:pointer;white-space:nowrap}
 @media(max-width:720px){
   .wh-top{padding:19px 14px 14px;min-height:69px}

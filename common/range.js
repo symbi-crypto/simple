@@ -11,26 +11,26 @@
   var CSS = [
     '.wr-host{margin:6px 2px 4px}',
     '.wr{position:relative;height:46px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}',
-    '.wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}',
-    '.wr-sel{position:absolute;top:8px;height:16px;border-radius:6px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 0 8px rgba(255,255,255,.12)}',
-    '.wr-h{position:absolute;top:4px;width:12px;height:24px;border-radius:4px;background:rgba(255,255,255,.88);border:1px solid #E6F4FF;box-shadow:0 0 0 2px rgba(14,116,144,.45);z-index:2}',
-    '.wr-h::after{content:\'\';position:absolute;left:4px;top:7px;width:2px;height:10px;background:#0E7490;border-radius:1px}',
-    '.wr-lab{position:absolute;top:30px;font-size:9px;color:#9FB0C3;white-space:nowrap}',
+    WufuTheme.sub('.wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:§WFT0116§;border:1px solid §WFT0093§}'),
+    WufuTheme.sub('.wr-sel{position:absolute;top:8px;height:16px;border-radius:6px;background:§WFT0117§;border:1px solid §WFT0118§;box-shadow:inset 0 0 8px §WFT0093§}'),
+    WufuTheme.sub('.wr-h{position:absolute;top:4px;width:12px;height:24px;border-radius:4px;background:§WFT0119§;border:1px solid §WFT0109§;box-shadow:0 0 0 2px §WFT0113§;z-index:2}'),
+    WufuTheme.sub('.wr-h::after{content:\'\';position:absolute;left:4px;top:7px;width:2px;height:10px;background:§WFT0024§;border-radius:1px}'),
+    WufuTheme.sub('.wr-lab{position:absolute;top:30px;font-size:9px;color:§WFT0003§;white-space:nowrap}'),
     '.wr-lab-l{left:0;transform:none}',
     '.wr-lab-r{right:0;left:auto;transform:none;text-align:right}',
-    '.wr-tip{font-size:9.5px;color:#7C8DA1;margin:2px 2px 0;text-align:right}',
-    '.wr-info{font-size:9.5px;color:#9FB0C3;line-height:1.6;margin:2px 2px 6px;word-break:break-all}',
-    '.wr-info b{color:#4FC3F7;font-weight:600}',
+    WufuTheme.sub('.wr-tip{font-size:9.5px;color:§WFT0002§;margin:2px 2px 0;text-align:right}'),
+    WufuTheme.sub('.wr-info{font-size:9.5px;color:§WFT0003§;line-height:1.6;margin:2px 2px 6px;word-break:break-all}'),
+    WufuTheme.sub('.wr-info b{color:§WFT0006§;font-weight:600}'),
     '.wr-host svg{cursor:crosshair}',
     /* v0.69b：看板曲线同款「展示区间」控件 */
     '.wr-quick{margin:2px 2px 10px;display:flex;flex-direction:column;gap:8px}',
     '.wr-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
-    '.wr-quick-lab{font-size:11px;color:#9FB0C3;white-space:nowrap}',
-    '.wr-quick-sep{font-size:11px;color:#7C8DA1}',
-    '.wr-quick input[type=date]{background:#202E3F;color:#D8E6F2;border:1px solid #33465C;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}',
+    WufuTheme.sub('.wr-quick-lab{font-size:11px;color:§WFT0003§;white-space:nowrap}'),
+    WufuTheme.sub('.wr-quick-sep{font-size:11px;color:§WFT0002§}'),
+    WufuTheme.sub('.wr-quick input[type=date]{background:§WFT0008§;color:§WFT0131§;border:1px solid §WFT0098§;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}'),
     '.wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}',
-    '.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:#202E3F;color:#9FB0C3;border:1px solid #33465C;white-space:nowrap}',
-    '.wr-quick-btns button.on{background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7}',
+    WufuTheme.sub('.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:§WFT0008§;color:§WFT0003§;border:1px solid §WFT0098§;white-space:nowrap}'),
+    WufuTheme.sub('.wr-quick-btns button.on{background:§WFT0124§;color:§WFT0006§;border:1px solid §WFT0006§}'),
   /* v0.71：锁定控件高度，按按钮时说明文字/日期框/卡片数变化不再推动整页 */
   '.wr-quick{min-height:76px;box-sizing:border-box}',
   '.wr-info{min-height:36px;line-height:1.45;box-sizing:border-box}',
@@ -250,7 +250,7 @@
   var NS = 'http://www.w3.org/2000/svg';
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
   function TXT(x, y, s, size, color, weight) {
-    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || '#D8E2EF',
+    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || WufuTheme.sub('§WFT0005§'),
       'font-family': 'sans-serif', 'pointer-events': 'none' });
     if (weight) t.setAttribute('font-weight', weight);
     t.textContent = s; return t;
@@ -283,17 +283,17 @@
         var g = E('g', { 'data-probe': '1', 'pointer-events': 'none' });
         st.g = g; svg.appendChild(g);
         g.appendChild(E('line', { x1: x, y1: y0, x2: x, y2: y1,
-          stroke: '#4FC3F7', 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.85' }));
+          stroke: WufuTheme.sub('§WFT0006§'), 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.85' }));
         var rows = [];
         (c.series || []).forEach(function (s) {
           var v = (typeof s.data === 'function') ? s.data(i) : (s.data || [])[i];
           var ok = (typeof v === 'number' && isFinite(v));
           if (ok && c.yAt) {
             g.appendChild(E('circle', { cx: x, cy: c.yAt(v), r: 2.8,
-              fill: s.color || '#4FC3F7', stroke: '#0E7490', 'stroke-width': '1' }));
+              fill: s.color || WufuTheme.sub('§WFT0006§'), stroke: WufuTheme.sub('§WFT0024§'), 'stroke-width': '1' }));
           }
           var txt = !ok ? '—' : (s.fmt ? s.fmt(v, i) : (typeof v === 'number' ? v.toFixed(2) : String(v)));
-          rows.push({ name: s.name || '', color: s.color || '#9FB0C3', text: txt });
+          rows.push({ name: s.name || '', color: s.color || WufuTheme.sub('§WFT0003§'), text: txt });
         });
         var lines = 1 + rows.length + (c.note ? 1 : 0);
         var bw = c.boxW || 152, bh = 9 + lines * 13 + 5;
@@ -301,14 +301,14 @@
         if (bx < 2) bx = 2; if (bx + bw > W - 2) bx = W - bw - 2;
         var by = c.boxY == null ? 5 : c.boxY;
         g.appendChild(E('rect', { x: bx, y: by, width: bw, height: bh, rx: 6,
-          fill: 'rgba(16,24,36,.95)', stroke: '#3E4E63', 'stroke-width': '1' }));
-        g.appendChild(TXT(bx + 8, by + 15, String(c.labels[i] || ''), 10, '#F1F5F9', '600'));
+          fill: WufuTheme.sub('§WFT0041§'), stroke: WufuTheme.sub('§WFT0001§'), 'stroke-width': '1' }));
+        g.appendChild(TXT(bx + 8, by + 15, String(c.labels[i] || ''), 10, WufuTheme.sub('§WFT0004§'), '600'));
         rows.forEach(function (r, j) {
           var yy = by + 15 + 13 * (j + 1);
           g.appendChild(E('circle', { cx: bx + 11, cy: yy - 3, r: 2.4, fill: r.color }));
-          g.appendChild(TXT(bx + 18, yy, r.name + ' ' + r.text, 9, '#D8E2EF'));
+          g.appendChild(TXT(bx + 18, yy, r.name + ' ' + r.text, 9, WufuTheme.sub('§WFT0005§')));
         });
-        if (c.note) g.appendChild(TXT(bx + 8, by + 15 + 13 * (rows.length + 1), c.note, 8, '#7C8DA1'));
+        if (c.note) g.appendChild(TXT(bx + 8, by + 15 + 13 * (rows.length + 1), c.note, 8, WufuTheme.sub('§WFT0002§')));
         activeProbe = st;
       });
     }
@@ -512,8 +512,8 @@
 
     function btnStyle(on) {
       return 'cursor:pointer;font-size:12px;padding:4px 12px;border-radius:6px;' +
-        (on ? 'background:rgba(79,195,247,.16);color:#4FC3F7;border:1px solid #4FC3F7;'
-            : 'background:#202E3F;color:#9FB0C3;border:1px solid #33465C;');
+        (on ? WufuTheme.sub('background:§WFT0124§;color:§WFT0006§;border:1px solid §WFT0006§;')
+            : WufuTheme.sub('background:§WFT0008§;color:§WFT0003§;border:1px solid §WFT0098§;'));
     }
     /* v0.76：坐标轴按钮只在允许对数时出现（回撤含负值 → 禁用并强制线性） */
     function axisWhen(st) {
@@ -540,7 +540,7 @@
           '<button type="button" data-axis="log"' + dis + ' style="' + btnStyle(eff === 'log') + ds + '">对数</button>';
       }
       if ((cfg.modes || []).length)
-        html += '<span id="__navModeHint_' + id + '" style="font-size:11px;color:#7C8DA1"></span>';
+        html += '<span id="__navModeHint_' + id + WufuTheme.sub('" style="font-size:11px;color:§WFT0002§"></span>');
       modeEl.innerHTML = html;
       var hint = document.getElementById('__navModeHint_' + id);
       if (hint && typeof cfg.hint === 'function') { try { hint.textContent = cfg.hint(state) || ''; } catch (e) { } }

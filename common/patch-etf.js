@@ -449,26 +449,26 @@
     var box = $("wufuFyFactorReport"); if (!box) return;
     var p = readPatch() || newPatch(), ck = p.fyCheck;
     if (!ck || !ck.rows || !ck.rows.length) { box.style.display = "none"; box.innerHTML = ""; return; }
-    var vl = { same: ["一致", "#34D399"], minor: ["轻微偏差", "#FCD34D"], bad: ["明显偏差", "#F87171"],
-      miss: ["疑似漏分红", "#F87171"], orphan: ["系统抬升·官方无事件", "#FCD34D"],
-      outdate: ["不在日历范围", "#7C8DA1"], nodata: ["系统无有效因子", "#7C8DA1"],
-      badevent: ["事件值异常", "#7C8DA1"] };
+    var vl = { same: ["一致", WufuTheme.sub("§WFT0012§")], minor: ["轻微偏差", WufuTheme.sub("§WFT0014§")], bad: ["明显偏差", WufuTheme.sub("§WFT0010§")],
+      miss: ["疑似漏分红", WufuTheme.sub("§WFT0010§")], orphan: ["系统抬升·官方无事件", WufuTheme.sub("§WFT0014§")],
+      outdate: ["不在日历范围", WufuTheme.sub("§WFT0002§")], nodata: ["系统无有效因子", WufuTheme.sub("§WFT0002§")],
+      badevent: ["事件值异常", WufuTheme.sub("§WFT0002§")] };
     var h = [];
-    h.push('<div style="margin-top:12px;padding:10px;border:1px solid #2A3A4E;border-radius:6px;background:rgba(79,195,247,.04)">');
-    h.push('<div style="font-size:12px;color:#4FC3F7;margin-bottom:6px"><b>扶摇复权因子校验 · 官方分红事件对拍</b> <span style="font-size:10px;color:#7C8DA1">' + esc(ck.ts || "") + '</span></div>');
-    h.push('<div style="font-size:11px;color:#9FB0C3;line-height:1.7;margin-bottom:8px">' + esc(ck.summary || "") +
+    h.push(WufuTheme.sub('<div style="margin-top:12px;padding:10px;border:1px solid §WFT0016§;border-radius:6px;background:§WFT0134§">'));
+    h.push(WufuTheme.sub('<div style="font-size:12px;color:§WFT0006§;margin-bottom:6px"><b>扶摇复权因子校验 · 官方分红事件对拍</b> <span style="font-size:10px;color:§WFT0002§">') + esc(ck.ts || "") + '</span></div>');
+    h.push(WufuTheme.sub('<div style="font-size:11px;color:§WFT0003§;line-height:1.7;margin-bottom:8px">') + esc(ck.summary || "") +
       '<br>理论抬升 k = P×(1+送转) ÷ (P−每股分红)，P 取除权日前一有效未复权收盘；实际抬升 = 事件日后因子 ÷ 事件日前因子，因子 = 复权价 ÷ 未复权价。' +
-      '<b style="color:#FCD34D">「未覆盖」= 该端点无此代码或返回空，未做校验，不代表数据正确</b>；' +
+      WufuTheme.sub('<b style="color:§WFT0014§">「未覆盖」= 该端点无此代码或返回空，未做校验，不代表数据正确</b>；') +
       '该端点只在个股 600519.SH 探测过（11 行），ETF / 指数是否覆盖以本表为准。</div>');
     var nFix = ck.rows.filter(function (x) { return x.verdict === "bad" || x.verdict === "minor" || x.verdict === "miss"; }).length;
     if (nFix) h.push('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="corr-mini" id="wufuFyFixAll">按官方事件重算全部 ' + nFix + ' 个异常事件</button>' +
-      '<span style="font-size:10px;color:#6E7F93;align-self:center">重算只改复权价（含开高低）与 RDIDX 对应值，未复权价不动；可撤销</span></div>');
+      WufuTheme.sub('<span style="font-size:10px;color:§WFT0025§;align-self:center">重算只改复权价（含开高低）与 RDIDX 对应值，未复权价不动；可撤销</span></div>'));
     h.push('<div class="tblwrap"><table class="trades hltbl" style="width:100%;min-width:780px"><thead><tr>' +
       '<th>标的</th><th style="width:86px">除权日</th><th style="width:72px">每股分红</th><th style="width:56px">送转</th>' +
       '<th style="width:76px">理论 k</th><th style="width:76px">实际抬升</th><th style="width:76px">偏差</th>' +
       '<th style="width:128px">判定</th><th style="width:112px">操作</th></tr></thead><tbody>');
     ck.rows.slice(0, 200).forEach(function (x, ix) {
-      var L = vl[x.verdict] || ["—", "#7C8DA1"];
+      var L = vl[x.verdict] || ["—", WufuTheme.sub("§WFT0002§")];
       var act = (x.verdict === "bad" || x.verdict === "minor" || x.verdict === "miss")
         ? '<button type="button" class="corr-mini" data-fyfix="' + ix + '">重算该事件</button>'
         : (x.verdict === "orphan" ? '<button type="button" class="corr-mini" data-fyex="' + esc(x.c) + '">标记已确认</button>' : "—");
@@ -482,11 +482,11 @@
     h.push('</tbody></table></div><p class="swipehint">表格较宽，可左右滑动查看 →</p>');
     var un = ck.uncovered || [];
     if (un.length) {
-      h.push('<details style="margin-top:6px"><summary style="font-size:11px;color:#7C8DA1;cursor:pointer">官方未覆盖 ' + un.length + ' 只（点击展开前 30 条）</summary>' +
-        '<div style="font-size:10px;color:#7C8DA1;line-height:1.8;margin-top:5px">' +
+      h.push(WufuTheme.sub('<details style="margin-top:6px"><summary style="font-size:11px;color:§WFT0002§;cursor:pointer">官方未覆盖 ') + un.length + ' 只（点击展开前 30 条）</summary>' +
+        WufuTheme.sub('<div style="font-size:10px;color:§WFT0002§;line-height:1.8;margin-top:5px">') +
         un.slice(0, 30).map(function (x) { return esc(x.c) + " · " + esc(x.m); }).join("<br>") + '</div></details>');
     }
-    h.push('<p style="font-size:10px;color:#6E7F93;margin:6px 0 0;line-height:1.6">偏差阈值：≤1.5% 一致，1.5~5% 轻微，&gt;5% 明显；官方有分红而系统因子未抬升判「疑似漏分红」。' +
+    h.push(WufuTheme.sub('<p style="font-size:10px;color:§WFT0025§;margin:6px 0 0;line-height:1.6">偏差阈值：≤1.5% 一致，1.5~5% 轻微，&gt;5% 明显；官方有分红而系统因子未抬升判「疑似漏分红」。') +
       '份额折算（未复权价单日跳 ≥30%）不参与反向核对。重算结果刷新仍生效，可在「数据纠正 → 体检纠正记录」里撤销。</p>');
     h.push('</div>');
     box.innerHTML = h.join(""); box.style.display = "";
@@ -1118,7 +1118,7 @@
     var ns = (p.swaps || []).length, nf = (p.refactors || []).length, ne = (p.exempt || []).length;
     var no = p.ohlcFix ? Object.keys(p.ohlcFix).length : 0;
     var ny = p.fyFix ? Object.keys(p.fyFix).length : 0;
-    if (!nr && !ns && !nf && !ne && !no && !ny) { box.innerHTML = "<p style='font-size:11px;color:#7C8DA1;margin:4px 0'>暂无体检纠正记录。</p>"; return; }
+    if (!nr && !ns && !nf && !ne && !no && !ny) { box.innerHTML = WufuTheme.sub("<p style='font-size:11px;color:§WFT0002§;margin:4px 0'>暂无体检纠正记录。</p>"); return; }
     var h = "<div class='tblwrap'><table class='trades hltbl' style='width:100%;min-width:420px'><thead><tr><th>类型</th><th>数量</th><th></th></tr></thead><tbody>";
     function row(t, v, act) { h += "<tr><td>" + t + "</td><td>" + v + "</td><td>" + (act ? "<button class='corr-mini' data-clr='" + act + "'>撤销</button>" : "—") + "</td></tr>"; }
     if (no) row("OHLC 重供", no + " 只", "ohlc");
@@ -1129,7 +1129,7 @@
     if (ne) row("已确认（不再提示）", ne + " 条", "exempt");
     h += "</tbody></table></div>";
     if (ne) {
-      h += "<div style='font-size:10px;color:#7C8DA1;margin:8px 0 4px'>已确认明细（点「×」恢复提示）：</div><div style='display:flex;gap:6px;flex-wrap:wrap'>";
+      h += WufuTheme.sub("<div style='font-size:10px;color:§WFT0002§;margin:8px 0 4px'>已确认明细（点「×」恢复提示）：</div><div style='display:flex;gap:6px;flex-wrap:wrap'>");
       (p.exempt || []).slice(-40).forEach(function (x) {
         h += "<button type='button' class='corr-mini' data-unex='" + esc(x.id + "|" + x.c) + "'>" + esc(x.id + " · " + x.c) + " ×</button>";
       });
@@ -1305,10 +1305,10 @@
   function renderScan(list) {
     var box = $("wufuCorrList"); if (!box) return;
     if (!list || !list.length) {
-      box.innerHTML = '<p style="font-size:11px;color:#4FC3F7;margin:6px 0">扫描完成：未发现异常。</p>';
+      box.innerHTML = WufuTheme.sub('<p style="font-size:11px;color:§WFT0006§;margin:6px 0">扫描完成：未发现异常。</p>');
       box.style.display = ""; return;
     }
-    var h = ['<p style="font-size:11px;color:#FCD34D;margin:6px 0">发现 ' + list.length +
+    var h = [WufuTheme.sub('<p style="font-size:11px;color:§WFT0014§;margin:6px 0">发现 ') + list.length +
       ' 条疑似异常（最近 90 日 + 全库序列长度），点「填入」预填纠正表单：</p>',
       '<div class="tblwrap"><table class="trades hltbl" style="width:100%;min-width:560px"><thead><tr><th>标的</th><th>日期</th><th>问题</th><th>当前值</th><th></th></tr></thead><tbody>'];
     list.slice(0, 60).forEach(function (x) {
@@ -1454,18 +1454,18 @@
   function note(msg, color) {
     var e = $("wufuUpdMsg"); if (!e) return;
     e.style.display = ""; e.textContent = msg;
-    e.style.background = color === "err" ? "rgba(248,113,113,.14)" : (color === "warn" ? "rgba(251,191,36,.12)" : "rgba(79,195,247,.10)");
-    e.style.border = "1px solid " + (color === "err" ? "#F87171" : color === "warn" ? "#FBBF24" : "#4FC3F7");
-    e.style.color = color === "err" ? "#F87171" : color === "warn" ? "#FCD34D" : "#9FD8F6";
+    e.style.background = color === "err" ? WufuTheme.sub("§WFT0054§") : (color === "warn" ? WufuTheme.sub("§WFT0038§") : WufuTheme.sub("§WFT0100§"));
+    e.style.border = "1px solid " + (color === "err" ? WufuTheme.sub("§WFT0010§") : color === "warn" ? WufuTheme.sub("§WFT0011§") : WufuTheme.sub("§WFT0006§"));
+    e.style.color = color === "err" ? WufuTheme.sub("§WFT0010§") : color === "warn" ? WufuTheme.sub("§WFT0014§") : WufuTheme.sub("§WFT0049§");
   }
   /* 净值补齐专用反馈：同时写「一键更新」卡片与当前所在的净值清单，避免提示在屏幕外 */
   function navNote(msg, color) {
     note(msg, color);
     var e = $("pmNavMsg"); if (!e) return;
     e.style.display = ""; e.style.whiteSpace = "pre-line"; e.textContent = msg;
-    e.style.background = color === "err" ? "rgba(248,113,113,.14)" : (color === "warn" ? "rgba(251,191,36,.12)" : "rgba(79,195,247,.10)");
-    e.style.border = "1px solid " + (color === "err" ? "#F87171" : color === "warn" ? "#FBBF24" : "#4FC3F7");
-    e.style.color = color === "err" ? "#F87171" : color === "warn" ? "#FCD34D" : "#9FD8F6";
+    e.style.background = color === "err" ? WufuTheme.sub("§WFT0054§") : (color === "warn" ? WufuTheme.sub("§WFT0038§") : WufuTheme.sub("§WFT0100§"));
+    e.style.border = "1px solid " + (color === "err" ? WufuTheme.sub("§WFT0010§") : color === "warn" ? WufuTheme.sub("§WFT0011§") : WufuTheme.sub("§WFT0006§"));
+    e.style.color = color === "err" ? WufuTheme.sub("§WFT0010§") : color === "warn" ? WufuTheme.sub("§WFT0014§") : WufuTheme.sub("§WFT0049§");
     try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { }
   }
   function syncNavKeyUI() {
@@ -1477,8 +1477,8 @@
     if (FY_KEY && !av && !bv) FY_KEY = "";               // 两个框都被清空 → 主动停用扶摇
     if (a && a.value !== FY_KEY) a.value = FY_KEY;
     if (b && b.value !== FY_KEY) b.value = FY_KEY;
-    if (st) { st.textContent = FY_KEY ? "已启用 · 仅本次会话" : "未启用"; st.style.color = FY_KEY ? "#4FC3F7" : "#FCD34D"; }
-    var s2 = $("wufuFyState"); if (s2) { s2.textContent = FY_KEY ? "已启用（仅本次会话，不保存）" : "未启用 · 全部走免费源"; s2.style.color = FY_KEY ? "#4FC3F7" : "#7C8DA1"; }
+    if (st) { st.textContent = FY_KEY ? "已启用 · 仅本次会话" : "未启用"; st.style.color = FY_KEY ? WufuTheme.sub("§WFT0006§") : WufuTheme.sub("§WFT0014§"); }
+    var s2 = $("wufuFyState"); if (s2) { s2.textContent = FY_KEY ? "已启用（仅本次会话，不保存）" : "未启用 · 全部走免费源"; s2.style.color = FY_KEY ? WufuTheme.sub("§WFT0006§") : WufuTheme.sub("§WFT0002§"); }
   }
   function busy(on) {
     ["wufuUpdRun", "wufuUpdHtml", "wufuUpdPkg", "wufuUpdClear", "wufuUpdUndo",
@@ -1512,27 +1512,27 @@
       ["失败/留空", rep.fail.length], ["回填补齐", rep.fix.length],
       ["异常条目", rep.issues === undefined ? "—" : rep.issues],
       ["净值真值日", rep.navRows === undefined ? "—" : rep.navRows]].forEach(function (x) {
-      h.push('<div style="background:#1B2634;border:1px solid #2A3A4E;border-radius:6px;padding:8px 10px">' +
-        '<div style="font-size:11px;color:#7C8DA1">' + x[0] + '</div><div style="font-size:18px;color:#D8E2EF">' + x[1] + '</div></div>');
+      h.push(WufuTheme.sub('<div style="background:§WFT0007§;border:1px solid §WFT0016§;border-radius:6px;padding:8px 10px">') +
+        WufuTheme.sub('<div style="font-size:11px;color:§WFT0002§">') + x[0] + WufuTheme.sub('</div><div style="font-size:18px;color:§WFT0005§">') + x[1] + '</div></div>');
     });
     h.push('</div>');
-    h.push('<p style="font-size:11px;color:#9FB0C3;margin:0 0 8px;line-height:1.7">新增日期：<b style="color:#D8E2EF">' +
+    h.push(WufuTheme.sub('<p style="font-size:11px;color:§WFT0003§;margin:0 0 8px;line-height:1.7">新增日期：<b style="color:§WFT0005§">') +
       esc((rep.dates || []).join("、") || "无") + '</b>　·　数据源：' + esc(rep.sources || "") +
       '　·　更新时刻 ' + esc(rep.ts || "") + '</p>');
     if (rep.fail.length) {
       h.push('<div class="tblwrap"><table class="trades hltbl" style="width:100%;min-width:520px"><thead><tr>' +
         '<th style="width:150px">标的</th><th style="width:110px">结果</th><th>说明</th></tr></thead><tbody>');
       rep.fail.slice(0, 200).forEach(function (x) {
-        h.push('<tr><td>' + esc(x.c) + '</td><td style="color:#F87171">未更新</td><td>' + esc(x.m) + '</td></tr>');
+        h.push('<tr><td>' + esc(x.c) + WufuTheme.sub('</td><td style="color:§WFT0010§">未更新</td><td>') + esc(x.m) + '</td></tr>');
       });
       h.push('</tbody></table></div><p class="swipehint">表格较宽，可左右滑动查看 →</p>');
     }
     if (rep.micro && rep.micro !== "未启用" && rep.micro !== "返回空" && rep.micro.indexOf("失败") !== 0)
-      h.push('<p style="font-size:11px;color:#4FC3F7;margin:8px 0 0;line-height:1.7">微盘标尺 883418.TI 已更新（' +
+      h.push(WufuTheme.sub('<p style="font-size:11px;color:§WFT0006§;margin:8px 0 0;line-height:1.7">微盘标尺 883418.TI 已更新（') +
         esc(rep.micro) + '），可在相关性页与基准下拉中查看；原有序列未作任何改动。</p>');
-    h.push('<p style="font-size:11px;color:#7C8DA1;margin:8px 0 0;line-height:1.7">未更新的标的保持原序列不变，新增日期一律留 -1；' +
-      '<b style="color:#FCD34D">不做涨幅外推、不做前值填充、不做量价估算</b>。换手率取行情源真实换手率（腾讯日K day[7]），源未提供时留 -1，不做推算。</p>');
-    h.push('<p style="font-size:11px;color:#4FC3F7;margin:6px 0 0;line-height:1.7">单位净值取扶摇官方 unit_nav 真值（约 2021-11 起，premium 按未复权收盘反算），' +
+    h.push(WufuTheme.sub('<p style="font-size:11px;color:§WFT0002§;margin:8px 0 0;line-height:1.7">未更新的标的保持原序列不变，新增日期一律留 -1；') +
+      WufuTheme.sub('<b style="color:§WFT0014§">不做涨幅外推、不做前值填充、不做量价估算</b>。换手率取行情源真实换手率（腾讯日K day[7]），源未提供时留 -1，不做推算。</p>'));
+    h.push(WufuTheme.sub('<p style="font-size:11px;color:§WFT0006§;margin:6px 0 0;line-height:1.7">单位净值取扶摇官方 unit_nav 真值（约 2021-11 起，premium 按未复权收盘反算），') +
       '旧标的历史净值段与全部价格序列均未改动；重叠日口径偏差 >2% 的标的自动跳过，只写入近 500 天内缺失或外推不一致的日期。</p>');
     box.innerHTML = h.join(""); box.style.display = "";
   }
@@ -2029,7 +2029,7 @@
 
   function pmMsg(t, bad) {
     var e = $("pmMsg");
-    if (e) { e.textContent = t || ""; e.style.color = bad ? "#F87171" : "#7C8DA1"; }
+    if (e) { e.textContent = t || ""; e.style.color = bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0002§"); }
   }
   function pmHint(t) { var e = $("pmHint"); if (e) e.textContent = t || ""; }
   function pmHintUpdate() { pmHint(FY_KEY ? "扶摇已启用 · 可按中文名反查代码" : "名称在线搜索需填扶摇 Key；纯 6 位代码可直接查腾讯"); }
@@ -2323,13 +2323,13 @@
   function grpAsk(title, text, def, cb) {
     var old = $("grpAskBox"); if (old) old.remove();
     var box = document.createElement("div"); box.id = "grpAskBox";
-    box.setAttribute("style", "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:16px");
+    box.setAttribute("style", WufuTheme.sub("position:fixed;inset:0;z-index:99999;background:§WFT0132§;display:flex;align-items:center;justify-content:center;padding:16px"));
     var inner = document.createElement("div");
-    inner.setAttribute("style", "width:min(360px,92vw);background:#101C29;border:1px solid #3E4E63;border-radius:10px;padding:14px 15px;box-shadow:0 10px 40px rgba(0,0,0,.5)");
-    var h = '<div style="font-size:13px;color:#F1F5F9;font-weight:bold;margin-bottom:7px">' + esc(title) + '</div>' +
-      '<div style="font-size:11.5px;color:#9FB0C3;line-height:1.7;margin-bottom:10px">' + esc(text) + '</div>';
+    inner.setAttribute("style", WufuTheme.sub("width:min(360px,92vw);background:§WFT0126§;border:1px solid §WFT0001§;border-radius:10px;padding:14px 15px;box-shadow:0 10px 40px §WFT0036§"));
+    var h = WufuTheme.sub('<div style="font-size:13px;color:§WFT0004§;font-weight:bold;margin-bottom:7px">') + esc(title) + '</div>' +
+      WufuTheme.sub('<div style="font-size:11.5px;color:§WFT0003§;line-height:1.7;margin-bottom:10px">') + esc(text) + '</div>';
     if (def !== null && def !== undefined) h += '<input id="grpAskInput" type="text" value="' + esc(def) +
-      '" style="width:100%;box-sizing:border-box;height:32px;padding:0 9px;background:#0F1822;border:1px solid #3E4E63;border-radius:6px;color:#D8E2EF;font-size:12px;margin-bottom:11px">';
+      WufuTheme.sub('" style="width:100%;box-sizing:border-box;height:32px;padding:0 9px;background:§WFT0018§;border:1px solid §WFT0001§;border-radius:6px;color:§WFT0005§;font-size:12px;margin-bottom:11px">');
     h += '<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="grpAskCancel" class="corr-mini">取消</button>' +
       '<button type="button" id="grpAskOk" class="btn" style="padding:6px 14px">确定</button></div>';
     inner.innerHTML = h; box.appendChild(inner); document.body.appendChild(box);
@@ -2370,8 +2370,8 @@
     var list = grpPool(), cfg = grpCfg(list), by = {};
     list.forEach(function (p) { by[p.code] = p; });
     var expand = GRP_EXPAND;
-    var inp = 'style="height:30px;width:150px;box-sizing:border-box;padding:0 8px;background:#0F1822;border:1px solid #3E4E63;border-radius:6px;color:#D8E2EF;font-size:12px"';
-    var sel = 'style="height:27px;background:#0F1822;border:1px solid #3E4E63;border-radius:6px;color:#D8E2EF;font-size:11px"';
+    var inp = WufuTheme.sub('style="height:30px;width:150px;box-sizing:border-box;padding:0 8px;background:§WFT0018§;border:1px solid §WFT0001§;border-radius:6px;color:§WFT0005§;font-size:12px"');
+    var sel = WufuTheme.sub('style="height:27px;background:§WFT0018§;border:1px solid §WFT0001§;border-radius:6px;color:§WFT0005§;font-size:11px"');
     var h = [];
     h.push('<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">' +
       '<input id="grpNewName" type="text" placeholder="新分组名" ' + inp + '>' +
@@ -2381,10 +2381,10 @@
       ' 只标的。改动立即生效，随更新包导出；空分组在移入标的后才出现在选标的页。</div>');
     cfg.groups.forEach(function (g, gi) {
       var codes = cfg.seq.filter(function (c) { return cfg.names[c] === g; });
-      h.push('<div style="margin-top:9px;border:1px solid #2A3A4E;border-radius:6px;padding:8px 10px">' +
+      h.push(WufuTheme.sub('<div style="margin-top:9px;border:1px solid §WFT0016§;border-radius:6px;padding:8px 10px">') +
         '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">' +
-        '<b style="color:#4FC3F7;font-size:12px">' + esc(g) + '</b>' +
-        '<span style="font-size:10px;color:#7C8DA1">' + codes.length + ' 只</span>' +
+        WufuTheme.sub('<b style="color:§WFT0006§;font-size:12px">') + esc(g) + '</b>' +
+        WufuTheme.sub('<span style="font-size:10px;color:§WFT0002§">') + codes.length + ' 只</span>' +
         '<button type="button" class="corr-mini" data-grp-act="gup" data-g="' + esc(g) + '">↑</button>' +
         '<button type="button" class="corr-mini" data-grp-act="gdown" data-g="' + esc(g) + '">↓</button>' +
         '<button type="button" class="corr-mini" data-grp-act="rename" data-g="' + esc(g) + '">改名</button>' +
@@ -2393,15 +2393,15 @@
           '" data-g="' + esc(g) + '" style="margin-left:auto">' + (expand === g ? "收起标的" : "展开标的") + '</button>' +
         '</div>');
       if (expand === g) {
-        if (!codes.length) h.push('<div style="font-size:11px;color:#6E7F93;margin:7px 0 2px">该分组暂无标的，可从别的组移入。</div>');
+        if (!codes.length) h.push(WufuTheme.sub('<div style="font-size:11px;color:§WFT0025§;margin:7px 0 2px">该分组暂无标的，可从别的组移入。</div>'));
         codes.forEach(function (c) {
           var it = by[c] || { name: c, code: c };
           var opts = cfg.groups.map(function (x) {
             return '<option value="' + esc(x) + '"' + (x === g ? " selected" : "") + '>' + esc(x) + '</option>';
           }).join("");
-          h.push('<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:5px 0;border-top:1px solid #233347;font-size:11.5px">' +
-            '<span style="color:#D8E2EF;min-width:135px">' + esc(it.name) + '</span>' +
-            '<span style="color:#7C8DA1">' + esc(c) + '</span>' +
+          h.push(WufuTheme.sub('<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:5px 0;border-top:1px solid §WFT0128§;font-size:11.5px">') +
+            WufuTheme.sub('<span style="color:§WFT0005§;min-width:135px">') + esc(it.name) + '</span>' +
+            WufuTheme.sub('<span style="color:§WFT0002§">') + esc(c) + '</span>' +
             '<button type="button" class="corr-mini" data-grp-act="iup" data-c="' + esc(c) + '">↑</button>' +
             '<button type="button" class="corr-mini" data-grp-act="idown" data-c="' + esc(c) + '">↓</button>' +
             '<select data-grp-move="' + esc(c) + '" ' + sel + '>' + opts + '</select></div>');
@@ -2557,16 +2557,16 @@
     var box = $("pmList");
     if (!box) return;
     if (!out.length) {
-      box.innerHTML = '<div style="font-size:11px;color:#7C8DA1;padding:6px 0">没找到匹配的标的。可换名称、直接输 6 位代码，或填扶摇 Key 后按名称反查。</div>';
+      box.innerHTML = WufuTheme.sub('<div style="font-size:11px;color:§WFT0002§;padding:6px 0">没找到匹配的标的。可换名称、直接输 6 位代码，或填扶摇 Key 后按名称反查。</div>');
       pmMsg("", false); return;
     }
     var h = ['<div style="display:flex;flex-direction:column;gap:5px;max-height:250px;overflow:auto">'];
     out.slice(0, 20).forEach(function (x, i) {
-      h.push('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;background:rgba(79,195,247,.05);border:1px solid #2A3A4E;border-radius:6px;font-size:11.5px">' +
-        '<span style="color:#F1F5F9;min-width:130px">' + esc(x.name) + '</span>' +
-        '<span style="color:#7C8DA1">' + esc(x.code) + '</span>' +
-        '<span style="color:#6E7F93;font-size:10px">' + esc(x.src) + '</span>' +
-        '<span style="color:' + (x.state === "可加入" ? "#4FC3F7" : "#FCD34D") + ';font-size:10px">' + esc(x.state) + '</span>' +
+      h.push(WufuTheme.sub('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;background:§WFT0135§;border:1px solid §WFT0016§;border-radius:6px;font-size:11.5px">') +
+        WufuTheme.sub('<span style="color:§WFT0004§;min-width:130px">') + esc(x.name) + '</span>' +
+        WufuTheme.sub('<span style="color:§WFT0002§">') + esc(x.code) + '</span>' +
+        WufuTheme.sub('<span style="color:§WFT0025§;font-size:10px">') + esc(x.src) + '</span>' +
+        '<span style="color:' + (x.state === "可加入" ? WufuTheme.sub("§WFT0006§") : WufuTheme.sub("§WFT0014§")) + ';font-size:10px">' + esc(x.state) + '</span>' +
         '<button type="button" class="corr-mini" data-pm-idx="' + i + '" style="margin-left:auto">选用</button>' +
         (x.state === "已移出"
           ? '<button type="button" class="corr-mini" data-pm-act="restore" data-pm-code="' + esc(x.code) + '">恢复</button>'
@@ -2606,7 +2606,7 @@
     try {
       var res = await pmFetch(code, false);
       PM_CACHE[code] = res;
-      if (box) box.innerHTML = '<div style="padding:8px 10px;background:rgba(79,195,247,.06);border:1px solid #2A3A4E;border-radius:6px">' + esc(pmDescribe(res)) + '</div>';
+      if (box) box.innerHTML = WufuTheme.sub('<div style="padding:8px 10px;background:§WFT0040§;border:1px solid §WFT0016§;border-radius:6px">') + esc(pmDescribe(res)) + '</div>';
       pmMsg("预览完成 · 确认类别后点「加入标的池」");
     } catch (e) {
       if (box) box.innerHTML = "";
@@ -2676,26 +2676,26 @@
   function pmRenderMine() {
     var box = $("pmMine"); if (!box) return;
     var p = readPatch() || newPatch(), cust = p.custom || [], hid = p.hidden || [];
-    if (!cust.length && !hid.length) { box.innerHTML = '<div style="color:#7C8DA1">暂无自定义标的，也没有移出的标的。</div>'; return; }
+    if (!cust.length && !hid.length) { box.innerHTML = WufuTheme.sub('<div style="color:§WFT0002§">暂无自定义标的，也没有移出的标的。</div>'); return; }
     var h = [];
     if (cust.length) {
-      h.push('<div style="color:#4FC3F7;margin-bottom:6px">自定义 / 已改类别 ' + cust.length + ' 只</div>');
+      h.push(WufuTheme.sub('<div style="color:§WFT0006§;margin-bottom:6px">自定义 / 已改类别 ') + cust.length + ' 只</div>');
       cust.forEach(function (x) {
-        h.push('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid #2A3A4E">' +
-          '<span style="color:#F1F5F9">' + esc(x.name) + '</span><span style="color:#7C8DA1">' + esc(x.code) + '</span>' +
-          '<span style="color:#6E7F93;font-size:10px">' + esc(x.group) + ' · ' + esc(x.src || "") + (x.metaOnly ? " · 仅元信息" : "") + '</span>' +
+        h.push(WufuTheme.sub('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid §WFT0016§">') +
+          WufuTheme.sub('<span style="color:§WFT0004§">') + esc(x.name) + WufuTheme.sub('</span><span style="color:§WFT0002§">') + esc(x.code) + '</span>' +
+          WufuTheme.sub('<span style="color:§WFT0025§;font-size:10px">') + esc(x.group) + ' · ' + esc(x.src || "") + (x.metaOnly ? " · 仅元信息" : "") + '</span>' +
           '<button type="button" class="corr-mini" data-pm-del="' + esc(x.code) + '" data-cust="1" style="margin-left:auto">移出</button></div>');
       });
     }
     if (hid.length) {
-      h.push('<div style="color:#FCD34D;margin:9px 0 6px">已从标的池移出 ' + hid.length + ' 只（行情数据保留）</div>');
+      h.push(WufuTheme.sub('<div style="color:§WFT0014§;margin:9px 0 6px">已从标的池移出 ') + hid.length + ' 只（行情数据保留）</div>');
       hid.forEach(function (c) {
-        h.push('<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #2A3A4E">' +
-          '<span style="color:#9FB0C3">' + esc(c) + '</span>' +
+        h.push(WufuTheme.sub('<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid §WFT0016§">') +
+          WufuTheme.sub('<span style="color:§WFT0003§">') + esc(c) + '</span>' +
           '<button type="button" class="corr-mini" data-pm-restore="' + esc(c) + '" style="margin-left:auto">恢复</button></div>');
       });
     }
-    h.push('<div style="color:#6E7F93;font-size:10px;margin-top:8px;line-height:1.6">自定义标的的全历史行情存在本机浏览器；标的多时建议「导出完整 HTML」把数据烘进文件，再「清除本机更新」。</div>');
+    h.push(WufuTheme.sub('<div style="color:§WFT0025§;font-size:10px;margin-top:8px;line-height:1.6">自定义标的的全历史行情存在本机浏览器；标的多时建议「导出完整 HTML」把数据烘进文件，再「清除本机更新」。</div>'));
     box.innerHTML = h.join("");
     Array.prototype.forEach.call(box.querySelectorAll("[data-pm-del]"), function (b) {
       b.addEventListener("click", function () { pmDel(b.getAttribute("data-pm-del"), b.getAttribute("data-cust") === "1"); });
@@ -2768,9 +2768,9 @@
       '<th style="width:88px">扶摇真值日</th><th style="width:100px">状态</th><th style="width:64px">操作</th>' +
       '</tr></thead><tbody>'];
     show.forEach(function (x) {
-      var st = { todo: '<span style="color:#FCD34D">待补</span>', done: '<span style="color:#4FC3F7">已补</span>',
-        hist: '<span style="color:#7C8DA1">历史真值</span>', na: '<span style="color:#6E7F93">不适用</span>' }[x.state];
-      var why = x.state === "na" ? '<div style="font-size:10px;color:#6E7F93">' + esc(x.naWhy) + '</div>' : "";
+      var st = { todo: WufuTheme.sub('<span style="color:§WFT0014§">待补</span>'), done: WufuTheme.sub('<span style="color:§WFT0006§">已补</span>'),
+        hist: WufuTheme.sub('<span style="color:§WFT0002§">历史真值</span>'), na: WufuTheme.sub('<span style="color:§WFT0025§">不适用</span>') }[x.state];
+      var why = x.state === "na" ? WufuTheme.sub('<div style="font-size:10px;color:§WFT0025§">') + esc(x.naWhy) + '</div>' : "";
       var btn = (x.state === "todo" || x.state === "done")
         ? '<button type="button" class="corr-mini" data-nav-fill="' + esc(x.c) + '">' + (x.state === "done" ? "重补" : "补齐") + '</button>' : "—";
       h.push('<tr><td>' + esc(x.c) + '</td><td>' + esc(x.name) + '</td><td>' + esc(x.group) + '</td><td>' + x.valid +
@@ -3005,7 +3005,7 @@
       var st = $("wufuFyState");
       if (st) {
         st.textContent = FY_KEY ? "已启用（仅本次会话，不保存）" : "未启用 · 全部走免费源";
-        st.style.color = FY_KEY ? "#4FC3F7" : "#7C8DA1";
+        st.style.color = FY_KEY ? WufuTheme.sub("§WFT0006§") : WufuTheme.sub("§WFT0002§");
       }
       pmHintUpdate(); syncNavKeyUI();
     });

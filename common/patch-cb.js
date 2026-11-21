@@ -38,21 +38,21 @@
   function gD() { try { if (window.WufuUI && window.WufuUI.getData) { var d = window.WufuUI.getData(); if (d) return d; } } catch (e) { } return window.__WUFU_D || window.D || null; }
   function note(t, bad) {
     var e = $("wufuUpdMsg"); if (!e) return;
-    e.style.display = ""; e.textContent = t; e.style.color = bad ? "#F87171" : "#9FD8F6";
-    e.style.background = bad ? "rgba(248,113,113,.12)" : "rgba(79,195,247,.08)";
-    e.style.border = "1px solid " + (bad ? "#F87171" : "#2A3A4E");
+    e.style.display = ""; e.textContent = t; e.style.color = bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0049§");
+    e.style.background = bad ? WufuTheme.sub("§WFT0063§") : WufuTheme.sub("§WFT0050§");
+    e.style.border = "1px solid " + (bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0016§"));
   }
   function qnote(t, bad) {
     var e = $("qckMsg"); if (!e) return;
-    e.style.display = ""; e.textContent = t; e.style.color = bad ? "#F87171" : "#9FD8F6";
-    e.style.background = bad ? "rgba(248,113,113,.12)" : "rgba(79,195,247,.08)";
-    e.style.border = "1px solid " + (bad ? "#F87171" : "#2A3A4E");
+    e.style.display = ""; e.textContent = t; e.style.color = bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0049§");
+    e.style.background = bad ? WufuTheme.sub("§WFT0063§") : WufuTheme.sub("§WFT0050§");
+    e.style.border = "1px solid " + (bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0016§"));
   }
   function fcMsg(t, bad) {
     var e = $("fcMsg"); if (!e) return;
-    e.style.display = ""; e.textContent = t; e.style.color = bad ? "#F87171" : "#9FD8F6";
-    e.style.background = bad ? "rgba(248,113,113,.12)" : "rgba(79,195,247,.08)";
-    e.style.border = "1px solid " + (bad ? "#F87171" : "#2A3A4E");
+    e.style.display = ""; e.textContent = t; e.style.color = bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0049§");
+    e.style.background = bad ? WufuTheme.sub("§WFT0063§") : WufuTheme.sub("§WFT0050§");
+    e.style.border = "1px solid " + (bad ? WufuTheme.sub("§WFT0010§") : WufuTheme.sub("§WFT0016§"));
   }
   function dl(name, txt) {
     var b = new Blob([txt], { type: "application/json;charset=utf-8" }), u = URL.createObjectURL(b);
@@ -255,8 +255,8 @@
     var e = $("wufuFixList"); if (!e) return;
     var p = P(), h = [], n = 0;
     function row(label, txt, act, val) {
-      n++; h.push('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid #243244;font-size:11px;color:#9FB0C3">' +
-        '<span style="color:#4FC3F7;min-width:96px">' + esc(label) + '</span><span style="flex:1;min-width:150px">' + esc(txt) + '</span>' +
+      n++; h.push(WufuTheme.sub('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid §WFT0009§;font-size:11px;color:§WFT0003§">') +
+        WufuTheme.sub('<span style="color:§WFT0006§;min-width:96px">') + esc(label) + '</span><span style="flex:1;min-width:150px">' + esc(txt) + '</span>' +
         (act ? '<button type="button" class="corr-mini" data-cb-un="' + esc(act) + '" data-cb-v="' + esc(val) + '">撤销</button>' : '') + '</div>');
     }
     (p.corrections || []).slice(-12).forEach(function (x) { row("人工纠正", x.c + " · " + x.date, "corr", x.c + "|" + x.date); });
@@ -265,7 +265,7 @@
     (p.swaps || []).slice(-6).forEach(function (x) { row("序列互换", x.a + " ↔ " + x.b, "", ""); });
     (p.exempt || []).slice(-12).forEach(function (x) { row("已确认", x.id + " · " + x.c, "exempt", x.id + "|" + x.c); });
     (p.days || []).slice(-6).forEach(function (x) { row("增量交易日", x.date + " · " + Object.keys(x.series || {}).length + " 只", "", ""); });
-    e.innerHTML = n ? h.join("") : '<div style="font-size:11px;color:#7C8DA1;padding:6px 0">暂无修复记录。</div>';
+    e.innerHTML = n ? h.join("") : WufuTheme.sub('<div style="font-size:11px;color:§WFT0002§;padding:6px 0">暂无修复记录。</div>');
     Array.prototype.forEach.call(e.querySelectorAll("[data-cb-un]"), function (b) {
       b.addEventListener("click", function () {
         var a = b.getAttribute("data-cb-un"), v = b.getAttribute("data-cb-v"), p = P();
@@ -291,8 +291,8 @@
     var e = $("wufuCorrList"); if (!e) return;
     var p = P(), a = (p.corrections || []).slice(-20).reverse();
     e.style.display = a.length ? "" : "none";
-    e.innerHTML = a.length ? '<div style="font-size:10.5px;color:#7C8DA1;margin:6px 0">最近人工纠正（' + a.length + ' 条）</div>' +
-      a.map(function (x) { return '<div style="font-size:11px;color:#9FB0C3;padding:3px 0;border-bottom:1px solid #243244">' + esc(x.c) + " · " + esc(x.date) + " · 收 " + esc(x.close == null ? "—" : x.close) + "</div>"; }).join("") : "";
+    e.innerHTML = a.length ? WufuTheme.sub('<div style="font-size:10.5px;color:§WFT0002§;margin:6px 0">最近人工纠正（') + a.length + ' 条）</div>' +
+      a.map(function (x) { return WufuTheme.sub('<div style="font-size:11px;color:§WFT0003§;padding:3px 0;border-bottom:1px solid §WFT0009§">') + esc(x.c) + " · " + esc(x.date) + " · 收 " + esc(x.close == null ? "—" : x.close) + "</div>"; }).join("") : "";
   }
   function renderState() {
     var p = P(), st = $("wufuUpdState"), os = $("wufuOhlcState"), rp = $("wufuUpdReport");
@@ -313,8 +313,8 @@
       ? "剩余规模：已更新至 " + p.scale.asof + "（" + p.scale.source + "）· 交易所日频"
       : "剩余规模：内嵌日频序列（截至 2026-10-29）· 点「更新剩余规模（日频）」";
     if (os) os.textContent = nOh ? "OHLC 修复 " + nOh + " 只（可撤销）" : "暂无 OHLC 修复记录";
-    if (rp) { rp.style.display = ""; rp.innerHTML = '<div style="font-size:11px;color:#9FB0C3;line-height:1.8;padding:8px 10px;background:#0F1822;border:1px solid #2A3A4E;border-radius:6px">' +
-      "本机增量摘要（" + esc(p.ts || "尚无") + "）：增量交易日 " + nDay + " · 人工纠正 " + nCorr + " 条 · OHLC 修复 " + nOh + " 只 · 插值修复 " + nRe + " 只 · 序列互换 " + (p.swaps || []).length + " 组 · 已确认 " + nEx + " 条 · ST 公告 " + esc((stA && stA.asof) || "无") + "。<br><span style='color:#6E7F93'>联网增量写在本机；清除本机更新会回到内嵌原始数据。</span></div>"; }
+    if (rp) { rp.style.display = ""; rp.innerHTML = WufuTheme.sub('<div style="font-size:11px;color:§WFT0003§;line-height:1.8;padding:8px 10px;background:§WFT0018§;border:1px solid §WFT0016§;border-radius:6px">') +
+      "本机增量摘要（" + esc(p.ts || "尚无") + "）：增量交易日 " + nDay + " · 人工纠正 " + nCorr + " 条 · OHLC 修复 " + nOh + " 只 · 插值修复 " + nRe + " 只 · 序列互换 " + (p.swaps || []).length + " 组 · 已确认 " + nEx + " 条 · ST 公告 " + esc((stA && stA.asof) || "无") + WufuTheme.sub("。<br><span style='color:§WFT0025§'>联网增量写在本机；清除本机更新会回到内嵌原始数据。</span></div>"); }
     renderList(); renderCorrList();
     var cu = $("wufuCorrState"); if (cu) cu.textContent = nCorr ? "本机存有 " + nCorr + " 条人工纠正" : "暂无人工纠正";
   }
@@ -1143,8 +1143,8 @@
     var e = $("qckFixLine"); if (!e) return;
     var f = ls(KF, null);
     if (!f) { e.textContent = "上次修复：暂无记录"; return; }
-    e.innerHTML = "上次修复：" + f.ts + " · <b style='color:#34D399'>实际改好 " + f.fixed + " 个数据点</b> · " +
-      (f.remain ? "<b style='color:#FCD34D'>" + f.remain + " 处需确认</b>" : "<b style='color:#34D399'>0 处需确认</b>");
+    e.innerHTML = "上次修复：" + f.ts + WufuTheme.sub(" · <b style='color:§WFT0012§'>实际改好 ") + f.fixed + " 个数据点</b> · " +
+      (f.remain ? WufuTheme.sub("<b style='color:§WFT0014§'>") + f.remain + " 处需确认</b>" : WufuTheme.sub("<b style='color:§WFT0012§'>0 处需确认</b>"));
   }
   function undoLine() {
     var b = $("qckUndo"), s = $("qckUndoNote"), snap = ls(KS, null);
@@ -1168,15 +1168,15 @@
         var v = p[x[0]], n = Array.isArray(v) ? v.length : Object.keys(v || {}).length; if (n) done.push([x[1], n]);
       });
       (p.exempt || []).slice(-40).forEach(function (x) { exempt.push(x.id + " · " + x.c); });
-      var items = [["待处理", todo.length, "#FCD34D"], ["已处理", done.reduce(function (a,x) { return a + x[1]; },0), "#4FC3F7"], ["已确认", exempt.length, "#34D399"]];
-      k.innerHTML = items.map(function (x) { return '<div style="background:#1B2634;border:1px solid #2A3A4E;border-radius:6px;padding:8px 10px"><div style="font-size:10.5px;color:#7C8DA1">' + x[0] + '</div><div style="font-size:18px;color:' + x[2] + '">' + x[1] + '</div></div>'; }).join("");
+      var items = [["待处理", todo.length, WufuTheme.sub("§WFT0014§")], ["已处理", done.reduce(function (a,x) { return a + x[1]; },0), WufuTheme.sub("§WFT0006§")], ["已确认", exempt.length, WufuTheme.sub("§WFT0012§")]];
+      k.innerHTML = items.map(function (x) { return WufuTheme.sub('<div style="background:§WFT0007§;border:1px solid §WFT0016§;border-radius:6px;padding:8px 10px"><div style="font-size:10.5px;color:§WFT0002§">') + x[0] + '</div><div style="font-size:18px;color:' + x[2] + '">' + x[1] + '</div></div>'; }).join("");
       var h = '<div class="tblwrap"><table class="trades hltbl" style="width:100%;min-width:460px"><thead><tr><th style="width:70px">来源</th><th>条目</th><th style="width:82px">状态</th><th style="width:90px">操作</th></tr></thead><tbody>';
-      if (!todo.length) h += '<tr><td colspan="4" style="color:#7C8DA1;padding:9px">暂无待处理项。先点「开始体检」或「一键修复数据」。</td></tr>';
+      if (!todo.length) h += WufuTheme.sub('<tr><td colspan="4" style="color:§WFT0002§;padding:9px">暂无待处理项。先点「开始体检」或「一键修复数据」。</td></tr>');
       todo.forEach(function (x, i) {
-        h += '<tr><td>体检</td><td>' + esc(x.name) + '</td><td style="color:#FCD34D">待处理</td><td><button type="button" class="corr-mini" data-fc-run="' + i + '">执行</button></td></tr>';
+        h += '<tr><td>体检</td><td>' + esc(x.name) + WufuTheme.sub('</td><td style="color:§WFT0014§">待处理</td><td><button type="button" class="corr-mini" data-fc-run="') + i + '">执行</button></td></tr>';
       });
       h += '</tbody></table></div><p class="swipehint">表格较宽，可左右滑动查看 →</p>';
-      if (done.length) h += '<div style="font-size:10.5px;color:#7C8DA1;line-height:1.8;margin-top:6px"><b style="color:#4FC3F7">已处理</b>：' + done.map(function (x) { return esc(x[0]) + " " + x[1]; }).join(" · ") + '</div>';
+      if (done.length) h += WufuTheme.sub('<div style="font-size:10.5px;color:§WFT0002§;line-height:1.8;margin-top:6px"><b style="color:§WFT0006§">已处理</b>：') + done.map(function (x) { return esc(x[0]) + " " + x[1]; }).join(" · ") + '</div>';
       q.innerHTML = h;
       Array.prototype.forEach.call(q.querySelectorAll("[data-fc-run]"), function (b) {
         b.addEventListener("click", async function () {
@@ -1194,11 +1194,11 @@
         });
       });
       var a = (ls(KL, []) || []).slice(-50).reverse();
-      var col = { ok: "#34D399", warn: "#FCD34D", err: "#F87171", act: "#9FB0C3", info: "#7C8DA1" };
-      var hh = '<div style="font-size:11px;color:#4FC3F7;margin:10px 0 5px"><b>审计时间线</b> · 最近 ' + a.length + ' 条（存本机，可导出）</div>';
-      if (!a.length) hh += '<div style="font-size:10.5px;color:#7C8DA1">暂无记录。点任一修复按钮后这里会自动出现。</div>';
-      else { hh += '<div style="max-height:230px;overflow:auto;border:1px solid #2A3A4E;border-radius:6px;background:#0F1822">';
-        a.forEach(function (x) { hh += '<div style="padding:5px 9px;border-bottom:1px solid #243244;font-size:10.5px;line-height:1.6;color:#9FB0C3"><span style="color:#6E7F93">' + esc(x.ts) + '</span> · <b style="color:' + (col[x.st] || "#9FB0C3") + '">' + esc(x.act) + '</b>' + (x.c ? ' · ' + esc(x.c) : '') + ' · ' + esc(x.m) + '</div>'; });
+      var col = { ok: WufuTheme.sub("§WFT0012§"), warn: WufuTheme.sub("§WFT0014§"), err: WufuTheme.sub("§WFT0010§"), act: WufuTheme.sub("§WFT0003§"), info: WufuTheme.sub("§WFT0002§") };
+      var hh = WufuTheme.sub('<div style="font-size:11px;color:§WFT0006§;margin:10px 0 5px"><b>审计时间线</b> · 最近 ') + a.length + ' 条（存本机，可导出）</div>';
+      if (!a.length) hh += WufuTheme.sub('<div style="font-size:10.5px;color:§WFT0002§">暂无记录。点任一修复按钮后这里会自动出现。</div>');
+      else { hh += WufuTheme.sub('<div style="max-height:230px;overflow:auto;border:1px solid §WFT0016§;border-radius:6px;background:§WFT0018§">');
+        a.forEach(function (x) { hh += WufuTheme.sub('<div style="padding:5px 9px;border-bottom:1px solid §WFT0009§;font-size:10.5px;line-height:1.6;color:§WFT0003§"><span style="color:§WFT0025§">') + esc(x.ts) + '</span> · <b style="color:' + (col[x.st] || WufuTheme.sub("§WFT0003§")) + '">' + esc(x.act) + '</b>' + (x.c ? ' · ' + esc(x.c) : '') + ' · ' + esc(x.m) + '</div>'; });
         hh += '</div>'; }
       if (l) l.innerHTML = hh;
     },

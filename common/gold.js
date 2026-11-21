@@ -13,7 +13,7 @@
   function $(id) { return document.getElementById(id); }
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
   function TX(x, y, s, size, color, anchor) {
-    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || '#7C8DA1', 'font-family': 'sans-serif' });
+    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || WufuTheme.sub('§WFT0002§'), 'font-family': 'sans-serif' });
     if (anchor) t.setAttribute('text-anchor', anchor); t.textContent = s; return t;
   }
   function T(v) { return (v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) ? '—' : String(v); }
@@ -77,7 +77,7 @@
       arr.push(a); if (a.length > n) n = a.length;
     });
     var LB = SL(labels || []);
-    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return rets; }
+    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); return rets; }
     var all = []; arr.forEach(function (a) { all = all.concat(a); });
     var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
     if (!isFinite(lo) || !isFinite(hi) || hi === lo) { lo = 90; hi = 110; }
@@ -86,11 +86,11 @@
     var Y = function (v) { return 12 + (hi - v) / (hi - lo) * 120; };
     [0.25, 0.5, 0.75].forEach(function (q) {
       var gv = lo + (hi - lo) * q;
-      svg.appendChild(E('line', { x1: 34, y1: Y(gv), x2: 344, y2: Y(gv), stroke: '#2C3B4E', 'stroke-width': '1' }));
-      svg.appendChild(TX(31, Y(gv) + 3, Math.round(gv), 9, '#7C8DA1', 'end'));
+      svg.appendChild(E('line', { x1: 34, y1: Y(gv), x2: 344, y2: Y(gv), stroke: WufuTheme.sub('§WFT0048§'), 'stroke-width': '1' }));
+      svg.appendChild(TX(31, Y(gv) + 3, Math.round(gv), 9, WufuTheme.sub('§WFT0002§'), 'end'));
     });
     if (lo <= 100 && hi >= 100) {
-      svg.appendChild(E('line', { x1: 34, y1: Y(100), x2: 344, y2: Y(100), stroke: '#4FC3F7', 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.45' }));
+      svg.appendChild(E('line', { x1: 34, y1: Y(100), x2: 344, y2: Y(100), stroke: WufuTheme.sub('§WFT0006§'), 'stroke-width': '1', 'stroke-dasharray': '4 3', opacity: '.45' }));
     }
     specs.forEach(function (s, j) {
       var full = s.__full || arr[j], pts = [];
@@ -105,7 +105,7 @@
     ticks.forEach(function (k) {
       var x = 34 + k.i * (310 / Math.max(1, LB.length - 1));
       var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
-      svg.appendChild(TX(x, 148, k.text, 9, '#7C8DA1', anchor));
+      svg.appendChild(TX(x, 148, k.text, 9, WufuTheme.sub('§WFT0002§'), anchor));
     });
     /* v0.65：点曲线 → 当日日期 + 各资产归一值 */
     if (window.WufuRange) WufuRange.probe(svg, {
@@ -144,15 +144,15 @@
       var specs = [];
       order.forEach(function (s) {
         var k = (d.kpi || []).filter(function (x) { return x.label === names[s]; })[0];
-        specs.push({ data: (t.price || {})[s] || [], color: k ? k.color : '#9FB0C3', name: names[s] });
-        lg += '<span><i style="background:' + (k ? k.color : '#9FB0C3') + '"></i>' + names[s] + '</span>';
+        specs.push({ data: (t.price || {})[s] || [], color: k ? k.color : WufuTheme.sub('§WFT0003§'), name: names[s] });
+        lg += '<span><i style="background:' + (k ? k.color : WufuTheme.sub('§WFT0003§')) + '"></i>' + names[s] + '</span>';
       });
       var rets = drawMulti('gMain', specs, t.labels || []);
       $('gTitle').textContent = '五资产价格';
       writeRangeInfo(rets);
     } else {
       var rk = ['金银比', '金油比', '金铜比'], cs = d.ratioColors || {}, sp = [];
-      rk.forEach(function (r) { sp.push({ data: (t.ratio || {})[r] || [], color: cs[r] || '#4FC3F7', name: r }); lg += '<span><i style="background:' + (cs[r] || '#4FC3F7') + '"></i>' + r + '</span>'; });
+      rk.forEach(function (r) { sp.push({ data: (t.ratio || {})[r] || [], color: cs[r] || WufuTheme.sub('§WFT0006§'), name: r }); lg += '<span><i style="background:' + (cs[r] || WufuTheme.sub('§WFT0006§')) + '"></i>' + r + '</span>'; });
       var rets = drawMulti('gMain', sp, t.labels || []);
       $('gTitle').textContent = '三项比价';
       writeRangeInfo(rets);
@@ -165,7 +165,7 @@
   function renderGvz(d) {
     var svg = $('gGvz'); if (!svg) return; svg.innerHTML = '';
     var a = SL(((d.trend || {})[String(years)] || {}).gvz || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
-    if (a.length < 2) { svg.appendChild(TX(180, 50, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
+    if (a.length < 2) { svg.appendChild(TX(180, 50, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); return; }
     var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a), pad = (hi - lo) * 0.12 || 1;
     lo -= pad; hi += pad;
     var X = function (i) { return 34 + i * (310 / (a.length - 1)); };
@@ -175,16 +175,16 @@
     area += ' L 344,76 Z';
     var defs = E('defs', {});
     var lg = E('linearGradient', { id: 'gvzgrad', x1: '0', y1: '0', x2: '0', y2: '1' });
-    lg.appendChild(E('stop', { offset: '0%', 'stop-color': '#FBBF24', 'stop-opacity': '.45' }));
-    lg.appendChild(E('stop', { offset: '100%', 'stop-color': '#FBBF24', 'stop-opacity': '0' }));
+    lg.appendChild(E('stop', { offset: '0%', 'stop-color': WufuTheme.sub('§WFT0011§'), 'stop-opacity': '.45' }));
+    lg.appendChild(E('stop', { offset: '100%', 'stop-color': WufuTheme.sub('§WFT0011§'), 'stop-opacity': '0' }));
     defs.appendChild(lg); svg.appendChild(defs);
     svg.appendChild(E('path', { d: area, fill: 'url(#gvzgrad)' }));
-    svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: '#FBBF24', 'stroke-width': '1.6' }));
+    svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: WufuTheme.sub('§WFT0011§'), 'stroke-width': '1.6' }));
     var avg = a.reduce(function (x, y) { return x + y; }, 0) / a.length;
-    svg.appendChild(E('line', { x1: 34, y1: Y(avg), x2: 344, y2: Y(avg), stroke: '#9FB0C3', 'stroke-width': '1', 'stroke-dasharray': '4 3' }));
-    svg.appendChild(TX(31, Y(hi) + 6, Math.round(hi), 9, '#7C8DA1', 'end'));
-    svg.appendChild(TX(31, Y(lo) + 2, Math.round(lo), 9, '#7C8DA1', 'end'));
-    svg.appendChild(TX(344, 90, '均值虚线', 8.5, '#7C8DA1', 'end'));
+    svg.appendChild(E('line', { x1: 34, y1: Y(avg), x2: 344, y2: Y(avg), stroke: WufuTheme.sub('§WFT0003§'), 'stroke-width': '1', 'stroke-dasharray': '4 3' }));
+    svg.appendChild(TX(31, Y(hi) + 6, Math.round(hi), 9, WufuTheme.sub('§WFT0002§'), 'end'));
+    svg.appendChild(TX(31, Y(lo) + 2, Math.round(lo), 9, WufuTheme.sub('§WFT0002§'), 'end'));
+    svg.appendChild(TX(344, 90, '均值虚线', 8.5, WufuTheme.sub('§WFT0002§'), 'end'));
     /* v0.65：点 GVZ 曲线 → 当日日期 + 点位 */
     var gL = SL(((d.trend || {})[String(years)] || {}).labels || []);
     var gV = SL(((d.trend || {})[String(years)] || {}).gvz || []);
@@ -192,7 +192,7 @@
       labels: gL, vbW: 360, y0: 6, y1: 80, boxW: 132, boxY: 4,
       xAt: function (i) { return 34 + i * (310 / Math.max(1, gL.length - 1)); },
       yAt: Y,
-      series: [{ name: 'GVZ', color: '#FBBF24', data: gV, fmt: function (v) { return v.toFixed(2); } }],
+      series: [{ name: 'GVZ', color: WufuTheme.sub('§WFT0011§'), data: gV, fmt: function (v) { return v.toFixed(2); } }],
       note: '指数点位 · 不重定基'
     });
   }
@@ -228,7 +228,7 @@
   function fail() {
     $('gSum').innerHTML = '暂无快照 · 周五同步后自动出现';
     ['gKpi', 'gPos'].forEach(function (id) { var e = $(id); if (e) e.innerHTML = '<div class="gempty">暂无快照</div>'; });
-    ['gMain', 'gGvz'].forEach(function (id) { var s = $(id); if (s) { s.innerHTML = ''; s.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); } });
+    ['gMain', 'gGvz'].forEach(function (id) { var s = $(id); if (s) { s.innerHTML = ''; s.appendChild(TX(180, 80, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); } });
     $('gSample').textContent = '—';
   }
 

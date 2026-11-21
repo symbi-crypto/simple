@@ -10,21 +10,21 @@
   function $(id) { return document.getElementById(id); }
   function E(tag, a) { var n = document.createElementNS(NS, tag); for (var k in a) n.setAttribute(k, a[k]); return n; }
   function TX(x, y, s, size, color, anchor) {
-    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || '#7C8DA1', 'font-family': 'sans-serif' });
+    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || WufuTheme.sub('§WFT0002§'), 'font-family': 'sans-serif' });
     if (anchor) t.setAttribute('text-anchor', anchor); t.textContent = s; return t;
   }
   function T(v) { return (v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) ? '—' : String(v); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
   function clear(id) { var e = $(id); if (e) e.innerHTML = ''; return e; }
   function heatColor(v, maxAbs) {
-    if (v === null || v === undefined || !isFinite(v)) return '#2A3B50';
+    if (v === null || v === undefined || !isFinite(v)) return WufuTheme.sub('§WFT0037§');
     var a = Math.min(.88, .12 + Math.abs(v) / Math.max(0.8, maxAbs) * .78);
-    return v >= 0 ? 'rgba(248,113,113,' + a.toFixed(2) + ')' : 'rgba(52,211,153,' + a.toFixed(2) + ')';
+    return v >= 0 ? 'rgba(' + WufuTheme.css('--c-up-rgb') + ',' + a.toFixed(2) + ')' : 'rgba(' + WufuTheme.css('--c-down-rgb') + ',' + a.toFixed(2) + ')';
   }
   function tempColor(v) {
-    if (v === null || v === undefined || !isFinite(v)) return '#2A3B50';
-    if (v <= 20) return '#1D4E7A';
-    if (v >= 80) return '#A33A36';
+    if (v === null || v === undefined || !isFinite(v)) return WufuTheme.sub('§WFT0037§');
+    if (v <= 20) return WufuTheme.sub('§WFT0102§');
+    if (v >= 80) return WufuTheme.sub('§WFT0106§');
     var t = (v - 20) / 60;
     return 'rgb(' + Math.round(29 + t * 134) + ',' + Math.round(78 - t * 20) + ',' + Math.round(122 - t * 68) + ')';
   }
@@ -41,19 +41,19 @@
   function renderRadar(d) {
     var svg = clear('indRadar'); if (!svg) return;
     var keys = d.keys || [], cx = 180, cy = 104, R = 70, n = keys.length;
-    if (!n) { svg.appendChild(TX(180, 100, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
+    if (!n) { svg.appendChild(TX(180, 100, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); return; }
     var ang = function (i) { return -Math.PI / 2 + i * 2 * Math.PI / n; };
     var pt = function (i, r) { return [cx + Math.cos(ang(i)) * r, cy + Math.sin(ang(i)) * r]; };
     [0.25, 0.5, 0.75, 1].forEach(function (q) {
       var p = [];
       for (var i = 0; i < n; i++) { var a = pt(i, R * q); p.push(a[0].toFixed(1) + ',' + a[1].toFixed(1)); }
-      svg.appendChild(E('polygon', { points: p.join(' '), fill: 'none', stroke: '#2C3B4E', 'stroke-width': '1' }));
+      svg.appendChild(E('polygon', { points: p.join(' '), fill: 'none', stroke: WufuTheme.sub('§WFT0048§'), 'stroke-width': '1' }));
     });
     for (var i = 0; i < n; i++) {
       var a = pt(i, R);
-      svg.appendChild(E('line', { x1: cx, y1: cy, x2: a[0], y2: a[1], stroke: '#2C3B4E', 'stroke-width': '1' }));
+      svg.appendChild(E('line', { x1: cx, y1: cy, x2: a[0], y2: a[1], stroke: WufuTheme.sub('§WFT0048§'), 'stroke-width': '1' }));
       var lp = pt(i, R + 17);
-      svg.appendChild(TX(lp[0], lp[1] + 3, keys[i].slice(0, 6), 8.5, '#9FB0C3',
+      svg.appendChild(TX(lp[0], lp[1] + 3, keys[i].slice(0, 6), 8.5, WufuTheme.sub('§WFT0003§'),
         Math.abs(lp[0] - cx) < 8 ? 'middle' : (lp[0] > cx ? 'start' : 'end')));
     }
     function poly(vals, stroke, fill) {
@@ -64,8 +64,8 @@
       }
       svg.appendChild(E('polygon', { points: p.join(' '), fill: fill, stroke: stroke, 'stroke-width': '1.7', 'stroke-linejoin': 'round' }));
     }
-    poly((d.radar || {}).lastWeek, '#FBBF24', 'rgba(251,191,36,.06)');
-    poly((d.radar || {}).today, '#4FC3F7', 'rgba(79,195,247,.18)');
+    poly((d.radar || {}).lastWeek, WufuTheme.sub('§WFT0011§'), WufuTheme.sub('§WFT0133§'));
+    poly((d.radar || {}).today, WufuTheme.sub('§WFT0006§'), WufuTheme.sub('§WFT0136§'));
   }
 
   /* ---------- 七张指标卡（点卡片切主图） ---------- */
@@ -74,7 +74,7 @@
     (d.indicators || []).forEach(function (it, i) {
       var e = document.createElement('div');
       e.className = 'mcard' + (i === active ? ' on' : '');
-      e.innerHTML = '<div class="mn">' + esc(it.name) + '</div><div class="mv">' + (it.value == null ? '—' : Math.round(it.value) + '<span style="font-size:10px;color:#9FB0C3">%</span>') + '</div>';
+      e.innerHTML = '<div class="mn">' + esc(it.name) + '</div><div class="mv">' + (it.value == null ? '—' : Math.round(it.value) + WufuTheme.sub('<span style="font-size:10px;color:§WFT0003§">%</span>')) + '</div>';
       /* v0.73：切指标卡也会把区间还原全段；必须通知 quickI，
          否则按钮仍高亮「1年」、日期框仍是旧值，与曲线脱钩。 */
       e.onclick = function () { active = i; isel = [0, 1]; if (rngI) rngI.reset();
@@ -90,13 +90,13 @@
     var rawL = ((d.area || {})[String(years)] || {}).labels || [];
     var a = SL(rawA), labels = SL(rawL);
     var vals = a.filter(function (x) { return typeof x === 'number' && isFinite(x); });
-    if (!vals.length) { svg.appendChild(TX(180, 78, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
+    if (!vals.length) { svg.appendChild(TX(180, 78, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); return; }
     var X = function (i) { return 34 + i * (310 / Math.max(1, a.length - 1)); };
     var Y = function (v) { return 12 + (100 - Math.max(0, Math.min(100, v))) * 1.1; };
     [20, 50, 80].forEach(function (g) {
-      svg.appendChild(E('line', { x1: 34, y1: Y(g), x2: 344, y2: Y(g), stroke: g === 50 ? '#2C3B4E' : '#3E4E63',
+      svg.appendChild(E('line', { x1: 34, y1: Y(g), x2: 344, y2: Y(g), stroke: g === 50 ? WufuTheme.sub('§WFT0048§') : WufuTheme.sub('§WFT0001§'),
         'stroke-width': '1', 'stroke-dasharray': g === 50 ? '' : '4 3' }));
-      svg.appendChild(TX(31, Y(g) + 3, g, 9, g === 20 ? '#4FC3F7' : (g === 80 ? '#F87171' : '#7C8DA1'), 'end'));
+      svg.appendChild(TX(31, Y(g) + 3, g, 9, g === 20 ? WufuTheme.sub('§WFT0006§') : (g === 80 ? WufuTheme.sub('§WFT0010§') : WufuTheme.sub('§WFT0002§')), 'end'));
     });
     var pts = [], area = 'M 34,122';
     for (var i = 0; i < a.length; i++) {
@@ -107,16 +107,16 @@
     area += ' L 344,122 Z';
     var defs = E('defs', {});
     var lg = E('linearGradient', { id: 'indag', x1: '0', y1: '0', x2: '0', y2: '1' });
-    lg.appendChild(E('stop', { offset: '0%', 'stop-color': '#4FC3F7', 'stop-opacity': '.38' }));
-    lg.appendChild(E('stop', { offset: '100%', 'stop-color': '#4FC3F7', 'stop-opacity': '0' }));
+    lg.appendChild(E('stop', { offset: '0%', 'stop-color': WufuTheme.sub('§WFT0006§'), 'stop-opacity': '.38' }));
+    lg.appendChild(E('stop', { offset: '100%', 'stop-color': WufuTheme.sub('§WFT0006§'), 'stop-opacity': '0' }));
     defs.appendChild(lg); svg.appendChild(defs);
     svg.appendChild(E('path', { d: area, fill: 'url(#indag)' }));
-    svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: '#4FC3F7', 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
+    svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: WufuTheme.sub('§WFT0006§'), 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
     var ticks = window.WufuRange ? WufuRange.yearTicks(labels) : [];
     ticks.forEach(function (k) {
       var x = 34 + k.i * (310 / Math.max(1, labels.length - 1));
       var anchor = k.i === 0 ? 'start' : (k.i >= labels.length - 2 ? 'end' : 'middle');
-      svg.appendChild(TX(x, 142, k.text, 9, '#7C8DA1', anchor));
+      svg.appendChild(TX(x, 142, k.text, 9, WufuTheme.sub('§WFT0002§'), anchor));
     });
     if (rngI) rngI.setLabels(rawL);
     var ri = $('indRangeInfo');
@@ -133,7 +133,7 @@
     if (window.WufuRange) WufuRange.probe(svg, {
       labels: labels, vbW: 360, y0: 8, y1: 124,
       xAt: X, yAt: Y,
-      series: [{ name: (d.keys || [])[active] || '行业宽度', color: '#4FC3F7', data: a,
+      series: [{ name: (d.keys || [])[active] || '行业宽度', color: WufuTheme.sub('§WFT0006§'), data: a,
         fmt: function (v) { return v.toFixed(1) + '%'; } }],
       note: '0–100 占比 · 不重定基'
     });
@@ -171,7 +171,7 @@
       dates.forEach(function (_, j) {
         var v = (M[i] || [])[j];
         var txt = (v === null || v === undefined || !isFinite(v)) ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(1);
-        html += '<td class="cell" style="background:' + heatColor(v, maxAbs) + ';color:' + (Math.abs(v || 0) > maxAbs * .55 ? '#fff' : '#F1F5F9') + '">' + txt + '</td>';
+        html += '<td class="cell" style="background:' + heatColor(v, maxAbs) + ';color:' + (Math.abs(v || 0) > maxAbs * .55 ? WufuTheme.sub('§WFT0017§') : WufuTheme.sub('§WFT0004§')) + '">' + txt + '</td>';
       });
       html += '</tr>';
     });
@@ -198,7 +198,7 @@
     }
   }
   function fail() {
-    ['indRadar', 'indArea'].forEach(function (id) { var s = $(id); if (s) { s.innerHTML = ''; s.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); } });
+    ['indRadar', 'indArea'].forEach(function (id) { var s = $(id); if (s) { s.innerHTML = ''; s.appendChild(TX(180, 80, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); } });
     var s = $('indSource'); if (s) s.textContent = '暂无快照 · 周五同步后自动出现';
     var c = clear('indCards'); if (c) c.innerHTML = '<div class="gempty">暂无快照</div>';
     var t = clear('indTable'); if (t) t.innerHTML = '';

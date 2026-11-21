@@ -15,7 +15,7 @@
   var m = new URL(s.src, location.href).pathname.match(/^(.*)\/common\/header\.js$/i);
   var rootPath = m ? m[1] + "/" : "/";
   var rootURL = new URL(rootPath, location.href).href;   // 带尾斜杠的站点根
-  var CACHE = "wufu-all-v0.81";
+  var CACHE = "wufu-all-v0.83";
 
   var inFrame = (function () { try { return window.top !== window; } catch (e) { return false; } })();
   var healthMode = /[?&]view=health(?:[&#]|$)/.test(location.search);
@@ -35,7 +35,7 @@
     var exp = d.export === "1" ?
       '<span class="wh-export" id="exportBox" style="display:none">' +
         '<button id="btnExport" class="wh-home" type="button">导出整站离线包</button>' +
-        '<span id="exportMsg" class="mut" style="color:#9FB0C3"></span>' +
+        WufuTheme.sub('<span id="exportMsg" class="mut" style="color:§WFT0003§"></span>') +
       '</span>' : "";
     /* 数据日期回到标题右侧；返回按钮仍独占第二行，渐变与按钮样式不动 */
     var row = (home || exp) ? '<div class="wh-row">' + home + exp + "</div>" : "";

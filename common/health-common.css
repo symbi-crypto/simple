@@ -4,9 +4,9 @@
    ============================================================ */
 .h-panel{border-radius:8px}
 .h-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.h-status{font-size:11px;color:#9FB0C3;line-height:1.6}
+.h-status{font-size:11px;color:var(--c-muted);line-height:1.6}
 .h-mini{font-size:11px;padding:5px 9px;border-radius:6px}
-.h-fold>summary{font-size:11px;color:#4FC3F7;cursor:pointer}
+.h-fold>summary{font-size:11px;color:var(--c-accent);cursor:pointer}
 /* 体检中心右上角：两行显示，日期不被省略号吃掉 */
 .h-asof2{display:flex;flex-direction:column;gap:2px;font-size:11px;line-height:1.35}
 
@@ -32,11 +32,11 @@ html.manage-view .h-extra:not(#fyWrap){display:block !important}
 html.manage-view #fyWrap{display:flex !important}
 /* 两个标题与「高级设置」同级 summary 样式一致；不开 open 即默认折叠 */
 html.manage-view #advTools>summary,
-html.manage-view #grpWrap>summary{font-size:12px;color:#4FC3F7;cursor:pointer;list-style:none}
+html.manage-view #grpWrap>summary{font-size:12px;color:var(--c-accent);cursor:pointer;list-style:none}
 /* 三项功能之间各画一条虚线 */
 html.manage-view #advTools,
 html.manage-view #grpWrap{
-  border-top:1px dashed #3E4E63 !important;
+  border-top:1px dashed var(--c-edge) !important;
   padding-top:12px !important;
   margin-top:12px !important
 }
@@ -61,10 +61,10 @@ html.manage-inline #qckCard>*:not(.h-extra){display:none !important}
 html.manage-inline .h-extra:not(#fyWrap){display:block !important}
 html.manage-inline #fyWrap{display:flex !important}
 html.manage-inline #advTools>summary,
-html.manage-inline #grpWrap>summary{font-size:12px;color:#4FC3F7;cursor:pointer;list-style:none}
+html.manage-inline #grpWrap>summary{font-size:12px;color:var(--c-accent);cursor:pointer;list-style:none}
 html.manage-inline #advTools,
 html.manage-inline #grpWrap{
-  border-top:1px dashed #3E4E63 !important;
+  border-top:1px dashed var(--c-edge) !important;
   padding-top:12px !important;
   margin-top:12px !important
 }

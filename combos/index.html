@@ -2,6 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="../common/theme.css">
+<script src="../common/theme.js"></script>
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>策略组合</title>
 <meta name="theme-color" content="#0E7490">
@@ -10,12 +13,12 @@
 <!-- 原样拷贝自 etf/tool.html 主样式块：组合区 DOM/CSS 与 ETF 系统内「策略组合」视图一致 -->
 <link rel="stylesheet" href="../common/combo-system.css">
 <style>
-.grpPick{float:right;font-weight:400;font-size:11px;color:#9FB0C3;cursor:pointer;user-select:none}
+.grpPick{float:right;font-weight:400;font-size:11px;color:var(--c-muted);cursor:pointer;user-select:none}
 .grpPick input{vertical-align:middle;margin-right:3px}
-.sttag{font-size:10px;color:#FBBF24;margin-left:4px}
-.pill{font-size:10px;color:#7DD3FC;border:1px solid #3E4E63;border-radius:999px;padding:0 5px;margin-left:3px}
-.pill.warn{color:#FBBF24}
-.note{font-size:11px;color:#9FB0C3;line-height:1.8;margin-top:14px;padding:0 2px}
+.sttag{font-size:10px;color:var(--c-warn);margin-left:4px}
+.pill{font-size:10px;color:var(--c-accent-soft);border:1px solid var(--c-edge);border-radius:999px;padding:0 5px;margin-left:3px}
+.pill.warn{color:var(--c-warn)}
+.note{font-size:11px;color:var(--c-muted);line-height:1.8;margin-top:14px;padding:0 2px}
 </style>
 <link rel="stylesheet" href="../common/header.css">
 </head>
@@ -28,50 +31,50 @@
   <div style="max-width:1280px;margin:0 auto;padding:12px 16px 40px;box-sizing:border-box">
     <div class="card">
       <h2>多策略组合</h2>
-      <p style="font-size:12px;color:#9FB0C3;margin:2px 0 12px;line-height:1.7">从「我的策略」中勾选多个策略、手动分配权重，按所选周期做组合再平衡，合成组合净值；并计算各策略<b>日收益率相关</b>矩阵，辅助判断分散化。</p>
+      <p style="font-size:12px;color:var(--c-muted);margin:2px 0 12px;line-height:1.7">从「我的策略」中勾选多个策略、手动分配权重，按所选周期做组合再平衡，合成组合净值；并计算各策略<b>日收益率相关</b>矩阵，辅助判断分散化。</p>
         <h3>已保存组合 <span class="v" id="comboCount">0 个</span></h3>
         <div class="row" style="display:flex;align-items:center;margin:8px 0;gap:8px;flex-wrap:wrap">
           <input id="comboSaveName" type="text" placeholder="组合名，如：稳健版"
-                 style="flex:2;min-width:120px;font-size:12px;padding:3px 6px;border:1px solid #3E4E63;border-radius:4px">
+                 style="flex:2;min-width:120px;font-size:12px;padding:3px 6px;border:1px solid var(--c-edge);border-radius:4px">
           <button type="button" id="comboSaveBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">保存</button>
         </div>
         <div class="row" style="display:flex;align-items:center;margin:8px 0;gap:8px;flex-wrap:wrap">
-          <select id="comboSel" style="flex:2;min-width:120px;font-size:12px;padding:3px 4px;border:1px solid #3E4E63;border-radius:4px"></select>
+          <select id="comboSel" style="flex:2;min-width:120px;font-size:12px;padding:3px 4px;border:1px solid var(--c-edge);border-radius:4px"></select>
           <button type="button" id="comboLoadBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">加载</button>
           <button type="button" id="comboRenBtn" style="flex:1;min-width:64px;cursor:pointer" class="btn">重命名</button>
           <button type="button" id="comboDelBtn" style="flex:1;min-width:52px;cursor:pointer" class="btn">删除</button>
         </div>
       <h3 style="margin:8px 0 6px;font-size:13px">选择策略与权重</h3>
       <div style="display:flex;gap:6px;align-items:center;margin:8px 0 6px">
-        <input id="comboSearch" type="text" placeholder="搜索策略名称…" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9">
+        <input id="comboSearch" type="text" placeholder="搜索策略名称…" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;background:var(--c-bg);border:1px solid var(--c-edge);border-radius:6px;color:var(--c-text)">
         <button id="comboAll" type="button" style="cursor:pointer" class="btn">全选</button>
         <button id="comboNone" type="button" style="cursor:pointer" class="btn">清空</button>
       </div>
-      <div id="comboStratList" style="max-height:340px;overflow:auto;border:1px solid #243244;border-radius:6px;padding:8px"></div>
-      <div id="comboWarn" style="display:none;background:rgba(251,191,36,.12);border:1px solid #FBBF24;color:#FCD34D;border-radius:6px;padding:7px 10px;font-size:12px;margin-top:8px"></div>
+      <div id="comboStratList" style="max-height:340px;overflow:auto;border:1px solid var(--c-line);border-radius:6px;padding:8px"></div>
+      <div id="comboWarn" style="display:none;background:var(--c-r005);border:1px solid var(--c-warn);color:var(--c-warn-ink);border-radius:6px;padding:7px 10px;font-size:12px;margin-top:8px"></div>
       <h3 style="margin:14px 0 6px;font-size:13px">组合参数</h3>
-      <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;font-size:12px;color:#D8E2EF">
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;font-size:12px;color:var(--c-text-2)">
         <span>合成方式</span>
-        <label style="display:flex;align-items:center;gap:4px;color:#F1F5F9"><input type="radio" name="comboSynth" value="fixed" checked style="width:14px;height:14px">固定权重</label>
-        <label style="display:flex;align-items:center;gap:4px;color:#F1F5F9"><input type="radio" name="comboSynth" value="rot" style="width:14px;height:14px">净值动量轮动</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--c-text)"><input type="radio" name="comboSynth" value="fixed" checked style="width:14px;height:14px">固定权重</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--c-text)"><input type="radio" name="comboSynth" value="rot" style="width:14px;height:14px">净值动量轮动</label>
       </div>
       <!-- 原「因子轮动」面板依赖 ETF 引擎，此处替换为等价的净值动量参数；容器结构与样式保持原样 -->
-      <div id="comboRotPanel" style="display:none;background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px;margin-bottom:10px">
-        <div style="font-size:12px;color:#7DD3FC;margin-bottom:6px">净值动量轮动 · 按策略净值过去 N 日涨幅排名，持有前 K 名</div>
-        <div class="row" style="display:flex;margin:6px 0;gap:8px;align-items:center;font-size:12px;color:#F1F5F9">
+      <div id="comboRotPanel" style="display:none;background:var(--c-surface);border:1px solid var(--c-line);border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:12px;color:var(--c-accent-soft);margin-bottom:6px">净值动量轮动 · 按策略净值过去 N 日涨幅排名，持有前 K 名</div>
+        <div class="row" style="display:flex;margin:6px 0;gap:8px;align-items:center;font-size:12px;color:var(--c-text)">
           <span>动量窗口</span>
-          <input id="momN" type="number" min="2" max="250" value="20" style="flex:0 0 60px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9"> 日
+          <input id="momN" type="number" min="2" max="250" value="20" style="flex:0 0 60px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid var(--c-edge);border-radius:4px;background:var(--c-bg);color:var(--c-text)"> 日
           <span style="margin-left:12px">持有前</span>
-          <input id="topK" type="number" min="1" max="20" value="2" style="flex:0 0 50px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9"> 名
+          <input id="topK" type="number" min="1" max="20" value="2" style="flex:0 0 50px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid var(--c-edge);border-radius:4px;background:var(--c-bg);color:var(--c-text)"> 名
         </div>
-        <div style="font-size:11px;color:#7C8DA1">调仓周期与起止日期沿用上方组合参数；权重按当期入选策略等权分配。</div>
+        <div style="font-size:11px;color:var(--c-gray)">调仓周期与起止日期沿用上方组合参数；权重按当期入选策略等权分配。</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
-        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">起始日期<input type="date" id="comboStart" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">结束日期<input type="date" id="comboEnd" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"></label>
-        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7C8DA1">组合再平衡
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--c-gray)">起始日期<input type="date" id="comboStart" style="padding:5px 8px;font-size:12px;background:var(--c-bg);border:1px solid var(--c-edge);border-radius:6px;color:var(--c-text)"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--c-gray)">结束日期<input type="date" id="comboEnd" style="padding:5px 8px;font-size:12px;background:var(--c-bg);border:1px solid var(--c-edge);border-radius:6px;color:var(--c-text)"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--c-gray)">组合再平衡
           <span style="display:flex;align-items:center;gap:4px;white-space:nowrap">
-            <select id="comboReb" style="padding:5px 8px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9">
+            <select id="comboReb" style="padding:5px 8px;font-size:12px;background:var(--c-bg);border:1px solid var(--c-edge);border-radius:6px;color:var(--c-text)">
               <option value="none">不调仓（买入持有）</option>
               <option value="daily">每交易日</option>
               <option value="weekly" selected>每周</option>
@@ -79,16 +82,16 @@
               <option value="quarterly">每季</option>
               <option value="yearly">每年</option>
             </select>
-            <span style="color:#9FB0C3">每</span>
-            <select id="comboRebInt" style="padding:5px 6px;font-size:12px;background:#1B2634;border:1px solid #3E4E63;border-radius:6px;color:#F1F5F9"><option>1</option><option>2</option><option>3</option><option>4</option></select>
-            <span style="color:#9FB0C3">个周期调仓</span>
+            <span style="color:var(--c-muted)">每</span>
+            <select id="comboRebInt" style="padding:5px 6px;font-size:12px;background:var(--c-bg);border:1px solid var(--c-edge);border-radius:6px;color:var(--c-text)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+            <span style="color:var(--c-muted)">个周期调仓</span>
           </span>
         </label>
       </div>
       <div class="runbar" style="background:transparent;border-top:none;padding:2px 0 0;gap:8px">
         <button id="comboRun" type="button">运行组合回测</button>
         <div class="runbar2">
-          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9FB0C3;white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden" title="自定义基准（默认沪深300）">基准<select id="comboBenchSel" style="flex:1;min-width:0;max-width:100%;text-overflow:ellipsis;font-size:11px;padding:3px 4px;border:1px solid #3E4E63;border-radius:4px;color:#F1F5F9;background:#202E3F"><option value="000300.SH">沪深300</option></select></label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--c-muted);white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden" title="自定义基准（默认沪深300）">基准<select id="comboBenchSel" style="flex:1;min-width:0;max-width:100%;text-overflow:ellipsis;font-size:11px;padding:3px 4px;border:1px solid var(--c-edge);border-radius:4px;color:var(--c-text);background:var(--c-surface)"><option value="000300.SH">沪深300</option></select></label>
           <span class="st" id="comboRunState"></span>
         </div>
       </div>
@@ -96,8 +99,8 @@
     <div id="comboResult" style="display:none;margin-top:14px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px" id="comboKpis"></div>
       <div class="card"><h2>净值曲线 <span class="n">组合 / 基准 / 组合相对净值（1.00=持平）</span></h2><div id="comboChart" style="width:100%;height:340px"></div></div>
-      <div class="card"><h2>策略收益率相关性 <span class="n">各策略日收益率序列皮尔逊相关</span></h2><div id="comboHeatmap" style="width:100%;height:340px"></div><div id="comboHmLegend" style="display:none;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:11px;color:#9FB0C3;line-height:1.6"></div></div>
-      <div class="card"><h2>目标权重占比</h2><div id="comboWeightLegend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:10px;padding:8px;border:1px solid #243244;border-radius:6px"></div><div id="comboWeight" style="width:100%;height:300px"></div></div>
+      <div class="card"><h2>策略收益率相关性 <span class="n">各策略日收益率序列皮尔逊相关</span></h2><div id="comboHeatmap" style="width:100%;height:340px"></div><div id="comboHmLegend" style="display:none;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:11px;color:var(--c-muted);line-height:1.6"></div></div>
+      <div class="card"><h2>目标权重占比</h2><div id="comboWeightLegend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:10px;padding:8px;border:1px solid var(--c-line);border-radius:6px"></div><div id="comboWeight" style="width:100%;height:300px"></div></div>
     </div>
   </div>
 </div>
@@ -120,7 +123,7 @@
 <script src="../common/hub-core.js"></script>
 <script src="../common/hub-combo.js"></script>
 <script src="../common/echarts.min.js"></script>
-<script src="../common/range.js?v=81"></script>
+<script src="../common/range.js?v=83"></script>
 <script>
 (function(){
   "use strict";
@@ -134,9 +137,9 @@
      ============================================================ */
   var COMBO = null;
   function kpiCard(kv) {
-    return '<div style="background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px 12px;text-align:center">'
-      + '<div style="font-size:11px;color:#7C8DA1">' + kv[0] + '</div>'
-      + '<div style="font-size:17px;color:#4FC3F7;font-weight:600;margin-top:2px">' + kv[1] + '</div></div>';
+    return WufuTheme.sub('<div style="background:§WFT0008§;border:1px solid §WFT0009§;border-radius:8px;padding:10px 12px;text-align:center">')
+      + WufuTheme.sub('<div style="font-size:11px;color:§WFT0002§">') + kv[0] + '</div>'
+      + WufuTheme.sub('<div style="font-size:17px;color:§WFT0006§;font-weight:600;margin-top:2px">') + kv[1] + '</div></div>';
   }
   function comboLogBounds(series, i0, i1) {
     var lo = Infinity, hi = -Infinity, j, k, p, v, d;
@@ -214,10 +217,10 @@
       chart("comboChart", {
         backgroundColor: "transparent",
         tooltip: { trigger: "axis" },
-        legend: { data: ["组合净值"], textStyle: { color: "#9FB0C3", fontSize: 10 } },
+        legend: { data: ["组合净值"], textStyle: { color: WufuTheme.sub("§WFT0003§"), fontSize: 10 } },
         grid: { left: 52, right: 14, top: 28, bottom: 28 },
-        xAxis: { type: "category", data: ds, axisLabel: { color: "#7C8DA1", fontSize: 9 } },
-        yAxis: { type: "value", scale: true, axisLabel: { color: "#9FB0C3", fontSize: 9 } },
+        xAxis: { type: "category", data: ds, axisLabel: { color: WufuTheme.sub("§WFT0002§"), fontSize: 9 } },
+        yAxis: { type: "value", scale: true, axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 9 } },
         series: [{ name: "组合净值", type: "line", showSymbol: false, data: nv }]
       });
       return;
@@ -237,9 +240,9 @@
       var full = WufuRange.isFull(sel);
       if (view === 'dd') {
         var d1 = [{ name: "组合回撤", type: "line", showSymbol: false,
-          lineStyle: { width: 2.2, color: "#F87171" }, itemStyle: { color: "#F87171" }, data: ddNv.slice() }];
+          lineStyle: { width: 2.2, color: WufuTheme.sub("§WFT0010§") }, itemStyle: { color: WufuTheme.sub("§WFT0010§") }, data: ddNv.slice() }];
         if (ddBn.length) d1.push({ name: "基准回撤", type: "line", showSymbol: false,
-          lineStyle: { width: 1.6, color: "#9FB0C3" }, itemStyle: { color: "#9FB0C3" }, data: ddBn.slice() });
+          lineStyle: { width: 1.6, color: WufuTheme.sub("§WFT0003§") }, itemStyle: { color: WufuTheme.sub("§WFT0003§") }, data: ddBn.slice() });
         return d1;
       }
       var base = null, k;
@@ -250,15 +253,15 @@
         });
       }
       var s = [{ name: "组合净值", type: "line", showSymbol: false,
-        lineStyle: { width: 2.4, color: "#4FC3F7" }, itemStyle: { color: "#4FC3F7" },
-        areaStyle: { color: "rgba(79,195,247,.10)" }, data: rb(nv) }];
+        lineStyle: { width: 2.4, color: WufuTheme.sub("§WFT0006§") }, itemStyle: { color: WufuTheme.sub("§WFT0006§") },
+        areaStyle: { color: WufuTheme.sub("§WFT0100§") }, data: rb(nv) }];
       if (bn.length) {
         s.push({ name: "基准", type: "line", showSymbol: false,
-          lineStyle: { width: 1.8, color: "#9FB0C3" }, itemStyle: { color: "#9FB0C3" }, data: rb(bn) });
+          lineStyle: { width: 1.8, color: WufuTheme.sub("§WFT0003§") }, itemStyle: { color: WufuTheme.sub("§WFT0003§") }, data: rb(bn) });
         s.push({ name: "组合相对净值", type: "line", showSymbol: false,
-          lineStyle: { width: 1.8, color: "#FBBF24" }, itemStyle: { color: "#FBBF24" }, data: rb(rl),
+          lineStyle: { width: 1.8, color: WufuTheme.sub("§WFT0011§") }, itemStyle: { color: WufuTheme.sub("§WFT0011§") }, data: rb(rl),
           markLine: { silent: true, symbol: "none", animation: false, label: { show: false },
-            lineStyle: { color: "#7C8DA1", width: 1, type: "dashed", opacity: .6 }, data: [{ yAxis: 1 }] } });
+            lineStyle: { color: WufuTheme.sub("§WFT0002§"), width: 1, type: "dashed", opacity: .6 }, data: [{ yAxis: 1 }] } });
       }
       return s;
     }
@@ -267,11 +270,11 @@
       var isLog = (view === 'nav' && curve && curve.getAxis && curve.getAxis() === 'log');
       var yax = isLog
         ? { type: "log", logBase: 10,
-            axisLabel: { color: "#9FB0C3", fontSize: 9, formatter: function (v) {
+            axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 9, formatter: function (v) {
               return v >= 10 ? v.toFixed(0) : (v >= 1 ? v.toFixed(1) : v.toPrecision(2)); } },
-            splitLine: { lineStyle: { color: "#2A3A4E" } } }
-        : { type: "value", scale: true, axisLabel: { color: "#9FB0C3", fontSize: 9 },
-            splitLine: { lineStyle: { color: "#2A3A4E" } } };
+            splitLine: { lineStyle: { color: WufuTheme.sub("§WFT0016§") } } }
+        : { type: "value", scale: true, axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 9 },
+            splitLine: { lineStyle: { color: WufuTheme.sub("§WFT0016§") } } };
       if (isLog) {
         var lb = comboLogBounds(s, i0, i1);
         if (lb) { yax.min = lb.min; yax.max = lb.max; }
@@ -280,9 +283,9 @@
       return {
         backgroundColor: "transparent",
         tooltip: { trigger: "axis" },
-        legend: { data: s.map(function (x) { return x.name; }), textStyle: { color: "#9FB0C3", fontSize: 10 }, top: 0, type: "scroll" },
+        legend: { data: s.map(function (x) { return x.name; }), textStyle: { color: WufuTheme.sub("§WFT0003§"), fontSize: 10 }, top: 0, type: "scroll" },
         grid: { left: 52, right: 14, top: 28, bottom: 28 },
-        xAxis: { type: "category", data: ds, axisLabel: { color: "#7C8DA1", fontSize: 9 }, axisLine: { lineStyle: { color: "#3E4E63" } } },
+        xAxis: { type: "category", data: ds, axisLabel: { color: WufuTheme.sub("§WFT0002§"), fontSize: 9 }, axisLine: { lineStyle: { color: WufuTheme.sub("§WFT0001§") } } },
         yAxis: yax,
         dataZoom: [{ type: "inside", start: sel[0] * 100, end: sel[1] * 100,
           zoomOnMouseWheel: false, moveOnMouseMove: false, moveOnMouseWheel: false }],
@@ -341,13 +344,13 @@
       var stale=!x.curve||(H.readAsOf(x.sys)&&x.curve.asof!==H.readAsOf(x.sys));
       var tag=x.name+modeTag(x);
       var mark=!x.curve?'（无曲线）':(stale?'（待刷新）':'');
-      rows+='<label class="comboRow" data-name="'+esc(x.name.toLowerCase())+'" data-mode="'+esc(grpKey(x))+'" style="display:flex;flex-wrap:nowrap;align-items:center;gap:6px;font-size:12px;color:#F1F5F9;padding:4px 6px;cursor:pointer;background:#202E3F;border:1px solid #243244;border-radius:5px">'
+      rows+='<label class="comboRow" data-name="'+esc(x.name.toLowerCase())+'" data-mode="'+esc(grpKey(x))+WufuTheme.sub('" style="display:flex;flex-wrap:nowrap;align-items:center;gap:6px;font-size:12px;color:§WFT0004§;padding:4px 6px;cursor:pointer;background:§WFT0008§;border:1px solid §WFT0009§;border-radius:5px">')
         +'<input type="checkbox" class="comboCk" data-id="'+esc(x.id)+'" data-g="'+g[0]+'" '+(x.curve?"":"disabled")+' style="flex:0 0 auto">'
         +'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(tag)+'">'+esc(x.name)+mark+'</span>'
-        +'<input type="number" min="0" max="100" step="1" class="comboWt" data-id="'+esc(x.id)+'" value="'+esc(w)+'" style="flex:0 0 52px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid #3E4E63;border-radius:4px;background:#1B2634;color:#F1F5F9">'
-        +'<span style="color:#7C8DA1;font-size:11px">%</span></label>';
+        +'<input type="number" min="0" max="100" step="1" class="comboWt" data-id="'+esc(x.id)+'" value="'+esc(w)+WufuTheme.sub('" style="flex:0 0 52px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid §WFT0001§;border-radius:4px;background:§WFT0007§;color:§WFT0004§">')
+        +WufuTheme.sub('<span style="color:§WFT0002§;font-size:11px">%</span></label>');
     });
-    return '<details open data-g="'+g[0]+'" style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:12.5px;color:#7DD3FC;padding:3px 2px;user-select:none">'
+    return '<details open data-g="'+g[0]+WufuTheme.sub('" style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:12.5px;color:§WFT0015§;padding:3px 2px;user-select:none">')
       +'<span class="grpPick"><label><input type="checkbox" class="grpCk" data-g="'+g[0]+'"> 全选本组</label></span>'
       +'▼ '+g[1]+'（'+list.length+'）</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;padding:2px">'+rows+'</div></details>';
   }
@@ -368,10 +371,10 @@
   function renderMembers(){
     captureWeights();all=H.allStrategies();
     var box=$("comboStratList");
-    if(!all.length){box.innerHTML='<div style="font-size:12px;color:#9FB0C3;padding:10px 2px">暂无已保存策略。<br>请先在回测系统调好参数并保存，再到此页组合多个策略。</div>';return;}
+    if(!all.length){box.innerHTML=WufuTheme.sub('<div style="font-size:12px;color:§WFT0003§;padding:10px 2px">暂无已保存策略。<br>请先在回测系统调好参数并保存，再到此页组合多个策略。</div>');return;}
     var html="";GROUPS.forEach(function(g){html+=grpHtml(g,all.filter(function(x){return grpKey(x)===g[0];}));});
     var hasDca=all.some(function(x){return grpKey(x)==="dca";});
-    if(hasDca)html+='<div style="font-size:11px;color:#9FB0C3;line-height:1.6;padding:2px 2px 0">定投策略按「每元累计投入成长倍数」折算为净值曲线参与组合，不等同于一次性投入净值。</div>';
+    if(hasDca)html+=WufuTheme.sub('<div style="font-size:11px;color:§WFT0003§;line-height:1.6;padding:2px 2px 0">定投策略按「每元累计投入成长倍数」折算为净值曲线参与组合，不等同于一次性投入净值。</div>');
     box.innerHTML=html;
     document.querySelectorAll(".comboCk").forEach(function(c){c.checked=true;});
     balanceComboWeights();syncGroups();
@@ -395,8 +398,8 @@
       ["组合累计收益",pct(k.total)],["组合年化",pct(k.cagr)],["最大回撤",pct(k.mdd)],["组合夏普",num(k.sharpe)],
       ["Calmar",num(k.calmar)],["基准收益",pct(k.benchTotal)],["超额收益",pct(k.excess)],["区间",res.dates[0]+" ~ "+res.dates[res.dates.length-1]]
     ].map(function(kv){
-      return '<div style="background:#202E3F;border:1px solid #243244;border-radius:8px;padding:10px 12px;text-align:center">'
-        +'<div style="font-size:11px;color:#7C8DA1">'+kv[0]+'</div><div style="font-size:17px;color:#4FC3F7;font-weight:600;margin-top:2px">'+kv[1]+'</div></div>';
+      return WufuTheme.sub('<div style="background:§WFT0008§;border:1px solid §WFT0009§;border-radius:8px;padding:10px 12px;text-align:center">')
+        +WufuTheme.sub('<div style="font-size:11px;color:§WFT0002§">')+kv[0]+WufuTheme.sub('</div><div style="font-size:17px;color:§WFT0006§;font-weight:600;margin-top:2px">')+kv[1]+'</div></div>';
     }).join("");
     var step=Math.max(1,Math.floor(res.dates.length/1200)),ds=[],nv=[],bn=[],rl=[],i;
     /* v0.77：benchNav 是原始指数点位，不能直接与净值共轴；先归一到起点 1，
@@ -416,17 +419,17 @@
     var showN=Math.min(8,mem.length),sm=mem.slice(0,showN),M=res.corr,data=[];
     for(i=0;i<showN;i++)for(var j=0;j<showN;j++)data.push([j,i,M[i]&&M[i][j]!=null?+M[i][j].toFixed(2):0]);
     chart("comboHeatmap",{backgroundColor:"transparent",tooltip:{position:"top",formatter:function(p){return sm[p.value[1]].name+" × "+sm[p.value[0]].name+"："+p.value[2];}},
-      grid:{left:96,right:16,top:12,bottom:78},xAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:"#9FB0C3",fontSize:9,rotate:38},splitArea:{show:true}},
-      yAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:"#9FB0C3",fontSize:9},splitArea:{show:true}},
-      visualMap:{min:-1,max:1,calculable:true,orient:"horizontal",left:"center",bottom:0,textStyle:{color:"#9FB0C3",fontSize:9},inRange:{color:["#34D399","#2A3A4E","#F87171"]}},
-      series:[{type:"heatmap",data:data,label:{show:showN<=6,color:"#F1F5F9",fontSize:9},itemStyle:{borderColor:"#1B2634",borderWidth:1}}]});
+      grid:{left:96,right:16,top:12,bottom:78},xAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:WufuTheme.sub("§WFT0003§"),fontSize:9,rotate:38},splitArea:{show:true}},
+      yAxis:{type:"category",data:sm.map(function(m){return m.name.slice(0,6);}),axisLabel:{color:WufuTheme.sub("§WFT0003§"),fontSize:9},splitArea:{show:true}},
+      visualMap:{min:-1,max:1,calculable:true,orient:"horizontal",left:"center",bottom:0,textStyle:{color:WufuTheme.sub("§WFT0003§"),fontSize:9},inRange:{color:[WufuTheme.sub("§WFT0012§"),WufuTheme.sub("§WFT0016§"),WufuTheme.sub("§WFT0010§")]}},
+      series:[{type:"heatmap",data:data,label:{show:showN<=6,color:WufuTheme.sub("§WFT0004§"),fontSize:9},itemStyle:{borderColor:WufuTheme.sub("§WFT0007§"),borderWidth:1}}]});
     var lg=$("comboHmLegend");if(mem.length>showN){lg.style.display="flex";lg.textContent="成员 "+mem.length+" 个，热力图仅显示前 "+showN+" 个";}else lg.style.display="none";
     var wnames=mem.map(function(m){return m.name.slice(0,10);}),wvals=mem.map(function(m){var v=+cfg.weights[m.id]||0;return +v.toFixed(1);});
-    $("comboWeightLegend").innerHTML=mem.map(function(m,i){return '<span style="font-size:11px;color:#9FB0C3">'+esc(m.name.slice(0,12))+' <b style="color:#4FC3F7">'+wvals[i]+'%</b></span>';}).join("");
+    $("comboWeightLegend").innerHTML=mem.map(function(m,i){return WufuTheme.sub('<span style="font-size:11px;color:§WFT0003§">')+esc(m.name.slice(0,12))+WufuTheme.sub(' <b style="color:§WFT0006§">')+wvals[i]+'%</b></span>';}).join("");
     chart("comboWeight",{backgroundColor:"transparent",tooltip:{trigger:"axis",formatter:function(p){return p[0].name+"："+p[0].value+"%";}},
-      grid:{left:110,right:24,top:12,bottom:28},xAxis:{type:"value",axisLabel:{color:"#7C8DA1",fontSize:9,formatter:"{value}%"},splitLine:{lineStyle:{color:"#2A3A4E"}}},
-      yAxis:{type:"category",data:wnames,axisLabel:{color:"#9FB0C3",fontSize:9}},
-      series:[{type:"bar",data:wvals,itemStyle:{color:"#4FC3F7",borderRadius:[0,4,4,0]},barWidth:"55%",label:{show:true,position:"right",color:"#D8E2EF",fontSize:10,formatter:"{c}%"}}]});
+      grid:{left:110,right:24,top:12,bottom:28},xAxis:{type:"value",axisLabel:{color:WufuTheme.sub("§WFT0002§"),fontSize:9,formatter:"{value}%"},splitLine:{lineStyle:{color:WufuTheme.sub("§WFT0016§")}}},
+      yAxis:{type:"category",data:wnames,axisLabel:{color:WufuTheme.sub("§WFT0003§"),fontSize:9}},
+      series:[{type:"bar",data:wvals,itemStyle:{color:WufuTheme.sub("§WFT0006§"),borderRadius:[0,4,4,0]},barWidth:"55%",label:{show:true,position:"right",color:WufuTheme.sub("§WFT0005§"),fontSize:10,formatter:"{c}%"}}]});
   }
   function collectCfg(){
     var members=[],weights={};

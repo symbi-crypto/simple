@@ -14,14 +14,14 @@
   function T(v) { return (v === null || v === undefined || v === '' || (typeof v === 'number' && !isFinite(v))) ? '—' : String(v); }
   function E(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
   function TX(x, y, s, size, color, anchor) {
-    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || '#7C8DA1', 'font-family': 'sans-serif' });
+    var t = E('text', { x: x, y: y, 'font-size': size, fill: color || WufuTheme.sub('§WFT0002§'), 'font-family': 'sans-serif' });
     if (anchor) t.setAttribute('text-anchor', anchor); t.textContent = s; return t;
   }
   function CLR(id) { var e = $(id); if (e) e.innerHTML = ''; return e; }
   function sign(v) { return (typeof v === 'number' && v > 0) ? '+' + v : T(v); }
   function cls(v) { return (typeof v === 'number' && v > 0) ? 'u' : 'd'; }
   function grid(svg, vals, yfn, x0, x1) {
-    var g = E('g', { stroke: '#2C3B4E', 'stroke-width': '1' });
+    var g = E('g', { stroke: WufuTheme.sub('§WFT0048§'), 'stroke-width': '1' });
     vals.forEach(function (v) { g.appendChild(E('line', { x1: x0, y1: yfn(v), x2: x1, y2: yfn(v) })); });
     svg.appendChild(g);
   }
@@ -32,7 +32,7 @@
   function multi(svg, specs, labels) {
     if (!svg) return; svg.innerHTML = '';
     var n = 0; specs.forEach(function (s) { if (s && s.data && s.data.length > n) n = s.data.length; });
-    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, '#7C8DA1', 'middle')); return; }
+    if (!n) { svg.appendChild(TX(180, 80, '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle')); return; }
     var all = [];
     specs.forEach(function (s) {
       var a = [], mn = null, mx = null;
@@ -77,7 +77,7 @@
     var ticks = window.WufuRange ? WufuRange.yearTicks(labels) : [];
     ticks.forEach(function (k) {
       var x = 34 + k.i * (310 / Math.max(1, (labels || []).length - 1));
-      svg.appendChild(TX(x, 146, k.text, 9, '#7C8DA1', k.i === 0 ? 'start' : (k.i >= (labels || []).length - 2 ? 'end' : 'middle')));
+      svg.appendChild(TX(x, 146, k.text, 9, WufuTheme.sub('§WFT0002§'), k.i === 0 ? 'start' : (k.i >= (labels || []).length - 2 ? 'end' : 'middle')));
     });
     /* v0.69c：浮层显示与上方六卡同源的真实值；曲线本身仍是起点=100 的归一形状 */
     if (window.WufuRange) WufuRange.probe(svg, {
@@ -102,7 +102,7 @@
   }
   function emptyChart(id, msg) {
     var svg = $(id); if (!svg) return; svg.innerHTML = '';
-    svg.appendChild(TX(180, 78, msg || '暂无快照', 12, '#7C8DA1', 'middle'));
+    svg.appendChild(TX(180, 78, msg || '暂无快照', 12, WufuTheme.sub('§WFT0002§'), 'middle'));
   }
   function tg(id) { var c = $(id); if (c) c.classList.toggle('open'); }
   window.tg = tg;
@@ -152,11 +152,11 @@
     grid(svg, [0, 0.25, 0.5, 0.75, 1], function (v) { return 18 + (1 - v) * H; }, 34, 344);
     bins.forEach(function (b, i) {
       var w = W - 8, x = x0 + 9 + i * ((310 - 9) / Math.max(1, bins.length)), h = (b.count / max) * H;
-      svg.appendChild(E('rect', { x: x, y: 18 + H - h, width: w, height: Math.max(1, h), rx: 3, fill: 'rgba(79,195,247,.55)' }));
-      svg.appendChild(TX(x + w / 2, 18 + H - h - 4, String(b.count), 9, '#9FB0C3', 'middle'));
-      svg.appendChild(TX(x + w / 2, 142, b.label, 8.5, '#7C8DA1', 'middle'));
+      svg.appendChild(E('rect', { x: x, y: 18 + H - h, width: w, height: Math.max(1, h), rx: 3, fill: WufuTheme.sub('§WFT0140§') }));
+      svg.appendChild(TX(x + w / 2, 18 + H - h - 4, String(b.count), 9, WufuTheme.sub('§WFT0003§'), 'middle'));
+      svg.appendChild(TX(x + w / 2, 142, b.label, 8.5, WufuTheme.sub('§WFT0002§'), 'middle'));
     });
-    svg.appendChild(TX(180, 158, '柱高 = 区间只数', 9, '#7C8DA1', 'middle'));
+    svg.appendChild(TX(180, 158, '柱高 = 区间只数', 9, WufuTheme.sub('§WFT0002§'), 'middle'));
     var note = $('distNote'); if (note) note.textContent = (d.dist && d.dist[distKey] && d.dist[distKey].note) || ('按 ' + distKey + ' 分档统计在市债只数；平均涨跌幅待接入。');
   }
   function drawCbTrend(d) {
@@ -169,10 +169,10 @@
     var num = function (x) { var m = String(x == null ? '' : x).match(/-?[\d.]+/); return m ? parseFloat(m[0]) : null; };
     var REAL = { eq: null, price: num(sum.medianPrice), prem: num(sum.medianPremium), amount: num(kp['总成交额']) };
     var specs = [
-      { key: 'eq', color: '#F87171', name: '转债等权', unit: '' },
-      { key: 'price', color: '#4FC3F7', name: '中位价', unit: ' 元' },
-      { key: 'prem', color: '#A78BFA', name: '中位溢价率', unit: '%' },
-      { key: 'amount', color: '#9FB0C3', name: '总成交额', unit: ' 亿' }
+      { key: 'eq', color: WufuTheme.sub('§WFT0010§'), name: '转债等权', unit: '' },
+      { key: 'price', color: WufuTheme.sub('§WFT0006§'), name: '中位价', unit: ' 元' },
+      { key: 'prem', color: WufuTheme.sub('§WFT0020§'), name: '中位溢价率', unit: '%' },
+      { key: 'amount', color: WufuTheme.sub('§WFT0003§'), name: '总成交额', unit: ' 亿' }
     ];
     var txt = [];
     specs.forEach(function (s) {
@@ -200,7 +200,7 @@
     }
     var clipped = specs.filter(function (s) { return s.clipped; });
     if (clipped.length && ri) ri.insertAdjacentHTML('beforeend',
-      '<br><span style="color:#FBBF24">' + clipped.map(function (s) { return s.name; }).join('、') +
+      WufuTheme.sub('<br><span style="color:§WFT0011§">') + clipped.map(function (s) { return s.name; }).join('、') +
       ' 倍率过大已贴边显示（早期基数极小），浮层仍为真实值。</span>');
     if (rngCB) rngCB.setLabels(t.labels || []);
     var sn = $('cbSampleNote');
@@ -279,13 +279,13 @@
         var x = 34 + ai * (310 / Math.max(1, am.length - 1));
         var h = Math.max(1, (v / amax) * 32);
         svg.appendChild(E('rect', { x: (x - bw / 2).toFixed(1), y: (156 - h).toFixed(1),
-          width: bw.toFixed(1), height: h.toFixed(1), fill: 'rgba(79,195,247,.28)',
-          stroke: 'rgba(79,195,247,.45)', 'stroke-width': '.5' }));
+          width: bw.toFixed(1), height: h.toFixed(1), fill: WufuTheme.sub('§WFT0137§'),
+          stroke: WufuTheme.sub('§WFT0139§'), 'stroke-width': '.5' }));
       }
-      svg.appendChild(E('line', { x1: 34, y1: 156, x2: 344, y2: 156, stroke: '#3E4E63', 'stroke-width': '1' }));
-      svg.appendChild(TX(344, 122, '成交额峰值 ' + Math.round(amax) + ' 亿', 8.5, '#7C8DA1', 'end'));
+      svg.appendChild(E('line', { x1: 34, y1: 156, x2: 344, y2: 156, stroke: WufuTheme.sub('§WFT0001§'), 'stroke-width': '1' }));
+      svg.appendChild(TX(344, 122, '成交额峰值 ' + Math.round(amax) + ' 亿', 8.5, WufuTheme.sub('§WFT0002§'), 'end'));
     }
-    [[s1, '#4FC3F7'], [s2, '#F87171']].forEach(function (p) {
+    [[s1, WufuTheme.sub('§WFT0006§')], [s2, WufuTheme.sub('§WFT0010§')]].forEach(function (p) {
       var pts = [];
       p[0].forEach(function (v, i) { if (isFinite(v)) pts.push((34 + i * (310 / Math.max(1, p[0].length - 1))) + ',' + Y(v)); });
       if (pts.length > 1) svg.appendChild(E('polyline', { points: pts.join(' '), fill: 'none', stroke: p[1], 'stroke-width': '1.8', 'stroke-linejoin': 'round' }));
@@ -295,7 +295,7 @@
     ticks.forEach(function (k) {
       var x = 34 + k.i * (310 / Math.max(1, LB.length - 1));
       var anchor = k.i === 0 ? 'start' : (k.i >= LB.length - 2 ? 'end' : 'middle');
-      svg.appendChild(TX(x, 170, k.text, 9, '#7C8DA1', anchor));
+      svg.appendChild(TX(x, 170, k.text, 9, WufuTheme.sub('§WFT0002§'), anchor));
     });
     if (rngIDX) rngIDX.setLabels(t.labels || []);
     var ri = $('idxRangeInfo');
@@ -318,8 +318,8 @@
       xAt: function (i) { return 34 + i * (310 / Math.max(1, LB.length - 1)); },
       yAt: Y,
       series: [
-        { name: '沪深300', color: '#4FC3F7', data: s1, fmt: function (v) { return v.toFixed(1); } },
-        { name: '国证2000', color: '#F87171', data: s2, fmt: function (v) { return v.toFixed(1); } }
+        { name: '沪深300', color: WufuTheme.sub('§WFT0006§'), data: s1, fmt: function (v) { return v.toFixed(1); } },
+        { name: '国证2000', color: WufuTheme.sub('§WFT0010§'), data: s2, fmt: function (v) { return v.toFixed(1); } }
       ],
       note: '起点=100 · 成交额柱只裁区间'
     });

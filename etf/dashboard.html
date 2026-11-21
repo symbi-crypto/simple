@@ -1,5 +1,8 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../common/theme.css">
+<script src="../common/theme.js"></script>
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <script>
@@ -15,7 +18,7 @@
 </script>
 <style>
 html.db-embed .nav{display:none!important}
-html.db-embed body{margin:0;padding:0;background:#1B2634}
+html.db-embed body{margin:0;padding:0;background:var(--c-bg)}
 html.db-embed .wrap{padding-top:10px;padding-bottom:14px}
 </style>
 <title>ETF量化回测系统</title>
@@ -23,13 +26,13 @@ html.db-embed .wrap{padding-top:10px;padding-bottom:14px}
 <link rel="stylesheet" href="../common/header.css">
 <link rel="stylesheet" href="../common/dashboard.css">
 <style>
-:root{--bg:#1B2634;--card:#202E3F;--line:#243244;--edge:#3E4E63;--ink:#F1F5F9;--mut:#9FB0C3;--gray:#7C8DA1;--acc:#4FC3F7;--acc2:#22D3EE;--up:#F87171;--down:#34D399;--purple:#A78BFA;--amber:#FBBF24;--radius:10px}
+:root{--bg:var(--c-bg);--card:var(--c-surface);--line:var(--c-line);--edge:var(--c-edge);--ink:var(--c-text);--mut:var(--c-muted);--gray:var(--c-gray);--acc:var(--c-accent);--acc2:var(--c-accent-2);--up:var(--c-up);--down:var(--c-down);--purple:var(--c-purple);--amber:var(--c-warn);--radius:10px}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .nav{display:flex;gap:5px;padding:10px 16px 0;max-width:1280px;margin:0 auto;width:100%;box-sizing:border-box;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
 .nav button,.nav a{font-size:11.5px;padding:6px 8px;flex:0 0 auto;white-space:nowrap;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:none;background:var(--card);color:var(--mut);cursor:pointer;text-decoration:none;display:inline-block}
-.nav button.on,.nav a.on{background:var(--acc);color:#fff;font-weight:600}
+.nav button.on,.nav a.on{background:var(--acc);color:var(--c-white);font-weight:600}
 </style>
 </head><body>
 <script src="../common/header.js" data-t1="ETF量化" data-t2="回测系统" data-badge="none" data-page="etf"></script>
@@ -52,11 +55,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
     <div class="sumline" id="idxSum">加载中…</div>
     <div class="ghead" style="margin-top:11px"><b>指数统计<span class="gname">—</span></b>
       <span class="seg" data-seg><span class="on" data-y="5">5年</span><span data-y="10">10年</span></span></div>
-    <div class="ghead" style="margin-top:8px"><b><span style="color:#4FC3F7">A股</span><span class="gname">—</span></b></div>
+    <div class="ghead" style="margin-top:8px"><b><span style="color:var(--c-accent)">A股</span><span class="gname">—</span></b></div>
     <div class="idx" id="idxA"></div>
-    <div class="ghead" style="margin-top:10px"><b><span style="color:#A78BFA">港股</span><span class="gname">—</span></b><span>各自交易日</span></div>
+    <div class="ghead" style="margin-top:10px"><b><span style="color:var(--c-purple)">港股</span><span class="gname">—</span></b><span>各自交易日</span></div>
     <div class="idx" id="idxH"></div>
-    <div class="ghead" style="margin-top:10px"><b><span style="color:#9FB0C3">美股</span><span class="gname">—</span></b><span>各自交易日</span></div>
+    <div class="ghead" style="margin-top:10px"><b><span style="color:var(--c-muted)">美股</span><span class="gname">—</span></b><span>各自交易日</span></div>
     <div class="idx" id="idxU"></div>
     <div class="more" onclick="tg('c2')"><span>A股市场宽度</span><span class="arw">▾</span></div>
     <div class="detail">
@@ -67,9 +70,9 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <div id="idxRange" class="wr-host"></div>
         <div class="wr-info" id="idxRangeInfo">拖动下方时间条，以所选区间开头为起点重算收益</div>
         <div class="legend">
-          <span><i style="background:#4FC3F7"></i>沪深300（大盘）</span>
-          <span><i style="background:#F87171"></i>国证2000（小盘）</span>
-          <span><i style="background:rgba(79,195,247,.35);border:1px solid #4FC3F7"></i>两市成交额（柱）</span>
+          <span><i style="background:var(--c-accent)"></i>沪深300（大盘）</span>
+          <span><i style="background:var(--c-up)"></i>国证2000（小盘）</span>
+          <span><i style="background:var(--c-r046);border:1px solid var(--c-accent)"></i>两市成交额（柱）</span>
         </div>
       </div>
       <div class="subnote" id="idxSampleNote" style="margin:8px 0 0">—</div>
@@ -82,7 +85,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
         <div class="pillrow"><span class="pill cold">低于 20% 过冷</span><span class="pill hot">高于 80% 过热</span></div>
         <div class="radarbox">
           <svg viewBox="0 0 360 210" id="indRadar" role="img" aria-label="七指标雷达图"></svg>
-          <div class="legend" style="justify-content:center"><span><i style="background:#4FC3F7"></i>今日</span><span><i style="background:#FBBF24"></i>上周</span></div>
+          <div class="legend" style="justify-content:center"><span><i style="background:var(--c-accent)"></i>今日</span><span><i style="background:var(--c-warn)"></i>上周</span></div>
         </div>
         <div class="mgrid" id="indCards"></div>
         <div class="chartbox">
@@ -106,9 +109,9 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans 
     </div>
   </div>
 </div>
-<script src="../common/range.js?v=81"></script>
-<script src="../common/dashboard.js?v=81"></script>
-<script src="../common/industry.js?v=81"></script>
+<script src="../common/range.js?v=83"></script>
+<script src="../common/dashboard.js?v=83"></script>
+<script src="../common/industry.js?v=83"></script>
 
 <script>
 (function(){
