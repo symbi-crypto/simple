@@ -493,6 +493,8 @@ def static_checks(root, valid_fn):
         a9.append('缺 visibilitychange 监听注册')
     if "window.addEventListener('pageshow', maybeRefresh)" not in seg:
         a9.append('缺 pageshow 兜底注册')
+    if "window.parent.document.addEventListener('visibilitychange', maybeRefresh)" not in seg:
+        a9.append('缺 iframe 父文档监听（看板嵌在 tool.html 内）')
     if 'setInterval' in seg or 'setTimeout' in seg:
         a9.append('P3 段含定时器（规则禁止分钟级轮询）')
     if 'textContent' in seg or 'innerHTML' in seg:

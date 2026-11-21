@@ -23,6 +23,9 @@
 - **§6 回前台重取**：`common/dash-source.js` 新增 `onRefresh(name, fn)` +
   `visibilitychange` / `pageshow` 单次触发。只有「曾离开前台且当前可见」才重取；
   **去重窗口靠 `Date.now()` 比较，无任何 `setTimeout` / `setInterval`**，不是轮询。
+- **看板实际是 iframe**：`cb/dashboard.html` 等被 `tool.html` 以 iframe 嵌入，
+  部分移动 WebView 只给父文档派发 `visibilitychange`。故在同源下补一个父级监听，
+  与自身监听**共用同一去重窗口**，父/子同时派发也只重取一次。
 - **不踩旧坑**：回前台处理**不改任何状态文字**（不覆盖「完成 / 离线副本」等标签），
   不打断调优与回测；取数失败时保留现有真值，不调 `fail()` 把页面抹成「暂无快照」。
 - **三个渲染器注册刷新**：`dashboard.js`（重取主快照并把 `__amtTried` 复位，让成交额柱同步前进）、

@@ -179,8 +179,14 @@
   function onRefresh(name, fn) {
     if (name && typeof fn === 'function') REFRESH[name] = fn;
   }
+  function anyHidden() {
+    if (document.hidden) return true;
+    /* 看板被 tool.html 以 iframe 嵌入：部分移动 WebView 只把父文档标为隐藏 */
+    try { return !!(window.parent && window.parent !== window && window.parent.document.hidden); }
+    catch (e) { return false; }
+  }
   function maybeRefresh() {
-    if (document.hidden) { wasHidden = true; return; }
+    if (anyHidden()) { wasHidden = true; return; }
     if (!wasHidden) return;                       // 从未离开前台 → 不取
     wasHidden = false;
     var now = Date.now();
@@ -191,8 +197,12 @@
     });
   }
   try {
-    document.addEventListener('visibilitychange', maybeRefresh);
-    window.addEventListener('pageshow', maybeRefresh);   // 部分安卓 WebView 兜底
+    /* P3-L1 */ document.addEventListener('visibilitychange', maybeRefresh);
+    /* P3-L2 */ window.addEventListener('pageshow', maybeRefresh);   // 部分安卓 WebView 兜底
+    /* 看板 iframe：父文档也补一个监听，与自身监听共用同一去重窗口，不会重复取 */
+    if (window.parent && window.parent !== window) {
+      try { window.parent.document.addEventListener('visibilitychange', maybeRefresh); } catch (e) { }
+    }
   } catch (e) { }
   /* P3 END */
 
