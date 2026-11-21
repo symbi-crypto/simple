@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-打包流程第一步（v0.83 / 方案 A）：从 GitHub 仓库拉取最新看板/行情快照，写进站点工作目录。
+打包流程第一步（v0.83 / 方案 A，v0.84 纳入 index-daily.json）：从 GitHub 仓库拉取最新看板/行情快照。
 
 用法：
     python3 scripts/pull-snapshots.py [--root 站点根目录] [--token-file /path/.gh_token]
@@ -8,7 +8,7 @@
 纪律（与系统既有约定一致）：
   · 只接受 dataAsOf 不倒退、ok 不为 false、结构完整的快照；
     失败或空壳一律沿用包内「上次成功真值」，绝不摆空壳。
-  · index-daily.json 是 index.gz 静态基线（按设计不追加），列在 EXCLUDE，不拉。
+  · index-daily.json 自 v0.84 起由基线 + state 日更增量生成，随周度同步前进，纳入拉取。
   · 校验不过的文件写进警告清单，不中断打包；打包仍能用包内副本出包。
   · 不推 GitHub，只读，不改动仓库内容。
 """
@@ -20,14 +20,14 @@ API = 'https://api.github.com/repos/' + REPO
 
 # 与打包有关、会随周度同步前进的快照
 TARGETS = [
-    'cb-daily.json', 'gold-daily.json', 'industry-daily.json',
+    'cb-daily.json', 'gold-daily.json', 'industry-daily.json', 'index-daily.json',
     'market-amount.json', 'us-etf-daily.json', 'state.json',
     'sync-status.json', 'chain-R-status.json',
     'external-warnings.json', 'external-warnings-L.json',
     'external-warnings-A.json', 'external-warnings-G.json',
 ]
-# 静态基线 / 本机模板，不随远端覆盖
-EXCLUDE = {'index-daily.json', 'local-overrides.json'}
+# 本机模板不随远端覆盖；index-daily.json 自 v0.84 起随日更增量前进，已纳入 TARGETS
+EXCLUDE = {'local-overrides.json'}
 
 
 def http_json(path, headers, timeout=90):
@@ -80,6 +80,11 @@ def valid(name, d):
         a5 = d.get('5') if isinstance(d.get('5'), dict) else {}
         if not a5.get('labels'):
             return False, '5.labels 为空'
+    elif fmt == 'wufu-dash-idx-v2':
+        i5 = (d.get('idxTrend') or {}).get('5') if isinstance(d.get('idxTrend'), dict) else {}
+        if not (isinstance(d.get('idx'), dict) and (d['idx'].get('A') or [])
+                and (i5.get('labels') if isinstance(i5, dict) else None)):
+            return False, 'idx.A / idxTrend.5 不完整'
     elif fmt == 'wufu-offline-state-v2':
         pass  # dataAsOf 已校验，行情增量由 hub-core 自行合并
     return True, a

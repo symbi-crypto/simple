@@ -1,6 +1,6 @@
 /* build-dashboards.mjs — 周五同步后刷新两个综合看板快照
    1) cb-daily.json：把 state.json 里最新的可转债增量日追加成当日截面（六卡/分位/结构分布）
-   2) index-daily.json：由内嵌 index.gz 的真实日线重算 15 条指数分位与双线，不引外部数据源。
+   2) index-daily.json 已移交 scripts/build-index-daily.py（基线 + 日更增量），本文件不再处理。
    原始 .gz 不进页面，只写算好的小 JSON。 */
 import fs from 'node:fs';
 
@@ -132,46 +132,6 @@ if (fs.existsSync(CBD) && fs.existsSync(CBV) && cb) {
 }
 
 
-const IXP = 'common/index.gz';
-if (fs.existsSync(IXP)) {
-  const gd = JSON.parse(zlib.gunzipSync(fs.readFileSync(IXP)).toString('utf8'));
-  const cal = gd.calendar || [], idxm = gd.index || {};
-  const GROUPS = {
-    A: [['000001.SH','上证指数'],['000300.SH','沪深300'],['000510.SH','中证A500'],['000906.SH','中证800'],['000905.SH','中证500'],['399006.SZ','创业板指'],['000680.SH','科创综指'],['000852.SH','中证1000'],['399303.SZ','国证2000']],
-    H: [['HSI.HI','恒生指数'],['HSTECH.HI','恒生科技'],['930915.CSI','港股通高股息']],
-    U: [['SPX.GI','标普500'],['NDX.GI','纳斯达克100'],['DJI.GI','道琼斯工业']]
-  };
-  const gp = c => { const a = idxm[c] || []; const o = []; for (let i=0;i<a.length;i++) if (typeof a[i]==='number' && a[i]>0) o.push([i,a[i]]); return o; };
-  const pctl = (g, years) => { if (!g.length) return null; const i=g[g.length-1][0], v=g[g.length-1][1]; const cut=new Date(Date.parse(cal[i])-365*years*86400000); const w=g.filter(([j])=>Date.parse(cal[j])>=cut.getTime()).map(x=>x[1]); return w.length?Math.round(100*w.filter(x=>x<=v).length/w.length):null; };
-  /* v0.63 · 按自然周取点：每周最后一个交易日；labels 与点数同长 */
-  const weekKey = d => { const t = Date.parse(d + 'T00:00:00Z'); const day = new Date(t).getUTCDay() || 7; return new Date(t - (day - 1) * 86400000).toISOString().slice(0, 10); };
-  const weekly = arr => { const out = []; let last = null; arr.forEach(x => { const w = weekKey(x.date || x.d); if (w !== last) { out.push(x); last = w; } else out[out.length - 1] = x; }); return out; };
-  const line = (c, years) => {
-    const g = gp(c); if (g.length < 2) return [[], []];
-    const end = g[g.length - 1][0], cut = Date.parse(cal[end]) - 365.25 * years * 86400000;
-    const w = weekly(g.filter(([j]) => Date.parse(cal[j]) >= cut).map(([j, v]) => ({ date: cal[j], v })));
-    if (w.length < 2) return [[], []];
-    const b = w[0].v;
-    return [w.map(x => +(100 * x.v / b).toFixed(2)), w.map(x => x.date)];
-  };
-  /* 用主线的周点日期对齐另一条指数：该周无数据则沿用上一个有效值，保证两条线同长 */
-  const lineOn = (c, dates) => {
-    const g = gp(c), m = new Map(g.map(([j, v]) => [cal[j], v]));
-    let last = null;
-    const vals = dates.map(d => { const v = m.get(d); if (typeof v === 'number' && v > 0) last = v; return last; });
-    const b = vals.find(v => v != null) || null;
-    return b ? vals.map(v => v == null ? null : +(100 * v / b).toFixed(2)) : [];
-  };
-  const out = { format:'wufu-dash-idx-v2', dataAsOf: cal[cal.length-1] || null,
-    sampleNote:'指数基线 '+(cal[0]||'—')+' 起，共 '+cal.length+' 交易日；分位与曲线由本地真实日线计算',
-    idx:{}, idxTrend:{}, trendNote:{}, note:'15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线计算；不含外部抓取与占位值。' };
-  for (const [g,lst] of Object.entries(GROUPS)) {
-    out.idx[g] = lst.map(([c,n])=>{ const q=gp(c); if(q.length<2) return [n,null,null,null]; const v=q[q.length-1][1], p=q[q.length-2][1]; return [n,+((v/p-1)*100).toFixed(2),pctl(q,5),pctl(q,10)]; });
-  }
-  for (const y of [5,10]) { const [hs,labels]=line('000300.SH',y); const gz=lineOn('399303.SZ',labels); out.idxTrend[String(y)]={labels,hs300:hs,gz2000:gz,points:labels.length}; }
-  const gzg = gp('399303.SZ');
-  const gnote = gzg.length ? '国证2000 样本 '+gzg.length+' 交易日（约 '+(gzg.length/250).toFixed(1)+' 年），末有效日 '+cal[gzg[gzg.length-1][0]] : '国证2000 无有效序列';
-  out.trendNote['5']='样本 5 年 · '+gnote; out.trendNote['10']='样本 10 年（沪深300）· '+gnote;
-  save('index-daily.json', out);
-  console.log('index-daily.json 已由本地真实日线重算');
-} else console.log('未找到 common/index.gz，index-daily.json 保持原值');
+/* v0.84 / 方案 B：指数看板改由 scripts/build-index-daily.py 生成
+   （基线 index.gz + state.json 日更增量，缺口如实标注）。
+   本文件只负责可转债快照，不再写 index-daily.json，避免双写覆盖。 */

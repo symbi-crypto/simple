@@ -1,6 +1,8 @@
-/* dashboard.js — 综合看板渲染器（v0.59 / v0.83 取数改造）
-   v0.83：取数统一走 common/dash-source.js（远端优先 + 包内副本兜底）；
-   index-daily.json 是静态基线，仍只读包内。缺数一律显示「—」，不写示意值。 */
+/* dashboard.js — 综合看板渲染器（v0.59 / v0.83 取数改造 / v0.84 指数日更）
+   v0.83：取数统一走 common/dash-source.js（远端优先 + 包内副本兜底）。
+   v0.84：index-daily.json 由基线 + 日更增量生成，标签统一「最新交易日」；
+   指数曲线与成交额柱截止日不一致时不叠柱并明确说明，同步对齐后自动恢复。
+   缺数一律显示「—」，不写示意值。 */
 (function () {
   'use strict';
   var wrap = document.getElementById('dashWrap');
@@ -220,7 +222,7 @@
   function renderIDX() {
     var d = D || {};
     var hd = document.querySelector('#c2 .hd span');
-    if (hd) hd.textContent = '指数基线 ' + T(d.dataAsOf) + badgeOf(d);
+    if (hd) hd.textContent = '最新交易日 ' + T(d.dataAsOf) + badgeOf(d);
     function findChg(name) {
       var A = (d.idx || {}).A || [];
       for (var i = 0; i < A.length; i++) if (A[i][0] === name) return A[i][1];
@@ -228,7 +230,11 @@
     }
     function ch(v) { return typeof v === 'number' ? '<span class="' + cls(v) + '">' + (v > 0 ? '+' : '') + v.toFixed(2) + '%</span>' : '—'; }
     var sl = $('idxSum');
-    if (sl) sl.innerHTML = '沪深300 ' + ch(findChg('沪深300')) + '<i>·</i>国证2000 ' + ch(findChg('国证2000'));
+    var gapSum = (((d.coverage || {}).gaps) || []).map(function (g) {
+      return g.name + ' 止于 ' + T(g.lastValidDate);
+    }).join(' · ');
+    if (sl) sl.innerHTML = '沪深300 ' + ch(findChg('沪深300')) + '<i>·</i>国证2000 ' + ch(findChg('国证2000'))
+      + (gapSum ? '<i>·</i><span class="gapmk">' + gapSum + '（无日更增量，未编造）</span>' : '');
     renderIdxRows(d);
     drawIdxChart(d);
     if (!AMT && !window.__amtTried) {
@@ -238,7 +244,13 @@
         function () { AMT = null; if (D) drawIdxChart(D); });
     }
     var sn = $('idxSampleNote');
-    if (sn) sn.textContent = ((d.trendNote || {})[String(years)]) || d.sampleNote || '样本 —';
+    if (sn) {
+      var gapTxt = (((d.coverage || {}).gaps) || []).map(function (g) {
+        return g.name + ' 止于 ' + T(g.lastValidDate);
+      }).join(' · ');
+      sn.textContent = (((d.trendNote || {})[String(years)]) || d.sampleNote || '样本 —')
+        + (gapTxt ? ' · ' + gapTxt + '（无日更增量，未编造）' : '');
+    }
   }
   function renderIdxRows(d) {
     var groups = [['A', 'idxA'], ['H', 'idxH'], ['U', 'idxU']];
@@ -258,11 +270,15 @@
     var gh = document.querySelectorAll('#c2 .ghead .gname');
     var na = ((d.idx || {}).A || []).length, nh = ((d.idx || {}).H || []).length, nu = ((d.idx || {}).U || []).length;
     if (gh[0]) gh[0].textContent = (na + nh + nu) + ' 条';
-    if (gh[1]) gh[1].textContent = na + ' 条 · 指数基线 ' + T(d.dataAsOf);
-    if (gh[2]) gh[2].textContent = nh + ' 条 · 指数基线 ' + T(d.dataAsOf);
-    if (gh[3]) gh[3].textContent = nu + ' 条 · 指数基线 ' + T(d.dataAsOf);
+    if (gh[1]) gh[1].textContent = na + ' 条 · 最新交易日 ' + T(d.dataAsOf);
+    if (gh[2]) gh[2].textContent = nh + ' 条 · 最新交易日 ' + T(d.dataAsOf);
+    if (gh[3]) gh[3].textContent = nu + ' 条 · 最新交易日 ' + T(d.dataAsOf);
   }
   function drawIdxChart(d) {
+    var idxAsOf = d.dataAsOf || null;
+    var amtAsOf = (AMT && AMT.dataAsOf) ? AMT.dataAsOf : null;
+    /* v0.84：截止日不一致就不叠柱，避免两条不同时间口径的数据同图混读 */
+    var amtMismatch = !!(idxAsOf && amtAsOf && idxAsOf !== amtAsOf);
     var t = ((d.idxTrend || {})[String(years)] || {});
     var svg = $('idxChart'); if (!svg) return; svg.innerHTML = '';
     var rb1 = window.WufuRange ? WufuRange.rebase(t.hs300 || [], selIDX) : { data: SL(t.hs300 || [], selIDX), ret: null };
@@ -277,7 +293,8 @@
     var Y = function (v) { return 12 + (hi - v) / (hi - lo) * 100; };
     grid(svg, [lo + (hi - lo) * 0.25, lo + (hi - lo) * 0.5, lo + (hi - lo) * 0.75], Y, 34, 344);
     /* 两市成交额柱：独立量纲，画在下方 124~158，不与指数点位混算 */
-    var am = (AMT && AMT[String(years)]) ? SL(AMT[String(years)].amount || [], selIDX) : [];
+    var am = (AMT && AMT[String(years)] && !amtMismatch)
+      ? SL(AMT[String(years)].amount || [], selIDX) : [];
     var amax = 1;
     am.forEach(function (v) { if (typeof v === 'number' && isFinite(v) && v > amax) amax = v; });
     if (am.length > 1) {
@@ -317,9 +334,12 @@
           '<br>成交额柱是绝对金额，只裁区间、不重定基。';
     }
     var note = $('idxAmtNote');
-    if (note) note.textContent = am.length > 1
-      ? '两市成交额 = 上证指数 + 深证成指 K 线成交额之和（亿元，近似口径），柱形单独归一，不与指数点位混读。'
-      : '两市成交额暂无快照，图上不摆空柱。';
+    if (note) note.textContent = amtMismatch
+      ? '两市成交额柱截至 ' + T(amtAsOf) + '，与指数曲线 ' + T(idxAsOf)
+        + ' 不同日，为避免混读本次不叠柱；同步对齐后自动恢复。'
+      : (am.length > 1
+        ? '两市成交额 = 上证指数 + 深证成指 K 线成交额之和（亿元，近似口径），柱形单独归一，不与指数点位混读。'
+        : '两市成交额暂无快照，图上不摆空柱。');
     /* v0.65：点曲线 → 当日日期 + 沪深300/国证2000 数值（成交额柱是绝对金额，不混进浮层） */
     if (window.WufuRange) WufuRange.probe(svg, {
       labels: LB, vbW: 360, y0: 8, y1: 158,

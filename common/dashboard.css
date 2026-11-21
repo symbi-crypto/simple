@@ -171,3 +171,6 @@ td.cell{height:23px;border-bottom:1px solid var(--line);font-size:9px;font-weigh
 /* v0.63 · 区间重定基说明（起点日期 / 区间收益） */
 .wr-info{font-size:9.5px;color:var(--c-muted);line-height:1.6;margin:2px 2px 6px;word-break:break-all}
 .wr-info b{color:var(--c-accent);font-weight:600}
+
+/* v0.84 · 指数缺口标注：无日更增量的序列标真实末日，避免旧值冒充最新交易日 */
+.gapmk{font-size:10px;color:var(--mut);font-weight:400;white-space:normal}

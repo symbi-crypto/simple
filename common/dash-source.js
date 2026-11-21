@@ -1,11 +1,10 @@
 /* ============================================================
-   dash-source.js — 看板快照取数单一入口（v0.83 / 方案 C）
+   dash-source.js — 看板快照取数单一入口（v0.83 方案 C / v0.84 纳入指数看板）
    ------------------------------------------------------------
    · 随周度同步前进的快照：优先读 GitHub（jsDelivr 主 / raw 备），
      失败或拉到空壳时回退包内副本，页面标「离线副本」并照常显示真值。
    · 不是「摆空壳」：两份都不可用时才调用渲染器的 fail()，绝不写示意值。
-   · index-daily.json 是 index.gz 静态基线（按设计不追加），不在远端名单，
-     仍只读包内，行为与 v0.82 完全一致。
+   · v0.84：index-daily.json 由基线 + 日更增量生成，已纳入远端名单，与其余看板同源。
    · 跨域请求由 sw.js 的同源判断直接放行，不进 Cache Storage。
    · 远端若因 CDN 缓存返回比包内更旧的日期，取两者中较新的一份。
    测试可用 window.WUFU_DASH_REMOTE 覆盖远端基址（指向本地 mock）。
@@ -19,7 +18,8 @@
     'cb-daily.json': 1,
     'gold-daily.json': 1,
     'industry-daily.json': 1,
-    'market-amount.json': 1
+    'market-amount.json': 1,
+    'index-daily.json': 1
   };
   var REMOTE_MS = 6000;   // 国内移动侧不让它拖住首屏
   var LOCAL_MS = 12000;
@@ -60,6 +60,11 @@
     if (fmt === 'wufu-dash-amount-v1') {
       var a5 = (d['5'] && typeof d['5'] === 'object') ? d['5'] : {};
       return !!(a5.labels && a5.labels.length);
+    }
+    if (fmt === 'wufu-dash-idx-v2') {
+      var it = (d.idxTrend && typeof d.idxTrend === 'object') ? d.idxTrend : {};
+      var i5 = (it['5'] && typeof it['5'] === 'object') ? it['5'] : {};
+      return !!(d.idx && d.idx.A && d.idx.A.length && i5.labels && i5.labels.length);
     }
     return true;
   }
