@@ -43,7 +43,15 @@
              !!(t5.labels && t5.labels.length && t5.price && t5.price.length);
     }
     if (fmt === 'wufu-dash-gold-v1') {
-      return !!(t5.labels && t5.labels.length && t5.price && t5.price.length);
+      /* 黄金是多资产：trend.5.price 是 {代码: 序列} 字典，不是数组。
+         只要 labels 非空且字典里至少有一条非空序列即算真值；
+         空壳（全空数组 / {}）仍拒收。 */
+      var gl = t5.labels, gp = t5.price;
+      if (!gl || !gl.length || !gp || typeof gp !== 'object') return false;
+      if (Array.isArray(gp)) return gp.length > 0;
+      return Object.keys(gp).some(function (k) {
+        return Array.isArray(gp[k]) && gp[k].length > 0;
+      });
     }
     if (fmt === 'wufu-dash-industry-v2') {
       return (typeof d.boardCount === 'number' && d.boardCount > 0) &&
