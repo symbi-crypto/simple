@@ -26,7 +26,7 @@ except Exception:
     qp = {}
 base_last = cal0[-1] if cal0 else ''
 
-# 增量日：QPatch（14 条指数）+ 链 I 的国证2000 增量（index-gz2000.json）
+# 增量日：QPatch（14 条指数）+ 链 I 的国证2000 / 4 只 CSI 增量
 seen, qp_rows = set(), {}
 for day in (qp.get('days') or []):
     dt = day.get('date')
@@ -58,6 +58,20 @@ try:
 except Exception:
     gz_patch = {}
 
+# 链 I 补丁：4 只中证指数（qt 当日 + 昨收），11-18 等缺口日如实留空
+csi_patch, csi_missing, csi_codes = {}, [], []
+try:
+    cp = load('index-csi-patch.json')
+    if cp.get('format') == 'wufu-index-csi-patch-v1':
+        csi_codes = sorted(cp.get('codes') or [])
+        csi_missing = list(cp.get('missingDates') or [])
+        for code, rows in (cp.get('series') or {}).items():
+            for d, v in rows.items():
+                if isinstance(d, str) and isinstance(v, (int, float)) and v > 0:
+                    csi_patch.setdefault(d, {})[code] = float(v)
+except Exception:
+    csi_patch, csi_missing, csi_codes = {}, [], []
+
 inc_dates = sorted(seen | set(d for d in gz_patch if d > base_last))
 cal = cal0 + inc_dates
 DATE0 = {d: i for i, d in enumerate(cal0)}
@@ -73,11 +87,15 @@ for c, base in idxm.items():
         v = (qp_rows.get(d) or {}).get(c)
         if c == '399303.SZ' and d in gz_patch:
             v = gz_patch[d]
+        # 链 I 的 CSI 真值优先于（缺失的）QPatch 行，不覆盖已有有效值之外的数据
+        if d in csi_patch and c in csi_patch[d]:
+            v = csi_patch[d][c]
         a.append(v if isinstance(v, (int, float)) and v > 0 else None)
     ext[c] = a
 inc_codes = set(c for row in qp_rows.values() for c in row)
 if any(d > base_last for d in gz_patch):
     inc_codes.add('399303.SZ')
+inc_codes.update(csi_codes)
 
 GROUPS = {
     'A': [['000001.SH','上证指数'],['000300.SH','沪深300'],['000510.SH','中证A500'],
@@ -168,8 +186,9 @@ out = {
     'sampleNote': '指数基线 %s 起 %d 交易日 + 日更增量 %d 天至 %s；分位与曲线由真实日线计算'
                   % (cal0[0] if cal0 else '—', len(cal0), len(inc_dates), asof or '—'),
     'idx': {}, 'idxTrend': {}, 'trendNote': {},
-    'note': '15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线 + state 日更增量计算；'
-            '不含外部抓取与占位值；无增量的序列在最后有效日断开并列入 coverage.gaps。',
+    'note': '15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线 + state 日更增量 + 链 I 真值计算；'
+            '不含占位值；无增量的序列在最后有效日断开并列入 coverage.gaps，'
+            '中间缺口日列入 coverage.csiHoles，均未编造。',
     'chain': 'L', 'contract': 'chain/1',
 }
 
@@ -209,7 +228,11 @@ out['coverage'] = {'asOf': asof, 'baseDays': len(cal0), 'incDays': len(inc_dates
                    'incCodes': sorted(inc_codes), 'gaps': gaps,
                    'gz2000Patch': {'source': 'chain I / index-gz2000.json',
                                    'days': len([d for d in gz_patch if d > base_last]),
-                                   'lastDate': max([d for d in gz_patch], default=None)}}
+                                   'lastDate': max([d for d in gz_patch], default=None)},
+                   'csiHoles': {'source': 'chain I / index-csi-patch.json',
+                                'codes': csi_codes, 'missingDates': csi_missing,
+                                'text': ('港股通高股息 缺 ' + '、'.join(csi_missing)
+                                         + '（无免费日K源，未编造）') if csi_missing else ''}}
 
 with open(os.path.join(R, 'index-daily.json'), 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))

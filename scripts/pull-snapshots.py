@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-打包流程第一步（v0.85 纳入 index-gz2000.json 链 I 增量）：从 GitHub 仓库拉取最新看板/行情快照。
+打包流程第一步（v0.86 纳入 index-gz2000.json / index-csi-patch.json 链 I 增量）：从 GitHub 仓库拉取最新看板/行情快照。
 
 用法：
     python3 scripts/pull-snapshots.py [--root 站点根目录] [--token-file /path/.gh_token]
@@ -21,7 +21,7 @@ API = 'https://api.github.com/repos/' + REPO
 # 与打包有关、会随周度同步前进的快照
 TARGETS = [
     'cb-daily.json', 'gold-daily.json', 'industry-daily.json', 'index-daily.json',
-    'index-gz2000.json', 'market-amount.json', 'us-etf-daily.json', 'state.json',
+    'index-gz2000.json', 'index-csi-patch.json', 'market-amount.json', 'us-etf-daily.json', 'state.json',
     'sync-status.json', 'chain-R-status.json',
     'external-warnings.json', 'external-warnings-L.json',
     'external-warnings-A.json', 'external-warnings-G.json',
@@ -80,6 +80,10 @@ def valid(name, d):
         a5 = d.get('5') if isinstance(d.get('5'), dict) else {}
         if not a5.get('labels'):
             return False, '5.labels 为空'
+    elif fmt == 'wufu-index-csi-patch-v1':
+        if not (isinstance(d.get('series'), dict) and len(d['series']) >= 4
+                and d.get('dataAsOf')):
+            return False, 'index-csi-patch series 不完整'
     elif fmt == 'wufu-index-patch-v1':
         if not (isinstance(d.get('days'), list) and len(d['days']) >= 3):
             return False, 'index-gz2000 days 不完整'

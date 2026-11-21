@@ -101,7 +101,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          FILES="sync-status.json chain-R-status.json cb-daily.json index-daily.json index-gz2000.json industry-daily.json gold-daily.json market-amount.json us-etf-daily.json external-warnings.json external-warnings-L.json external-warnings-A.json external-warnings-G.json external-warnings-I.json"
+          FILES="sync-status.json chain-R-status.json cb-daily.json index-daily.json index-gz2000.json index-csi-patch.json industry-daily.json gold-daily.json market-amount.json us-etf-daily.json external-warnings.json external-warnings-L.json external-warnings-A.json external-warnings-G.json external-warnings-I.json"
           CHANGED=""
           for f in $FILES; do [ -f "$f" ] && git add "$f" && CHANGED="$CHANGED $f"; done
           if [ -f state.json ]; then git add state.json; fi

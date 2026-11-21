@@ -1727,6 +1727,17 @@
         if (!tested && prevClose[c] !== undefined) {
           var lv = lastVal(arr);
           if (lv) { mx = Math.abs(prevClose[c] / lv - 1); tested = 1; }
+          /* v0.86：qt 兜底只给「当日 + 昨收」。若本次要补多个交易日（漏跑过几天），
+             昨收并非旧序列末日的下一日，把它和旧末值直接比会跨 N 天，正常跌幅
+             会被 0.2% 阈值误判成口径偏差，整只丢弃。此路径改按量级兜底：
+             只拦明显错源（>25%），跨日偏差记入 report.qtLoose，不判 bad。 */
+          if (tested && newdays.length > 1) {
+            if (mx > 0.25) { bad[c] = "qt兜底跨 " + newdays.length + " 日且量级异常 "
+              + (mx * 100).toFixed(2) + "%"; return; }
+            rep.qtLoose = rep.qtLoose || [];
+            rep.qtLoose.push(c + " 跨 " + newdays.length + " 日 " + (mx * 100).toFixed(2) + "%");
+            return;
+          }
         }
         if (!tested) { bad[c] = "源无重叠日，无法校验口径"; return; }
         if (mx > 0.002) bad[c] = "重叠日口径偏差 " + (mx * 100).toFixed(3) + "%（>0.2%）";

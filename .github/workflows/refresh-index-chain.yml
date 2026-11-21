@@ -33,7 +33,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os
-          for f in ['index-gz2000.json','market-amount.json','index-daily.json']:
+          for f in ['index-gz2000.json','index-csi-patch.json','market-amount.json','index-daily.json']:
               if not os.path.exists(f):
                   print(f, '未生成'); continue
               d=json.load(open(f,encoding='utf-8'))
@@ -44,6 +44,8 @@ jobs:
                   print('  缺口', [(g['name'],g['lastValidDate']) for g in d['coverage']['gaps']])
               if f=='index-gz2000.json':
                   print('  增量天数', len(d['days']), '源', d.get('source'))
+              if f=='index-csi-patch.json':
+                  print('  CSI', len(d.get('codes',[])), '只 · 缺口日', d.get('missingDates'))
           PY
 
       - name: 写回仓库
@@ -51,12 +53,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for f in index-gz2000.json market-amount.json index-daily.json                    external-warnings-I.json external-warnings.json; do
+          for f in index-gz2000.json index-csi-patch.json market-amount.json index-daily.json                    external-warnings-I.json external-warnings.json; do
             [ -f "$f" ] && git add "$f"
           done
           if git diff --cached --quiet; then
             echo "链 I 无变化，不提交"
           else
-            git commit -m "chore: 补指数链 国证2000 + 两市成交额 $(date -u +%F)"
+            git commit -m "chore: 补指数链 国证2000 + 4只CSI + 两市成交额 $(date -u +%F)"
             git push
           fi

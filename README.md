@@ -1,3 +1,15 @@
+# v0.86 · 4 只中证指数补链（方案 A）
+
+- **链 I 扩展**：`build-external.py --chain=I` 新增 `build_csi_patch()`，
+  用 `qt.gtimg.cn` 的 `cs*` 实时收盘（GBK），一次拿 4 只 CSI 的「当日收盘 + 昨收」，
+  产出 `index-csi-patch.json`。东财 push2his 对 `.CSI` 不稳定、中证官网 403、
+  腾讯日K 空 `day`，故只有 qt 这条能稳定补最后两个交易日。
+- **11-18 如实留洞**：无免费日K源，写进 `missingDates` 与前端摘要，不推算、不前向填充。
+- **修跨日误杀**：`patch-etf.js` 的 qt 兜底路径原本拿「昨收」直接比「旧序列末值」，
+  漏跑多日时正常跌幅被 0.2% 重叠校验判成口径偏差、整只丢弃（11-20 那次 4 只全中招）。
+  现改为按量级兜底（>25% 才拦），跨日信息记入 `report.qtLoose`。
+- **编排**：`refresh-index-chain.yml` 一并写回新快照；打包拉取清单纳入。
+
 # v0.85 · 新增国证2000 抓取链（链 I）+ 成交额兜底
 
 - **链 I**：`scripts/build-external.py --chain=I` 抓国证2000 日线，东财 `0.399303` 主源、

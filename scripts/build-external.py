@@ -7,6 +7,7 @@
   gold-daily.json      国际金/银/油/铜/BTC + GVZ + 上海金 + 三项比价
   market-amount.json   两市成交额（东财 f57 历史 + 腾讯 qt 最新交易日兜底）
   index-gz2000.json    国证2000 日更增量（链 I，供 build-index-daily.py 合并，v0.85 新增）
+  index-csi-patch.json 4 只中证指数 qt 收盘增量（链 I，v0.86 新增）
 
 原则：
   · 只写算好的小 JSON，原始日线不进仓库、不进页面。
@@ -38,6 +39,29 @@ def get(url, timeout=12, tries=2):
                     except Exception:
                         pass
                 return r.status, raw.decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            last = "HTTP %s" % e.code
+        except Exception as e:
+            last = "%s: %s" % (type(e).__name__, str(e)[:120])
+        time.sleep(0.6 * (k + 1))
+    return None, last
+
+
+def get_gbk(url, timeout=12, tries=2):
+    """qt.gtimg.cn 返回 GBK，get() 按 utf-8 解会乱码，这里单独解码。"""
+    last = ""
+    for k in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": UA, "Accept": "*/*", "Accept-Encoding": "gzip, deflate"})
+            with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+                raw = r.read()
+                if r.headers.get("Content-Encoding") == "gzip" or raw[:2] == b"\x1f\x8b":
+                    try:
+                        raw = gzip.decompress(raw)
+                    except Exception:
+                        pass
+                return r.status, raw.decode("gbk", "replace")
         except urllib.error.HTTPError as e:
             last = "HTTP %s" % e.code
         except Exception as e:
@@ -107,6 +131,7 @@ def window(days, years):
 CHAIN_OF = {
     "industry-daily.json": "A", "market-amount.json": "A",
     "gold-daily.json": "G", "index-gz2000.json": "I",
+    "index-csi-patch.json": "I",
 }
 
 def save(name, obj):
@@ -551,64 +576,77 @@ def amt_index(secid):
 
 
 def qq_qt_amount():
-    """腾讯财经 qt 收盘快照：返回 (交易日, 两市成交额亿元) 或 None。
-       qt 里 '现价/成交量(手)/成交额(元)' 三段是真实成交金额，与东财 f57 同口径；
-       只在 15:00 之后采信，避免把盘中未收盘值写进周频序列。"""
-    total, trade_day, stamps = 0.0, None, []
-    for code in ("sh000001", "sz399001"):
-        url = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get"
-               "?param=%s,day,2026-01-01,2026-12-31,320,qfq" % code)
-        st, txt = get(url, timeout=12, tries=2)
-        if st != 200:
-            return None
-        node = ((jload(txt).get("data") or {}).get(code) or {})
-        qt = (node.get("qt") or {}).get(code) or []
-        trip = next((x for x in qt if isinstance(x, str) and x.count("/") >= 2 and len(x) > 20), None)
-        stamp = next((x for x in qt if isinstance(x, str) and len(x) == 14 and x.isdigit()), None)
+    """两市成交额：qt.gtimg.cn 的 sh000001 / sz399001 实时收盘（GBK）。
+       从「现价/成交量/成交额(元)」三段取真实金额，与东财 f57 同口径；
+       只在 15:00 后采信。v0.86 起不再依赖偶发 501 的 proxy.finance.qq.com。"""
+    st, txt = get_gbk("https://qt.gtimg.cn/q=sh000001,sz399001", timeout=12, tries=2)
+    if st != 200 or not txt:
+        return None
+    total, stamps = 0.0, []
+    for line in txt.strip().split("\n"):
+        if '="' not in line:
+            continue
+        f = line.split('"')[1].split("~")
+        trip = next((x for x in f if isinstance(x, str) and x.count("/") >= 2 and len(x) > 20), None)
+        stamp = next((x for x in f if isinstance(x, str) and len(x) == 14 and x.isdigit()), None)
         if not trip or not stamp:
-            return None
+            continue
         try:
-            amt_yuan = float(trip.split("/")[2])
+            amt = float(trip.split("/")[2])
         except Exception:
-            return None
-        if amt_yuan <= 0:
-            return None
-        total += amt_yuan / 1e8          # 亿元
+            continue
+        if amt <= 0:
+            continue
+        total += amt / 1e8
         stamps.append(stamp)
-        trade_day = stamp[:4] + "-" + stamp[4:6] + "-" + stamp[6:8]
     if len(stamps) != 2 or any(int(x[8:14]) < 150000 for x in stamps):
         return None
     if stamps[0][:8] != stamps[1][:8]:
         return None
-    return trade_day, round(total, 1)
-
+    d = stamps[0]
+    return "%s-%s-%s" % (d[:4], d[4:6], d[6:8]), round(total, 1)
 
 def qq_day(code):
-    """腾讯日K：[date, open, close, high, low, volume]；返回 [(date, close)]。
-       腾讯对超大数量/跨度请求返回空，按「去年 + 今年」两段各 500 根抓取后合并。"""
+    """国证2000 日K：[date, open, close, high, low, volume] → [(date, close)]。
+       proxy.finance.qq.com 偶发 501 → web.ifzq.gtimg.cn → 新浪 K线，三级兜底；
+       腾讯对超大跨度请求返回空，按「去年 + 今年」各 500 根抓取。"""
     y = datetime.date.today().year
-    out, seen = [], set()
-    for yr in (y - 1, y):
-        url = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get"
-               "?param=%s,day,%d-01-01,%d-12-31,500,qfq" % (code, yr, yr))
-        st, txt = get(url, timeout=15, tries=2)
-        if st != 200:
-            continue
-        node = ((jload(txt).get("data") or {}).get(code) or {})
-        arr = node.get("day") or node.get("qfqday") or []
-        for row in arr:
-            if not isinstance(row, list) or len(row) < 3:
+    hosts = ["https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get",
+             "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"]
+    out, seen, src = [], set(), ""
+    for host in hosts:
+        for yr in (y - 1, y):
+            u = host + "?param=%s,day,%d-01-01,%d-12-31,500,qfq" % (code, yr, yr)
+            st, txt = get(u, timeout=12, tries=2)
+            if st != 200:
                 continue
-            try:
-                v = float(row[2])
-            except Exception:
-                continue
-            if v > 0 and isinstance(row[0], str) and len(row[0]) == 10 and row[0] not in seen:
-                seen.add(row[0])
-                out.append((row[0], v))
+            node = ((jload(txt).get("data") or {}).get(code) or {})
+            for row in (node.get("day") or node.get("qfqday") or []):
+                if not isinstance(row, list) or len(row) < 3:
+                    continue
+                try:
+                    v = float(row[2])
+                except Exception:
+                    continue
+                if v > 0 and isinstance(row[0], str) and len(row[0]) == 10 and row[0] not in seen:
+                    seen.add(row[0]); out.append((row[0], v))
+        if len(out) >= 100:
+            break
+    if len(out) < 100:
+        u = ("https://quotes.sina.cn/cn/api/openapi.php/CN_MarketDataService.getKLineData"
+             "?symbol=%s&scale=240&ma=no&datalen=600" % code)
+        st, txt = get(u, timeout=12, tries=2)
+        if st == 200:
+            for row in ((jload(txt).get("result") or {}).get("data") or []):
+                try:
+                    d, v = row["day"], float(row["close"])
+                except Exception:
+                    continue
+                if v > 0 and isinstance(d, str) and d not in seen:
+                    seen.add(d); out.append((d, v))
+            WARN.append("国证2000：腾讯两域名均不可用，已用新浪 K 线兜底，请核对首末值口径")
     out.sort(key=lambda t: t[0])
     return out
-
 
 def build_gz2000():
     """链 I：国证2000 日更增量。东财 0.399303 主源，腾讯 sz399303 兜底。
@@ -657,6 +695,106 @@ def same_iso_week(a, b):
                 == datetime.date.fromisoformat(b).isocalendar()[:2])
     except Exception:
         return False
+
+
+CSI_QT = {"930915.CSI": "930915", "931643.CSI": "931643",
+          "932000.CSI": "932000", "h30533.CSI": "H30533"}
+
+
+def build_csi_patch():
+    """链 I · 4 只中证指数：腾讯 qt 实时收盘（当日收盘价 + 昨收价）。
+       东财 push2his 对 .CSI 时好时坏、中证官网 403、腾讯日K返回空 day，
+       只有 qt.gtimg.cn 的 cs* 能稳定给「当日 + 昨收」两个真值。
+       缺口日（如 11-18）无免费日K源 → 如实写进 missingDates，绝不推算。
+       失败不写空壳：沿用上次真值。"""
+    keys = ",".join("cs" + v for v in CSI_QT.values())
+    st, txt = get_gbk("https://qt.gtimg.cn/q=" + keys, timeout=12, tries=2)
+    if st != 200 or not txt:
+        WARN.append("CSI 指数：qt.gtimg.cn 不可用，本次不写 index-csi-patch.json（沿用上次真值）")
+        return
+    qmap = {}
+    for line in txt.strip().split("\n"):
+        if '="' not in line:
+            continue
+        key = line.split("=")[0].replace("v_", "").strip()
+        f = line.split('"')[1].split("~")
+        if len(f) > 30 and f[1] and len(f[30]) >= 14 and f[30][:8].isdigit():
+            try:
+                cur, prev, stamp = float(f[3]), float(f[4]), f[30]
+            except Exception:
+                continue
+            if cur > 0 and prev > 0:
+                qmap[key] = {"name": f[1], "cur": cur, "prev": prev,
+                             "day": "%s-%s-%s" % (stamp[:4], stamp[4:6], stamp[6:8]),
+                             "hhmmss": stamp[8:14]}
+    # 交易日日历：state.json 的 QPatch days（含 11-02..11-20）
+    all_days = []
+    try:
+        stj = json.load(open("state.json", encoding="utf-8"))
+        qp = json.loads((stj.get("localStorage") or {}).get("wufuQPatch_v1") or "{}")
+        all_days = sorted(set(d["date"] for d in (qp.get("days") or [])
+                              if isinstance(d.get("date"), str)))
+    except Exception:
+        pass
+    if not all_days:
+        WARN.append("CSI 指数：无交易日历，无法定位昨收所属日，本次不写（沿用上次真值）")
+        return
+
+    series, wrote_days = {}, set()
+    day0 = None
+    for code, qk in CSI_QT.items():
+        rec = qmap.get("cs" + qk)
+        if not rec:
+            WARN.append("CSI 指数 %s：qt 无该代码，本次跳过" % code)
+            continue
+        day, hh = rec["day"], rec["hhmmss"]
+        if day in all_days and all_days.index(day) > 0:
+            prev_date = all_days[all_days.index(day) - 1]
+        elif all_days:
+            prev_date = all_days[-1]
+        else:
+            continue
+        if int(hh) < 150000:
+            WARN.append("CSI 指数 %s：qt 时间 %s 未收盘，不采信" % (code, hh))
+            continue
+        series[code] = {prev_date: rec["prev"], day: rec["cur"]}
+        wrote_days.add(prev_date); wrote_days.add(day)
+        day0 = day
+        print("  CSI %s %s：%s=%.2f  %s=%.2f" % (code, rec["name"], prev_date, rec["prev"], day, rec["cur"]),
+              flush=True)
+
+    if len(series) < 4 or not day0:
+        WARN.append("CSI 指数：4 只未全部取到真值，本次不写（沿用上次真值）")
+        return
+
+    # 缺口日：QPatch 里 930915 最后一个真值日 ~ qt 当日之间、本次没写到的交易日。
+    # 不能按「wrote_days 的前一个日历日」推：那会把 11-18 错当成已知日。
+    qp_known = []
+    try:
+        stj2 = json.load(open("state.json", encoding="utf-8"))
+        qp2 = json.loads((stj2.get("localStorage") or {}).get("wufuQPatch_v1") or "{}")
+        for day in (qp2.get("days") or []):
+            s = (day.get("series") or {}).get("930915.CSI")
+            if isinstance(s, dict) and isinstance(s.get("close"), (int, float)) and s["close"] > 0:
+                qp_known.append(day.get("date"))
+    except Exception:
+        pass
+    qp_known = sorted(d for d in qp_known if isinstance(d, str))
+    last_known = qp_known[-1] if qp_known else None
+    missing = [d for d in all_days
+               if (not last_known or d > last_known) and d < day0 and d not in wrote_days]
+    missing.sort()
+
+    save("index-csi-patch.json", {
+        "format": "wufu-index-csi-patch-v1", "dataAsOf": day0,
+        "source": "腾讯财经 qt.gtimg.cn cs* 中证指数实时收盘（当日收盘价 + 昨收价，GBK 接口）",
+        "note": ("东财 push2his 对 .CSI 不稳定、中证指数官网 403、腾讯日K 返回空 day；"
+                 "qt 只提供当日与前一交易日两个真值。中间缺口日无免费日K源，列入 missingDates，未编造。"),
+        "codes": sorted(series), "series": series,
+        "missingDates": missing, "warnings": list(WARN),
+    })
+    print("CSI 补丁 %d 只 · 末日 %s · 缺口日 %s" % (len(series), day0, missing), flush=True)
+
 
 
 def build_amount():
@@ -735,7 +873,9 @@ def main():
     if chain in ("ALL", "G"):
         jobs += [("黄金看板", build_gold)]
     if chain in ("ALL", "I"):
-        jobs += [("国证2000 日更增量", build_gz2000), ("两市成交额兜底", build_amount)]
+        jobs += [("国证2000 日更增量", build_gz2000),
+                 ("4 只中证指数 qt 增量", build_csi_patch),
+                 ("两市成交额兜底", build_amount)]
     errs = []
     for name, fn in jobs:
         print("=== [链 %s] %s ===" % (chain, name), flush=True)

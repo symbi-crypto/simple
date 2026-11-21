@@ -233,8 +233,10 @@
     var gapSum = (((d.coverage || {}).gaps) || []).map(function (g) {
       return g.name + ' 止于 ' + T(g.lastValidDate);
     }).join(' · ');
+    var holeTxt = ((((d.coverage || {}).csiHoles) || {}).text) || '';
     if (sl) sl.innerHTML = '沪深300 ' + ch(findChg('沪深300')) + '<i>·</i>国证2000 ' + ch(findChg('国证2000'))
-      + (gapSum ? '<i>·</i><span class="gapmk">' + gapSum + '（无日更增量，未编造）</span>' : '');
+      + (gapSum ? '<i>·</i><span class="gapmk">' + gapSum + '（无日更增量，未编造）</span>' : '')
+      + (holeTxt ? '<i>·</i><span class="gapmk">' + holeTxt + '</span>' : '');
     renderIdxRows(d);
     drawIdxChart(d);
     if (!AMT && !window.__amtTried) {
