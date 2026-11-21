@@ -16,6 +16,7 @@ const BASIS_CB = { unit: '元 / %', adjust: '不复权收盘价、转股价值�
 const SOURCE_CB = '本地 cb/data/cb-data.gz + state.json 可转债日更增量（链 L，零抓取，含退市债）';
 const stamp = (p, o) => {
   if (CHAIN_OF[p] && o && typeof o === 'object') {
+    o.availableAt = new Date().toISOString();   // §2.5：从接入日起记录真实可得时刻
     const ch = o.chain || CHAIN_OF[p];
     o.chain = ch;
     o.contract = { chain: ch, formatVersion: 2, minClient: 'v0.87' };
@@ -26,7 +27,28 @@ const stamp = (p, o) => {
   }
   return o;
 };
-const save = (p, o) => { fs.writeFileSync(p, JSON.stringify(stamp(p, o))); };
+/* §4.2 枚举分类：与 build-external.py 的 classify_warning 同规则 */
+const ENUM_KEYS = {
+  source_unpublished: ['未发布','源方未','no data','无 FRED','暂无该字段'],
+  session_incomplete: ['未收盘','未完成','盘中','未定稿'],
+  cross_source_divergent: ['divergent','价差','口径偏差','冲突','重叠校验'],
+  stale_fallback: ['沿用','离线副本','兜底','较旧真值','自动兜底'],
+  known_gap: ['缺口','缺 ','missingDates','未编造','留空','无免费'],
+  fetch_failed: ['失败','RemoteDisconnected','超时','0 根','不足','拿不到','不可用','HTTP','script error','限流','空壳'],
+};
+const classifyW = w => {
+  const s = String(w || '');
+  for (const [e, ks] of Object.entries(ENUM_KEYS)) if (ks.some(k => s.includes(k))) return e;
+  return 'unclassified';
+};
+const save = (p, o) => {
+  if (o && typeof o === 'object' && CHAIN_OF[p]) {
+    if (!Array.isArray(o.warnings)) o.warnings = [];
+    o.warningClasses = o.warnings.map(classifyW);
+    o.degradeLevel = o.warnings.length ? 'partial' : 'none';
+  }
+  fs.writeFileSync(p, JSON.stringify(stamp(p, o)));
+};
 const med = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); if (!a.length) return null; a.sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 const avg = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
 const pct = (s, v) => { s = s.filter(x => typeof x === 'number' && isFinite(x)); return v == null || !s.length ? null : Math.round(100 * s.filter(x => x <= v).length / s.length); };

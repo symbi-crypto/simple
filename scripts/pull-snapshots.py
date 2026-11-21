@@ -12,7 +12,7 @@
   · 校验不过的文件写进警告清单，不中断打包；打包仍能用包内副本出包。
   · 不推 GitHub，只读，不改动仓库内容。
 """
-import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib, re
+import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib, re, shutil, tempfile
 
 REPO = 'symbi-crypto/simple'
 BRANCH = 'main'
@@ -40,6 +40,64 @@ def http_json(path, headers, timeout=90):
 def git_blob(sha, headers):
     obj = http_json('/git/blobs/' + sha, headers)
     return base64.b64decode(obj['content'])
+
+
+# ---- §6 落盘事务：先校验再切换、原子写、留一份可回退副本、失败可一键恢复 ----
+PREV_DIRNAME = 'previous'
+
+
+def prev_dir(root):
+    return os.path.join(root, PREV_DIRNAME)
+
+
+def _atomic_put(path, raw):
+    """最小原子写单元：同目录临时文件 + fsync + os.replace。"""
+    d = os.path.dirname(os.path.abspath(path)) or '.'
+    fd, tmp = tempfile.mkstemp(dir=d, prefix='.wufu-tmp-')
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            f.write(raw); f.flush(); os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def atomic_write(path, raw, root):
+    """§6：先校验再切换、原子写、留一份可回退副本。
+    关键：previous 只在「整体成功」后更新，失败尝试绝不覆盖上一次成功真值。"""
+    os.makedirs(prev_dir(root), exist_ok=True)
+    old_bytes = open(path, 'rb').read() if os.path.isfile(path) else None
+    d = os.path.dirname(os.path.abspath(path)) or '.'
+    fd, tmp = tempfile.mkstemp(dir=d, prefix='.wufu-tmp-')
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            f.write(raw); f.flush(); os.fsync(f.fileno())
+        json.loads(open(tmp, 'rb').read())          # 切换前再校验一次
+        os.replace(tmp, path)                      # 原子切换
+        json.loads(open(path, 'rb').read())         # 切换后读回确认
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        if old_bytes is not None and open(path, 'rb').read() != old_bytes:
+            _atomic_put(path, old_bytes)           # replace 已发生则就地回滚
+        raise                                      # 此处不写 previous，副本保持上次成功态
+    if old_bytes is not None:
+        _atomic_put(os.path.join(prev_dir(root), os.path.basename(path)), old_bytes)
+
+
+def restore_previous(name, root):
+    """失败时一键恢复：把 previous/<name> 拷回站点根，不逆改业务数据格式。"""
+    src = os.path.join(prev_dir(root), name)
+    if not os.path.isfile(src):
+        return False
+    shutil.copy2(src, os.path.join(root, name))
+    return True
 
 
 def _vnum(v):
@@ -180,7 +238,12 @@ def main():
         if raw == open(local_path, 'rb').read():
             skipped.append({'file': name, 'reason': '与包内逐字节相同', 'asOf': ra})
             continue
-        open(local_path, 'wb').write(raw)
+        try:
+            atomic_write(local_path, raw, root)
+        except Exception as e:
+            restore_previous(name, root)
+            skipped.append({'file': name, 'reason': '原子写失败，已恢复 previous: ' + str(e)[:80]})
+            continue
         updated.append({'file': name, 'from': la or '(无)', 'to': ra,
                         'bytes': len(raw), 'sha1': hashlib.sha1(raw).hexdigest()[:12]})
         print('PULL %-30s %s -> %s  %d bytes' % (name, la or '(无)', ra, len(raw)), flush=True)

@@ -29,6 +29,8 @@ def main():
     ap.add_argument('--root', default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap.add_argument('--check', default=None, help='显式指定 contract-check.json 路径')
     ap.add_argument('--strict', action='store_true')
+    ap.add_argument('--degrade-exit', action='store_true',
+                    help='返回 0 放行 / 2 部分降级（放行但标注）/ 1 阻断，供打包流程消费')
     args = ap.parse_args()
     root = os.path.abspath(args.root)
     cp = args.check or os.path.join(root, CHECK_FILE)
@@ -63,9 +65,18 @@ def main():
             print('  GAP %-6s %s' % (g.get('id'), g.get('detail', '')), file=sys.stderr)
         die('strict 模式：%d 条 advisory 待补未清' % len(gaps))
 
+    ds = c.get('degradeSummary') or {}
+    level = ds.get('level', 'none')
     print('RELEASE GATE: PASS  blocking %s  fixtures %s  advisory gaps=%d%s' %
           (s.get('blocking', {}).get('passed'), s.get('fixtures', {}).get('passed'),
            len(gaps), '（strict 未启用，仅提示）' if gaps and not args.strict else ''), flush=True)
+    if args.degrade_exit:
+        if level == 'full':
+            die('全降级（level=full），失败不绿灯 → 阻断发布')
+        if level == 'partial':
+            print('RELEASE GATE: 部分降级 level=partial（%d 条 warnings），放行但须在产物标注' %
+                  ds.get('total', 0), flush=True)
+            return 2
     return 0
 
 

@@ -101,7 +101,15 @@ jobs:
         if: always()
         run: |
           python3 scripts/validate-contract.py --root . --write
-          python3 scripts/release-gate.py --root .
+          set +e
+          python3 scripts/release-gate.py --root . --degrade-exit
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            echo "::warning::部分降级：放行但已在 contract-check.json 标注"
+          elif [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          fi
 
       - name: 有变化才提交（没变化不触发 Netlify 构建）
         if: always() && steps.gate.outcome == 'success'

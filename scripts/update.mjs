@@ -435,6 +435,9 @@ function countNewSeries(raw) {
   const state = {
     format: 'wufu-offline-state-v2',
     contract: { chain: 'R', formatVersion: 2, minClient: 'v0.87' },
+    availableAt: new Date().toISOString(),
+    warningClasses: [],
+    degradeLevel: 'none',
     exportedAt: (old && old.exportedAt) || new Date().toISOString(),
     origin: PUBLIC_SITE || SITE,
     dataAsOf: finalAsOf,

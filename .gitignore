@@ -8,3 +8,6 @@ package-lock.json
 .chk_*
 
 # 注意：state.json 必须提交，不要写进这里
+
+# §6 事务回退副本（打包机本地产物，不进发布包/仓库）
+previous/

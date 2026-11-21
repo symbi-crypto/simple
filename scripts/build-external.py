@@ -21,6 +21,38 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 CTX = ssl._create_unverified_context()
 ROOT = os.getcwd()
 WARN = []
+# ---- §4.2 warnings 枚举（六类 + unclassified；前三态严格分开，不合并成「无数据」）----
+WARNING_ENUMS = (
+    'source_unpublished', 'fetch_failed', 'session_incomplete',
+    'stale_fallback', 'cross_source_divergent', 'known_gap', 'unclassified',
+)
+_ENUM_KEYS = {
+    'source_unpublished': ('未发布', '源方未', 'no data', '无 FRED', '暂无该字段'),
+    'session_incomplete': ('未收盘', '未完成', '盘中', '未定稿'),
+    'cross_source_divergent': ('divergent', '价差', '口径偏差', '冲突', '重叠校验'),
+    'stale_fallback': ('沿用', '离线副本', '兜底', '较旧真值', '自动兜底'),
+    'known_gap': ('缺口', '缺 ', 'missingDates', '未编造', '留空', '无免费'),
+    'fetch_failed': ('失败', 'RemoteDisconnected', '超时', '0 根', '不足', '拿不到',
+                     '不可用', 'HTTP', 'script error', '限流', '空壳'),
+}
+
+
+def classify_warning(text):
+    """把自由文本 warning 归到 §4.2 枚举；匹配不到归 unclassified，不强行塞进前三态。"""
+    s = str(text or '')
+    for e in WARNING_ENUMS[:-1]:
+        for k in _ENUM_KEYS.get(e, ()):
+            if k in s:
+                return e
+    return 'unclassified'
+
+
+def degrade_level(warnings, ok=True):
+    if ok is False:
+        return 'full'
+    return 'partial' if warnings else 'none'
+
+
 # ---- v0.87 / P1④：双源标注 + 交叉核验 + 域名级冷却（进程内）----
 # 只做「标注与控制」，不改任何已抓取数值；跨域名失败后短冷却，避免反复撞已知坏源。
 COOLDOWN = {}          # host -> 到期时间（epoch 秒）
@@ -189,6 +221,7 @@ BASIS_EXT = {
 
 def save(name, obj):
     if isinstance(obj, dict) and name in CHAIN_OF:
+        obj["availableAt"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
         obj = dict(obj)
         ch = obj.get("chain") or CHAIN_OF[name]
         obj["chain"] = ch
@@ -203,6 +236,9 @@ def save(name, obj):
         src = str(obj.get("source") or "")
         role = SOURCE_ROLE.get(name) or ("fallback" if ("兜底" in src or "不可用" in src) else "primary")
         obj["sourceRole"] = role
+        ws = obj.get("warnings") or []
+        obj["warningClasses"] = [classify_warning(w) for w in ws]
+        obj["degradeLevel"] = degrade_level(ws, obj.get("ok", True))
         if name in CROSS_CHECK:
             obj["crossCheck"] = CROSS_CHECK[name]
     with open(os.path.join(ROOT, name), "w", encoding="utf-8") as f:
@@ -977,7 +1013,9 @@ def main():
     if not by_chain:
         all_warn, all_fail = list(WARN), errs
     save("external-warnings.json", {
-        "warnings": all_warn, "at": at, "failed": all_fail, "byChain": by_chain})
+        "warnings": all_warn, "warningClasses": [classify_warning(w) for w in all_warn],
+        "degradeLevel": degrade_level(all_warn, not all_fail),
+        "at": at, "failed": all_fail, "byChain": by_chain})
     print("完成，warnings:", WARN, flush=True)
     if errs:
         # 单链失败只让本步红灯（不绿灯伪装）；其它链已各自写回，不牵连

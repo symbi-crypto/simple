@@ -15,7 +15,7 @@
   · 判定器是最小可执行化，仅用于回归，**不是生产实现、不进产品**（规则 §2.6）
   · 规则文件是断言的唯一依据；规则改了要同步改这里的 id 与 § 映射
 """
-import os, sys, json, hashlib, re, argparse, importlib.util
+import os, sys, json, hashlib, re, argparse, importlib.util, shutil
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
@@ -49,6 +49,10 @@ PURITY_FORBIDDEN = ['v0.8', 'v0.9', '2026-', '已落地', '上一轮', '翻案',
 ASSERTIONS = []
 FIXTURES = []
 GAPS = []
+
+# §4.2 枚举（与 build-external.py 的 WARNING_ENUMS 一致）
+WARNING_ENUMS = ('source_unpublished', 'fetch_failed', 'session_incomplete',
+                 'stale_fallback', 'cross_source_divergent', 'known_gap', 'unclassified')
 
 
 def add(aid, rule, severity, ok, detail, status=None):
@@ -134,6 +138,67 @@ def judge_minclient(mc, client='0.87'):
         m = re.findall(r'\d+', str(v or ''))
         return int(m[0]) * 1000 + (int(m[1]) if len(m) > 1 else 0) if m else 0
     return 'reject' if n(mc) > n(client) else 'accept'
+
+
+def judge_available_at(v):
+    """§2.5：null=历史不回填（合规）、ISO 真实时刻=新数据（合规）、其余=伪造/非法（拒）。"""
+    if v is None:
+        return 'legacy-null'
+    s = str(v)
+    return 'accept' if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}', s) else 'reject'
+
+
+def judge_degrade(gate, level):
+    """§3.6 / §6：0 放行 / 2 部分降级放行但标注 / 1 阻断（失败不绿灯）。"""
+    if gate != 'pass':
+        return 1
+    if level == 'full':
+        return 1
+    return 2 if level == 'partial' else 0
+
+
+def degrade_summary(root):
+    """汇总全部快照 warnings → 枚举计数 + 降级等级，写进报告供发布流程消费。"""
+    counts = {e: 0 for e in WARNING_ENUMS}
+    by_file, total = {}, 0
+    full = False
+    for n in DATA_FILES + sorted(STATE_FILES):
+        raw = blob(root, n)
+        if not raw:
+            continue
+        try:
+            d = json.loads(raw)
+        except Exception:
+            continue
+        if d.get('ok') is False:
+            full = True
+        ws = d.get('warnings') or []
+        cs = d.get('warningClasses') or []
+        if not cs and ws:
+            # 消费端兜底分类：与生成端同规则，未匹配归 unclassified
+            cs = []
+            for w in ws:
+                s = str(w)
+                hit = 'unclassified'
+                for key, kws in (('source_unpublished', ('未发布','源方未','无 FRED','暂无')),
+                                 ('session_incomplete', ('未收盘','未完成','盘中','未定稿')),
+                                 ('cross_source_divergent', ('divergent','价差','口径偏差','冲突')),
+                                 ('stale_fallback', ('沿用','离线副本','兜底','较旧')),
+                                 ('known_gap', ('缺口','缺 ','missingDates','未编造','留空','无免费')),
+                                 ('fetch_failed', ('失败','RemoteDisconnected','超时','0 根','不足',
+                                                  '拿不到','不可用','HTTP','script error','限流','空壳'))):
+                    if any(k in s for k in kws):
+                        hit = key; break
+                cs.append(hit)
+        for c in cs:
+            counts[c if c in counts else 'unclassified'] += 1
+        if ws:
+            by_file[n] = {'count': len(ws), 'classes': sorted(set(cs)),
+                          'level': d.get('degradeLevel') or 'partial'}
+        total += len(ws)
+    level = 'full' if full else ('partial' if total else 'none')
+    return {'level': level, 'total': total, 'counts': counts, 'byFile': by_file,
+            'exitCode': judge_degrade('pass', level)}
 
 
 def judge_docs(rule, ledger, readme):
@@ -233,7 +298,6 @@ def snapshot_checks(root, valid_fn):
         ('source', 'A1', '§4.1 source'),
         ('warnings', 'A2', '§4.1 warnings'),
         ('basis', 'A3', '§4.1 basis'),
-        ('availableAt', 'A4', '§2.5 / §4.1 availableAt'),
     ]:
         missing = [n for n in DATA_FILES
                    if not (blob(root, n) and field in json.loads(blob(root, n) or b'{}'))]
@@ -242,6 +306,24 @@ def snapshot_checks(root, valid_fn):
                 (len(missing), len(DATA_FILES), field, ', '.join(missing)))
         else:
             add(aid, rule, 'advisory', True, '全部数据快照已带 ' + field, status='pass')
+
+    # A4 §2.5：availableAt 键必填；null（历史不回填）/ ISO 真实时刻均合法，伪造值拒收
+    a4_bad = []
+    for n in DATA_FILES:
+        d = json.loads(blob(root, n) or b'{}')
+        if 'availableAt' not in d:
+            a4_bad.append(n + ':缺键')
+        elif judge_available_at(d.get('availableAt')) == 'reject':
+            a4_bad.append(n + ':值非法')
+    gens = ['scripts/build-dashboards.mjs', 'scripts/build-external.py',
+            'scripts/build-index-daily.py', 'scripts/build-us-etf.py', 'scripts/update.mjs']
+    a4_gen = [g for g in gens if 'availableAt' not in text(root, g)]
+    if a4_bad or a4_gen:
+        gap('A4', '§2.5 / §4.1 availableAt',
+            '快照问题=%s；生成器缺写入=%s' % (a4_bad or '无', a4_gen or '无'))
+    else:
+        add('A4', '§2.5 / §4.1 availableAt', 'advisory', True,
+            '8 份快照带键（历史为 null，未伪造）+ 5 个生成器写入真实时刻', status='pass')
 
     bad_contract = [n for n in DATA_FILES
                     if judge_contract(json.loads(blob(root, n) or b'{}').get('contract')) != 'accept']
@@ -253,13 +335,57 @@ def snapshot_checks(root, valid_fn):
         add('A5', '§4.3 contract 格式版本', 'advisory', True,
             '全部数据快照已升级为对象契约', status='pass')
 
-    # 控制类文件用 at 而非 dataAsOf（§4.1 不得互相替代）
-    at_only = [n for n in STATE_FILES if 'at' in json.loads(blob(root, n) or b'{}')]
-    if at_only:
+    # §4.1：dataAsOf / exportedAt / at 不得互相替代 —— 可执行化为「值类型不得串味」。
+    # 状态文件带 dataAsOf（记同步覆盖到哪天）是合规的，不是冒用；规则另要求台账写明它不属数据快照。
+    import re as _re
+    mix = []
+    for n in DATA_FILES + sorted(STATE_FILES):
+        d = json.loads(blob(root, n) or b'{}')
+        if 'dataAsOf' in d and not _re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(d['dataAsOf'])):
+            mix.append(n + ':dataAsOf 不是日期（疑似塞了生成时间戳）')
+        for k in ('at', 'exportedAt', 'validatedAt'):
+            if k in d and _re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(d[k])):
+                mix.append(n + ':' + k + ' 只有日期（疑似被当末日用）')
+    for n in DATA_FILES:
+        d = json.loads(blob(root, n) or b'{}')
+        if 'at' in d and 'dataAsOf' not in d:
+            mix.append(n + ':数据快照用 at 当末日')
+    ledger_has_note = '状态文件字段集' in text(root, LEDGER_FILE)
+    if mix or not ledger_has_note:
         gap('A5b', '§4.1 asOf 与 at 分离',
-            '%d 份状态文件用 at（ISO 时间戳）代替 dataAsOf：%s' %
-            (len(at_only), ', '.join(sorted(at_only))))
+            '串味=%s；台账已写明状态文件不属数据快照=%s' % (mix or '无', ledger_has_note))
+    else:
+        add('A5b', '§4.1 asOf 与 at 分离', 'advisory', True,
+            '16 份文件值类型无串味（dataAsOf=日期 / at=ISO 时间戳），台账已写明状态文件字段集', status='pass')
     return file_report
+
+
+def transaction_check(root):
+    """§6 事务实跑：在临时目录里用 pull-snapshots.atomic_write 验证成功/失败两路径。"""
+    import tempfile
+    try:
+        spec = importlib.util.spec_from_file_location(
+            '_wufu_pull_tx', os.path.join(root, 'scripts', 'pull-snapshots.py'))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        td = tempfile.mkdtemp(prefix='wufu-tx-')
+        p = os.path.join(td, 'cb-daily.json')
+        old = b'{"dataAsOf":"2026-11-20","ok":true}'
+        open(p, 'wb').write(old)
+        m.atomic_write(p, b'{"dataAsOf":"2026-11-21","ok":true}', td)
+        ok1 = (json.loads(open(p, 'rb').read())['dataAsOf'] == '2026-11-21'
+               and open(os.path.join(td, 'previous', 'cb-daily.json'), 'rb').read() == old)
+        before = open(p, 'rb').read()
+        try:
+            m.atomic_write(p, b'{broken', td)          # 故意破坏：切换前校验应拦住
+            ok2 = False
+        except Exception:
+            ok2 = open(p, 'rb').read() == before       # 旧文件未半写
+        ok3 = m.restore_previous('cb-daily.json', td) and open(p, 'rb').read() == old
+        shutil.rmtree(td, ignore_errors=True)
+        return (ok1 and ok2 and ok3), '切换=%s 失败不半写=%s 一键恢复=%s' % (ok1, ok2, ok3)
+    except Exception as e:
+        return False, str(e)[:140]
 
 
 # ── 静态源码断言 ────────────────────────────────────────────────────────
@@ -313,11 +439,38 @@ def static_checks(root, valid_fn):
     else:
         add('A6', '§2.1–2.3 双源标注与冷却', 'advisory', True,
             'build-external.py 含 sourceRole / crossCheck / cooldown 标注与控制', status='pass')
-    if not os.path.isfile(os.path.join(root, 'previous')):
-        gap('A7', '§6 留一份可回退副本', '未发现 previous 完整副本目录/标记')
-    gap('A8', '§3.6 部分降级退出码',
-        'warnings 尚未接入打包流程的「部分降级」退出码（P2）')
-    gap('A9', '§6 回前台重取', '页面回到前台时未重取快照（P3，边际收益最小）')
+    # A7 §6：不查目录是否存在（previous 是打包机本地产物、不进发布包），
+    # 改为真跑一次事务：成功路径原子切换 + 失败路径旧文件不变且 previous 可恢复。
+    tx_ok, tx_why = transaction_check(root)
+    pull_src = text(root, 'scripts/pull-snapshots.py')
+    a7_static = all(k in pull_src for k in ('atomic_write', 'os.replace', 'PREV_DIRNAME', 'restore_previous'))
+    if tx_ok and a7_static:
+        add('A7', '§6 原子写 + previous 回退', 'advisory', True,
+            'pull-snapshots.py 含原子写/副本/恢复；实跑成功与失败两路径均通过', status='pass')
+    else:
+        gap('A7', '§6 原子写 + previous 回退',
+            '静态=%s 实跑=%s（%s）' % (a7_static, tx_ok, tx_why))
+
+    # A8 §3.6 / §4.2：枚举分类 + degradeSummary + 三态退出码 + 自动链接入
+    ext = text(root, 'scripts/build-external.py')
+    vc = text(root, 'scripts/validate-contract.py')
+    rg = text(root, 'scripts/release-gate.py')
+    a8 = []
+    for k, src in (('classify_warning', ext), ('warningClasses', ext), ('degradeLevel', ext),
+                   ('degradeSummary', vc), ('--degrade-exit', rg)):
+        if k not in src:
+            a8.append(k)
+    wf_files = ['.github/workflows/update.yml', '.github/workflows/refresh-index-chain.yml',
+                '.github/workflows/refresh-dashboards.yml']
+    wf_ok = all('--degrade-exit' in text(root, f) for f in wf_files)
+    if not wf_ok:
+        a8.append('自动链未消费 --degrade-exit')
+    if a8:
+        gap('A8', '§3.6 / §4.2 部分降级退出码', '缺：' + ', '.join(a8))
+    else:
+        add('A8', '§3.6 / §4.2 部分降级退出码', 'advisory', True,
+            '枚举分类 + degradeSummary + 0/2/1 三态 + 三条自动链消费', status='pass')
+    gap('A9', '§6 回前台重取', '页面回到前台时未重取快照（P3，本轮不做）')
     return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn}
 
 
@@ -374,6 +527,18 @@ def run_fixtures(ctx, root, valid_fn):
         ('minClient v0.87 == 前端 → 放行', judge_minclient('v0.87'), 'accept'),
         ('minClient v9.99 > 前端 → 拒收回退', judge_minclient('v9.99'), 'reject'),
     ])
+    fixture('R11', '「历史快照空着 availableAt 是待补」→ 实为 §2.5 明令不得伪造历史', '§2.5 / §4.1', [
+        ('历史 null 合规（不回填）', judge_available_at(None), 'legacy-null'),
+        ('新数据真实 ISO 时刻合规', judge_available_at('2026-11-21T15:30:12+00:00'), 'accept'),
+        ('伪造/非法可得时间拒收', judge_available_at('不确定'), 'reject'),
+        ('拿 dataAsOf 冒充可得时间拒收', judge_available_at('2026-11-20'), 'reject'),
+    ])
+    fixture('R12', '「warnings 只是文本」→ 须驱动 0/2/1 部分降级退出码', '§3.6 / §4.2', [
+        ('无 warning → 0 放行', judge_degrade('pass', 'none'), 0),
+        ('部分降级 → 2 放行但标注', judge_degrade('pass', 'partial'), 2),
+        ('全失败 → 1 阻断（不绿灯）', judge_degrade('pass', 'full'), 1),
+        ('gate 失败 → 1 阻断', judge_degrade('fail', 'none'), 1),
+    ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),
         ('规则里混进版本号必须拒',
@@ -423,6 +588,7 @@ def main():
         'failedBlocking': [{'id': a['id'], 'rule': a['rule'], 'detail': a['detail']} for a in bfail],
         'failedFixtures': [{'id': f['id'], 'case': f['case'], 'failed': f['failed']} for f in ffix],
         'gaps': GAPS,
+        'degradeSummary': degrade_summary(root),
         'assertions': ASSERTIONS,
         'fixtures': FIXTURES,
         'files': files,

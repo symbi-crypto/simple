@@ -10,11 +10,11 @@
   },
   "advisory": {
    "total": 10,
-   "gaps": 5
+   "gaps": 1
   },
   "fixtures": {
-   "total": 10,
-   "passed": 10,
+   "total": 12,
+   "passed": 12,
    "failed": 0
   },
   "snapshots": 16
@@ -23,31 +23,69 @@
  "failedFixtures": [],
  "gaps": [
   {
-   "id": "A4",
-   "rule": "§2.5 / §4.1 availableAt",
-   "detail": "8/8 份数据快照缺 availableAt：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
-  },
-  {
-   "id": "A5b",
-   "rule": "§4.1 asOf 与 at 分离",
-   "detail": "5 份状态文件用 at（ISO 时间戳）代替 dataAsOf：external-warnings-A.json, external-warnings-G.json, external-warnings-I.json, external-warnings-L.json, external-warnings.json"
-  },
-  {
-   "id": "A7",
-   "rule": "§6 留一份可回退副本",
-   "detail": "未发现 previous 完整副本目录/标记"
-  },
-  {
-   "id": "A8",
-   "rule": "§3.6 部分降级退出码",
-   "detail": "warnings 尚未接入打包流程的「部分降级」退出码（P2）"
-  },
-  {
    "id": "A9",
    "rule": "§6 回前台重取",
-   "detail": "页面回到前台时未重取快照（P3，边际收益最小）"
+   "detail": "页面回到前台时未重取快照（P3，本轮不做）"
   }
  ],
+ "degradeSummary": {
+  "level": "partial",
+  "total": 8,
+  "counts": {
+   "source_unpublished": 0,
+   "fetch_failed": 8,
+   "session_incomplete": 0,
+   "stale_fallback": 0,
+   "cross_source_divergent": 0,
+   "known_gap": 0,
+   "unclassified": 0
+  },
+  "byFile": {
+   "gold-daily.json": {
+    "count": 1,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   },
+   "industry-daily.json": {
+    "count": 1,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   },
+   "external-warnings-A.json": {
+    "count": 1,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   },
+   "external-warnings-G.json": {
+    "count": 1,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   },
+   "external-warnings-I.json": {
+    "count": 1,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   },
+   "external-warnings.json": {
+    "count": 3,
+    "classes": [
+     "fetch_failed"
+    ],
+    "level": "partial"
+   }
+  },
+  "exitCode": 2
+ },
  "assertions": [
   {
    "id": "B1.cb-daily.json",
@@ -361,8 +399,8 @@
    "id": "A4",
    "rule": "§2.5 / §4.1 availableAt",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "8/8 份数据快照缺 availableAt：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+   "status": "pass",
+   "detail": "8 份快照带键（历史为 null，未伪造）+ 5 个生成器写入真实时刻"
   },
   {
    "id": "A5",
@@ -375,8 +413,8 @@
    "id": "A5b",
    "rule": "§4.1 asOf 与 at 分离",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "5 份状态文件用 at（ISO 时间戳）代替 dataAsOf：external-warnings-A.json, external-warnings-G.json, external-warnings-I.json, external-warnings-L.json, external-warnings.json"
+   "status": "pass",
+   "detail": "16 份文件值类型无串味（dataAsOf=日期 / at=ISO 时间戳），台账已写明状态文件字段集"
   },
   {
    "id": "B4",
@@ -457,24 +495,24 @@
   },
   {
    "id": "A7",
-   "rule": "§6 留一份可回退副本",
+   "rule": "§6 原子写 + previous 回退",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "未发现 previous 完整副本目录/标记"
+   "status": "pass",
+   "detail": "pull-snapshots.py 含原子写/副本/恢复；实跑成功与失败两路径均通过"
   },
   {
    "id": "A8",
-   "rule": "§3.6 部分降级退出码",
+   "rule": "§3.6 / §4.2 部分降级退出码",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "warnings 尚未接入打包流程的「部分降级」退出码（P2）"
+   "status": "pass",
+   "detail": "枚举分类 + degradeSummary + 0/2/1 三态 + 三条自动链消费"
   },
   {
    "id": "A9",
    "rule": "§6 回前台重取",
    "severity": "advisory",
    "status": "gap",
-   "detail": "页面回到前台时未重取快照（P3，边际收益最小）"
+   "detail": "页面回到前台时未重取快照（P3，本轮不做）"
   }
  ],
  "fixtures": [
@@ -710,6 +748,64 @@
    "failed": []
   },
   {
+   "id": "R11",
+   "case": "「历史快照空着 availableAt 是待补」→ 实为 §2.5 明令不得伪造历史",
+   "rule": "§2.5 / §4.1",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "历史 null 合规（不回填）",
+     "actual": "legacy-null",
+     "expect": "legacy-null"
+    },
+    {
+     "name": "新数据真实 ISO 时刻合规",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "伪造/非法可得时间拒收",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
+     "name": "拿 dataAsOf 冒充可得时间拒收",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R12",
+   "case": "「warnings 只是文本」→ 须驱动 0/2/1 部分降级退出码",
+   "rule": "§3.6 / §4.2",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "无 warning → 0 放行",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "部分降级 → 2 放行但标注",
+     "actual": 2,
+     "expect": 2
+    },
+    {
+     "name": "全失败 → 1 阻断（不绿灯）",
+     "actual": 1,
+     "expect": 1
+    },
+    {
+     "name": "gate 失败 → 1 阻断",
+     "actual": 1,
+     "expect": 1
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R9",
    "case": "「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离",
    "rule": "§11",
@@ -739,14 +835,17 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-cb-v1",
-   "bytes": 33895,
-   "sha1": "c9d1ff52b743",
+   "bytes": 34084,
+   "sha1": "421fdf21d3f7",
    "fields": [
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "contract",
     "count",
     "dataAsOf",
+    "degradeLevel",
     "dist",
     "extra",
     "format",
@@ -759,6 +858,7 @@
     "summary",
     "trend",
     "trendNote",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -766,13 +866,16 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-gold-v1",
-   "bytes": 59667,
-   "sha1": "a1136b850865",
+   "bytes": 59873,
+   "sha1": "831c1d842660",
    "fields": [
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "contract",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "kpi",
     "note",
@@ -784,6 +887,7 @@
     "source",
     "sourceRole",
     "trend",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -791,16 +895,19 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-industry-v2",
-   "bytes": 31641,
-   "sha1": "61d6e450d0f3",
+   "bytes": 31847,
+   "sha1": "f70892211da6",
    "fields": [
     "area",
+    "availableAt",
+    "availableAtNote",
     "basis",
     "boardCount",
     "boardTotal",
     "chain",
     "contract",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "heat",
     "heatbar",
@@ -813,6 +920,7 @@
     "sampleNote",
     "source",
     "sourceRole",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -820,14 +928,17 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-idx-v2",
-   "bytes": 21982,
-   "sha1": "61fdf5cd3960",
+   "bytes": 22171,
+   "sha1": "0fca504e1400",
    "fields": [
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "contract",
     "coverage",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "idx",
     "idxTrend",
@@ -836,6 +947,7 @@
     "source",
     "sourceRole",
     "trendNote",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -843,19 +955,23 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-patch-v1",
-   "bytes": 1218,
-   "sha1": "fcc4e8407fdd",
+   "bytes": 1407,
+   "sha1": "5fd83ed49c50",
    "fields": [
+    "availableAt",
+    "availableAtNote",
     "baselineLastDate",
     "basis",
     "chain",
     "contract",
     "dataAsOf",
     "days",
+    "degradeLevel",
     "format",
     "note",
     "source",
     "sourceRole",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -863,20 +979,24 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-csi-patch-v1",
-   "bytes": 1069,
-   "sha1": "9a977da7c3f2",
+   "bytes": 1258,
+   "sha1": "5f1b308f90e0",
    "fields": [
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "codes",
     "contract",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "missingDates",
     "note",
     "series",
     "source",
     "sourceRole",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -884,20 +1004,24 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-amount-v1",
-   "bytes": 16438,
-   "sha1": "679fcfe1abf4",
+   "bytes": 16627,
+   "sha1": "f2f66497ca55",
    "fields": [
     "10",
     "5",
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "contract",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "note",
     "ok",
     "source",
     "sourceRole",
+    "warningClasses",
     "warnings"
    ]
   },
@@ -905,16 +1029,19 @@
    "status": "pass",
    "asOf": "2026-11-16",
    "format": "us-etf-daily/1",
-   "bytes": 1122499,
-   "sha1": "d301816f7024",
+   "bytes": 1122688,
+   "sha1": "839b40a9177e",
    "fields": [
     "adjust",
+    "availableAt",
+    "availableAtNote",
     "basis",
     "chain",
     "cols",
     "commonDays",
     "contract",
     "dataAsOf",
+    "degradeLevel",
     "format",
     "note",
     "ok",
@@ -923,6 +1050,7 @@
     "source",
     "sourceRole",
     "symbols",
+    "warningClasses",
     "warnings"
    ]
   },

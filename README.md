@@ -18,6 +18,27 @@
 
 # 附：版本日志（倒序，最新在前）
 
+# v0.88 · P2 时间可得性 / 落盘事务 / 部分降级
+
+- **`availableAt`（§2.5）**：8 份历史快照带 `availableAt: null` + `availableAtNote`，
+  **不回填、不伪造历史可得时间**；5 个生成器改为写本次生成完成的真实 ISO 时刻，从接入日起记录。
+  门禁 A4 接受 `legacy-null` 与 ISO，拒收伪造值；夹具 R11 钉住。
+- **asOf / at 分离（§4.1）**：修正门禁 A5b 的误判——状态文件带 `dataAsOf`（同步覆盖末日）是合规的，
+  规则禁的是「拿 `at` 当末日」。改为按**值类型**检查 16 份文件：`dataAsOf` 必须是 `YYYY-MM-DD`，
+  `at`/`exportedAt`/`validatedAt` 必须是 ISO 时间戳。台账 §2.1 明文写明状态文件字段集不属数据快照。
+- **落盘事务（§6）**：`pull-snapshots.py` 改临时文件 + fsync + `os.replace`，切换前后各校验一次；
+  **previous 副本只在整体成功后更新**，失败尝试绝不覆盖上一次成功真值；`restore_previous()` 一键恢复。
+  实跑抓到并修掉「失败尝试污染 previous 导致恢复失效」这个真缺陷。门禁 A7 真跑成功/失败两路径。
+- **warnings 枚举 + 部分降级（§3.6 / §4.2）**：六类枚举 + `unclassified`；8 份快照与 5 个生成器带
+  `warningClasses`/`degradeLevel`（对已有 truthful warnings 分类，不编造数据）。
+  `contract-check.json` 新增 `degradeSummary`；`release-gate.py --degrade-exit` 返回
+  **0 放行 / 2 部分降级（放行但标注）/ 1 阻断（失败不绿灯）**，三条自动链把 exit 2 转成 `::warning::`，
+  不误判为失败。默认模式不变，CI 行为不回退。夹具 R12 钉住三态。
+- **A9（回前台重取）属 P3，本轮未做**；门禁 gaps 5→1，`--strict` 需等 P3 清完才能开。
+- 门禁：blocking 51/51、夹具 10→12、`gaps=1`（A9）。规则文件**一字未改**。
+- 8 份快照「剥离 4 个新增字段」与 v0.87 逐字节一致；`index.gz`、回测引擎、页面 UI 全不动。
+- 缓存 `wufu-all-v0.89`、`?v=89`；`sw.js` / `header.js` / 各页查询串同步。
+
 # v0.87 · P1 字段契约统一 + contract 版本化 + 双源标注
 
 - **① `source`/`warnings` 顶层统一**：`cb-daily.json` / `index-daily.json` 补齐，

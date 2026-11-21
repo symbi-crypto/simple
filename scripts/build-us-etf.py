@@ -76,6 +76,8 @@ def main():
         'contract': {'chain': 'A', 'formatVersion': 2, 'minClient': 'v0.87'},
         'source': 'eastmoney/kline fqt=1',  # 单一上游，不混用 Yahoo
         'sourceRole': 'primary',
+        'availableAt': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
+        'availableAtNote': '本次生成完成的真实时刻（§2.5，不推算历史）',
         'basis': {'unit': '美元', 'adjust': '东财 fqt=1 前复权（含分红再投）',
                   'universe': '美股 ETF 池', 'sample': '共同交易日逐日',
                   'normalized': '否（原始前复权价）'},
@@ -142,6 +144,22 @@ def main():
     out['note'] = ('文章主段 2012-2024 可直接用本基线回测；东财美股 ETF 历史起点为 '
                    'QQQ 2001 / XLV,XLP 2005 / TQQQ 2011 / BTAL 2011，1999 段须另接 Yahoo（链 G）。')
 
+    _ek = {
+        'source_unpublished': ('未发布','源方未','无 FRED','暂无'),
+        'session_incomplete': ('未收盘','未完成','盘中','未定稿'),
+        'cross_source_divergent': ('divergent','价差','口径偏差','冲突'),
+        'stale_fallback': ('沿用','离线副本','兜底','较旧'),
+        'known_gap': ('缺口','缺 ','missingDates','未编造','留空','无免费'),
+        'fetch_failed': ('失败','RemoteDisconnected','超时','0 根','不足','拿不到',
+                         '不可用','HTTP','script error','限流','空壳'),
+    }
+    def _cls(w):
+        s = str(w or '')
+        for e, ks in _ek.items():
+            if any(k in s for k in ks): return e
+        return 'unclassified'
+    out['warningClasses'] = [_cls(w) for w in out['warnings']]
+    out['degradeLevel'] = 'partial' if out['warnings'] else 'none'
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
     print('写出 %s %d 字节 | dataAsOf=%s | 共同交易日=%d | ok=%s' %
