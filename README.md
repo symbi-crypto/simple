@@ -18,6 +18,24 @@
 
 # 附：版本日志（倒序，最新在前）
 
+# v0.89 · P3 回前台重取 + 门禁转严格
+
+- **§6 回前台重取**：`common/dash-source.js` 新增 `onRefresh(name, fn)` +
+  `visibilitychange` / `pageshow` 单次触发。只有「曾离开前台且当前可见」才重取；
+  **去重窗口靠 `Date.now()` 比较，无任何 `setTimeout` / `setInterval`**，不是轮询。
+- **不踩旧坑**：回前台处理**不改任何状态文字**（不覆盖「完成 / 离线副本」等标签），
+  不打断调优与回测；取数失败时保留现有真值，不调 `fail()` 把页面抹成「暂无快照」。
+- **三个渲染器注册刷新**：`dashboard.js`（重取主快照并把 `__amtTried` 复位，让成交额柱同步前进）、
+  `gold.js`、`industry.js`（未展开过则不取，保持「展开才拉」）。`boot()` / `renderAll()`
+  的 mount 均带 `!rng*` 守卫，重复调用幂等，不叠加事件。
+- **门禁**：A9 转 pass，新增夹具 R13（5 例：首屏不取 / 隐藏不取 / 首次回来取 /
+  窗口内合并 / 超窗口再取）；静态断言 P3 段无定时器、无 `textContent`/`innerHTML`。
+  **gaps 5→1→0，夹具 12→13**。
+- **`--strict` 已在三条自动链启用**：gaps 清零后不再允许任何新待补项静默留存；
+  `--degrade-exit` 三态不变（当前 8 条既有 warnings 仍返回 2「放行但标注」）。
+- 规则文件**一字未改**；8 份数据快照本轮零改动；`index.gz`、回测引擎、页面 UI 不动。
+- 缓存 `wufu-all-v0.90`、`?v=90`；`sw.js` / `header.js` / 各页查询串同步。
+
 # v0.88 · P2 时间可得性 / 落盘事务 / 部分降级
 
 - **`availableAt`（§2.5）**：8 份历史快照带 `availableAt: null` + `availableAtNote`，

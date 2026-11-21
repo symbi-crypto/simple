@@ -161,10 +161,48 @@
     return ' · 离线副本';
   }
 
+  /* P3 BEGIN — v0.89 / §6：回到前台重取一次快照
+     · 只在 visibilitychange / pageshow 且「曾离开过前台」时触发；首屏 pageshow 不重复取。
+     · 无任何定时器：去重窗口只靠 Date.now() 比较，绝不是轮询（规则明禁分钟级轮询）。
+     · 只调用渲染器注册的刷新函数；不改任何状态文字、不碰调优/回测状态机。
+     · 未注册刷新函数的页面（tool.html 等）为空操作，加载本文件无副作用。 */
+  var REFRESH = {};
+  var FG_GAP = 2000;          // 合并窗口：2 秒内多次切回只重取一次
+  var lastFg = 0, wasHidden = false;
+
+  function judgeForeground(hidden, was, now, last, gap) {
+    if (hidden) return 'skip:hidden';
+    if (!was) return 'skip:never-left';
+    if (last && now - last < gap) return 'skip:coalesced';
+    return 'refresh';
+  }
+  function onRefresh(name, fn) {
+    if (name && typeof fn === 'function') REFRESH[name] = fn;
+  }
+  function maybeRefresh() {
+    if (document.hidden) { wasHidden = true; return; }
+    if (!wasHidden) return;                       // 从未离开前台 → 不取
+    wasHidden = false;
+    var now = Date.now();
+    if (judgeForeground(false, true, now, lastFg, FG_GAP) !== 'refresh') return;
+    lastFg = now;
+    Object.keys(REFRESH).forEach(function (k) {
+      try { REFRESH[k](); } catch (e) { }
+    });
+  }
+  try {
+    document.addEventListener('visibilitychange', maybeRefresh);
+    window.addEventListener('pageshow', maybeRefresh);   // 部分安卓 WebView 兜底
+  } catch (e) { }
+  /* P3 END */
+
   global.WufuDash = {
     load: load,
     badge: badge,
     valid: valid,
+    onRefresh: onRefresh,
+    judgeForeground: judgeForeground,
+    maybeRefresh: maybeRefresh,
     REMOTE: REMOTE,
     REMOTE_BASE: GH,
     RAW_BASE: RAW

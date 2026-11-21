@@ -256,4 +256,12 @@
 
   loadJSON(wrap.getAttribute('data-json') || '../gold-daily.json',
     function (d) { D = d; renderAll(); }, fail);
+
+  /* v0.89 / P3：回前台重取一次（renderAll 幂等；失败沿用上次真值） */
+  if (window.WufuDash && window.WufuDash.onRefresh) {
+    var gurl = wrap.getAttribute('data-json') || '../gold-daily.json';
+    window.WufuDash.onRefresh(gurl, function () {
+      loadJSON(gurl, function (d) { D = d; renderAll(); }, function () { });
+    });
+  }
 })();

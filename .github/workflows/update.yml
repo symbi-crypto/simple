@@ -102,7 +102,7 @@ jobs:
         run: |
           python3 scripts/validate-contract.py --root . --write
           set +e
-          python3 scripts/release-gate.py --root . --degrade-exit
+          python3 scripts/release-gate.py --root . --strict --degrade-exit
           rc=$?
           set -e
           if [ "$rc" -eq 2 ]; then

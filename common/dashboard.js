@@ -405,4 +405,15 @@
     boot();
   }
   loadJSON(url, function (d) { D = d; boot(); }, fail);
+
+  /* v0.89 / P3：回前台重取一次。失败时保留现有 D，绝不调 fail 把真值抹成「暂无快照」。 */
+  if (window.WufuDash && window.WufuDash.onRefresh) {
+    window.WufuDash.onRefresh(url, function () {
+      loadJSON(url, function (d) {
+        D = d;
+        window.__amtTried = false;   // 让 renderIDX 同步重取成交额柱，不留下旧截止日
+        boot();                      // boot 内 mount 均有 !rng* 守卫，重复调用幂等
+      }, function () { /* §3.6 沿用上次真值，页面保持原样 */ });
+    });
+  }
 })();

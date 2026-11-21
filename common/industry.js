@@ -234,4 +234,12 @@
       if (D) renderHeat(D);
     };
   });
+
+  /* v0.89 / P3：回前台重取一次。未展开过（loaded=false）就不取，保持「展开才拉」。 */
+  if (window.WufuDash && window.WufuDash.onRefresh) {
+    window.WufuDash.onRefresh('../industry-daily.json', function () {
+      if (!loaded) return;
+      loadJSON('../industry-daily.json', function (d) { D = d; renderAll(); }, function () { });
+    });
+  }
 })();

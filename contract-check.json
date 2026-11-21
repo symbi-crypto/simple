@@ -10,24 +10,18 @@
   },
   "advisory": {
    "total": 10,
-   "gaps": 1
+   "gaps": 0
   },
   "fixtures": {
-   "total": 12,
-   "passed": 12,
+   "total": 13,
+   "passed": 13,
    "failed": 0
   },
   "snapshots": 16
  },
  "failedBlocking": [],
  "failedFixtures": [],
- "gaps": [
-  {
-   "id": "A9",
-   "rule": "§6 回前台重取",
-   "detail": "页面回到前台时未重取快照（P3，本轮不做）"
-  }
- ],
+ "gaps": [],
  "degradeSummary": {
   "level": "partial",
   "total": 8,
@@ -511,8 +505,8 @@
    "id": "A9",
    "rule": "§6 回前台重取",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "页面回到前台时未重取快照（P3，本轮不做）"
+   "status": "pass",
+   "detail": "单次去重（无定时器）+ 3 渲染器注册 + 回前台不改状态文字"
   }
  ],
  "fixtures": [
@@ -806,6 +800,40 @@
      "name": "gate 失败 → 1 阻断",
      "actual": 1,
      "expect": 1
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R13",
+   "case": "「切回前台就重取」→ 须单次、不轮询、不误取首屏",
+   "rule": "§6",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "首屏 pageshow（从未离开）不取",
+     "actual": "skip:never-left",
+     "expect": "skip:never-left"
+    },
+    {
+     "name": "隐藏中不取",
+     "actual": "skip:hidden",
+     "expect": "skip:hidden"
+    },
+    {
+     "name": "离开后首次回来重取",
+     "actual": "refresh",
+     "expect": "refresh"
+    },
+    {
+     "name": "2 秒内再回来合并跳过",
+     "actual": "skip:coalesced",
+     "expect": "skip:coalesced"
+    },
+    {
+     "name": "超过窗口再回来仍重取",
+     "actual": "refresh",
+     "expect": "refresh"
     }
    ],
    "failed": []

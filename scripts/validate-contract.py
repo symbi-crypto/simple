@@ -206,6 +206,14 @@ def degrade_summary(root):
             'exitCode': judge_degrade('pass', level)}
 
 
+def judge_foreground(hidden, was, now, last, gap):
+    """§6：仅有「曾离开前台且当前可见」才重取；窗口内合并；隐藏中/从未离开不取。"""
+    if hidden: return 'skip:hidden'
+    if not was: return 'skip:never-left'
+    if last and now - last < gap: return 'skip:coalesced'
+    return 'refresh'
+
+
 def judge_docs(rule, ledger, readme):
     """§11 规则 / 台账 / 版本日志三分离"""
     pure = not any(w in rule for w in PURITY_FORBIDDEN)
@@ -475,7 +483,25 @@ def static_checks(root, valid_fn):
     else:
         add('A8', '§3.6 / §4.2 部分降级退出码', 'advisory', True,
             '枚举分类 + degradeSummary + 0/2/1 三态 + 三条自动链消费', status='pass')
-    gap('A9', '§6 回前台重取', '页面回到前台时未重取快照（P3，本轮不做）')
+    # A9 §6：回前台重取「一次」，且不得轮询、不得改状态文字
+    dsrc = text(root, 'common/dash-source.js')
+    seg = dsrc[dsrc.find('/* P3 BEGIN'):dsrc.find('/* P3 END')] if '/* P3 BEGIN' in dsrc else ''
+    a9 = []
+    for k in ('onRefresh', 'visibilitychange', 'pageshow', 'wasHidden',
+              'judgeForeground', 'FG_GAP', 'Date.now'):
+        if k not in seg: a9.append('P3 段缺 ' + k)
+    if 'setInterval' in seg or 'setTimeout' in seg:
+        a9.append('P3 段含定时器（规则禁止分钟级轮询）')
+    if 'textContent' in seg or 'innerHTML' in seg:
+        a9.append('P3 段改了页面文字（会覆盖完成态）')
+    renders = ['common/dashboard.js', 'common/gold.js', 'common/industry.js']
+    regs = [r for r in renders if 'onRefresh' not in text(root, r)]
+    if regs: a9.append('渲染器未注册：' + ', '.join(regs))
+    if a9:
+        gap('A9', '§6 回前台重取', '；'.join(a9))
+    else:
+        add('A9', '§6 回前台重取', 'advisory', True,
+            '单次去重（无定时器）+ 3 渲染器注册 + 回前台不改状态文字', status='pass')
     return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn}
 
 
@@ -544,6 +570,13 @@ def run_fixtures(ctx, root, valid_fn):
         ('部分降级 → 2 放行但标注', judge_degrade('pass', 'partial'), 2),
         ('全失败 → 1 阻断（不绿灯）', judge_degrade('pass', 'full'), 1),
         ('gate 失败 → 1 阻断', judge_degrade('fail', 'none'), 1),
+    ])
+    fixture('R13', '「切回前台就重取」→ 须单次、不轮询、不误取首屏', '§6', [
+        ('首屏 pageshow（从未离开）不取', judge_foreground(False, False, 10000, 0, 2000), 'skip:never-left'),
+        ('隐藏中不取', judge_foreground(True, True, 10000, 0, 2000), 'skip:hidden'),
+        ('离开后首次回来重取', judge_foreground(False, True, 10000, 0, 2000), 'refresh'),
+        ('2 秒内再回来合并跳过', judge_foreground(False, True, 11000, 10000, 2000), 'skip:coalesced'),
+        ('超过窗口再回来仍重取', judge_foreground(False, True, 13000, 10000, 2000), 'refresh'),
     ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),
