@@ -73,8 +73,12 @@ def main():
     out = {
         'format': 'us-etf-daily/1',
         'chain': 'A',                       # 三条链统一标识：L 本地 / A 东财+申万 / G Yahoo+CBOE
-        'contract': 'chain/1',
+        'contract': {'chain': 'A', 'formatVersion': 2, 'minClient': 'v0.87'},
         'source': 'eastmoney/kline fqt=1',  # 单一上游，不混用 Yahoo
+        'sourceRole': 'primary',
+        'basis': {'unit': '美元', 'adjust': '东财 fqt=1 前复权（含分红再投）',
+                  'universe': '美股 ETF 池', 'sample': '共同交易日逐日',
+                  'normalized': '否（原始前复权价）'},
         'adjust': '前复权（东财 fqt=1，含分红再投）',
         'cols': COLS,
         'symbols': [],

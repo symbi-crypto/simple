@@ -12,10 +12,11 @@
   · 校验不过的文件写进警告清单，不中断打包；打包仍能用包内副本出包。
   · 不推 GitHub，只读，不改动仓库内容。
 """
-import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib
+import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib, re
 
 REPO = 'symbi-crypto/simple'
 BRANCH = 'main'
+CLIENT_VER = '0.87'   # P1③：与前端 dash-source.js 的 CLIENT_VER 同步
 API = 'https://api.github.com/repos/' + REPO
 
 # 与打包有关、会随周度同步前进的快照
@@ -41,6 +42,26 @@ def git_blob(sha, headers):
     return base64.b64decode(obj['content'])
 
 
+def _vnum(v):
+    m = re.findall(r'\d+', str(v or ''))
+    return (int(m[0]) * 1000 + (int(m[1]) if len(m) > 1 else 0)) if m else 0
+
+
+def contract_ok(d):
+    """P1③：旧字符串契约兼容放行；对象契约校验 minClient；不合规判拒收。"""
+    if not isinstance(d, dict):
+        return False, 'not object'
+    c = d.get('contract')
+    if c is None or isinstance(c, str):
+        return True, 'legacy'
+    if not isinstance(c, dict):
+        return False, 'contract 类型异常'
+    mc = c.get('minClient')
+    if mc and _vnum(mc) > _vnum(CLIENT_VER):
+        return False, 'minClient %s > 客户端 %s（需升级前端）' % (mc, CLIENT_VER)
+    return True, 'v%s' % c.get('formatVersion')
+
+
 def asof(d):
     if not isinstance(d, dict):
         return ''
@@ -52,6 +73,9 @@ def valid(name, d):
     """结构 + 契约校验；空壳、失败态、缺关键字段一律拒收。"""
     if not isinstance(d, dict):
         return False, 'not object'
+    cok, cwhy = contract_ok(d)
+    if not cok:
+        return False, cwhy
     if d.get('ok') is False:
         return False, 'ok=false (失败态空壳)'
     a = asof(d)

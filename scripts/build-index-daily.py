@@ -189,7 +189,14 @@ out = {
     'note': '15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线 + state 日更增量 + 链 I 真值计算；'
             '不含占位值；无增量的序列在最后有效日断开并列入 coverage.gaps，'
             '中间缺口日列入 coverage.csiHoles，均未编造。',
-    'chain': 'L', 'contract': 'chain/1',
+    'chain': 'L',
+    'contract': {'chain': 'L', 'formatVersion': 2, 'minClient': 'v0.87'},
+    'source': '本地 common/index.gz 基线 + state.json 日更增量 + 链 I 真值（index-gz2000 / index-csi-patch）',
+    'warnings': [],
+    'sourceRole': 'primary',
+    'basis': {'unit': '点', 'adjust': '基线真实日线 + 日更增量，不复权',
+              'universe': '15 条 A股/港股/美股指数', 'sample': '曲线按自然周取点（5/10 年）',
+              'normalized': '双线与分位序列起点归一 = 100'},
 }
 
 for g, lst in GROUPS.items():

@@ -18,6 +18,28 @@
 
 # 附：版本日志（倒序，最新在前）
 
+# v0.87 · P1 字段契约统一 + contract 版本化 + 双源标注
+
+- **① `source`/`warnings` 顶层统一**：`cb-daily.json` / `index-daily.json` 补齐，
+  8 份数据快照全带；原有自由文本 `note`/`sampleNote`/`trendNote` 一律保留。
+- **② `basis` 结构化**：8 份各带 `unit/adjust/universe/sample/normalized`，
+  口径从自由文本里独立出来，机器可读。`note` 不删。
+- **③ `contract` 升级 + 最低版本校验**：`chain/1` 字符串升为
+  `{chain, formatVersion:2, minClient:"v0.87"}`；`common/dash-source.js` 与
+  `scripts/pull-snapshots.py` 两处 `valid()` 同步加 `contractOK`，旧字符串契约向后兼容放行，
+  `minClient` 高于前端则拒收该份、回退包内副本并标「离线副本」，不白屏、不强行渲染。
+  夹具 R8 改写为三态（legacy/accept/reject）。
+- **④ 双源标注 / 交叉核验 / 冷却**：`scripts/build-external.py` 加 `sourceRole`、
+  `crossCheck`（两源价差超阈值标 `divergent`，绝不静默取一个）与域名级 `cool_down`；
+  新增夹具 R10 钉住「冲突须标注 + minClient 超前须回退」。
+- **生成器收口**：`build-dashboards.mjs` / `build-external.py` / `build-index-daily.py` /
+  `build-us-etf.py` / `update.mjs` 统一写契约字段；实跑产出过前端 `valid()`。
+- **门禁**：`gaps 10→5`（A1/A2/A3/A5/A6 转 pass），blocking 51/51、夹具 10/10；
+  剩 5 条为 P2/P3（availableAt、asOf/at、previous 副本、部分降级退出码、回前台重取）。
+- **零回归**：8 份快照「剥离新增字段 + contract 还原」与 v0.86 逐字节一致；
+  `index.gz`、回测引擎、业务数值、页面 UI 全不动。真浏览器 390 宽 4 页 0 报错、不溢出。
+- 缓存 `wufu-all-v0.88`、`?v=88`；`sw.js` / `header.js` / 各页查询串同步。
+
 # v0.86 · 4 只中证指数补链（方案 A）
 
 - **链 I 扩展**：`build-external.py --chain=I` 新增 `build_csi_patch()`，

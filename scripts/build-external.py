@@ -21,11 +21,49 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 CTX = ssl._create_unverified_context()
 ROOT = os.getcwd()
 WARN = []
+# ---- v0.87 / P1④：双源标注 + 交叉核验 + 域名级冷却（进程内）----
+# 只做「标注与控制」，不改任何已抓取数值；跨域名失败后短冷却，避免反复撞已知坏源。
+COOLDOWN = {}          # host -> 到期时间（epoch 秒）
+SOURCE_ROLE = {}       # 文件名 -> primary|fallback|cross-check|rejected
+CROSS_CHECK = {}       # 文件名 -> {agreement, priceDiffPct, asOfMatch, status}
+
+
+def _host(u):
+    try:
+        return urllib.request.urlparse(u).netloc
+    except Exception:
+        return str(u)[:40]
+
+
+def in_cooldown(u):
+    return time.time() < COOLDOWN.get(_host(u), 0)
+
+
+def cool_down(u, sec=300):
+    COOLDOWN[_host(u)] = time.time() + sec
+
+
+def note_role(name, role):
+    SOURCE_ROLE[name] = role
+
+
+def note_crosscheck(name, a, b, asof_match=True, threshold=0.2):
+    """两源都拿到时记一笔：价差超阈值标 divergent，绝不静默取一个。"""
+    if a is None or b is None or a == 0:
+        CROSS_CHECK[name] = {'agreement': None, 'priceDiffPct': None,
+                             'asOfMatch': asof_match, 'status': 'single-source'}
+        return
+    diff = abs(a - b) / abs(a) * 100
+    CROSS_CHECK[name] = {'agreement': round(100 - min(diff, 100), 4),
+                         'priceDiffPct': round(diff, 4), 'asOfMatch': asof_match,
+                         'status': 'divergent' if diff > threshold else 'matched'}
 
 
 def get(url, timeout=12, tries=2):
     """带重试的 GET；返回 (status, text) 或 (None, 错误串)。
     超时刻意压短：宁可少一个板块，也不让无人值守任务卡几十分钟。"""
+    if in_cooldown(url):
+        return None, 'cooldown（域名级冷却中，未重撞）'
     last = ""
     for k in range(tries):
         try:
@@ -44,6 +82,7 @@ def get(url, timeout=12, tries=2):
         except Exception as e:
             last = "%s: %s" % (type(e).__name__, str(e)[:120])
         time.sleep(0.6 * (k + 1))
+    cool_down(url)   # 连续失败后登记冷却，下次不再重撞
     return None, last
 
 
@@ -134,11 +173,38 @@ CHAIN_OF = {
     "index-csi-patch.json": "I",
 }
 
+BASIS_EXT = {
+    'industry-daily.json': {'unit': '%', 'adjust': '申万 2021 版一级行业指数日线，不复权',
+        'universe': '31 个申万一级行业指数', 'sample': '日频 / 热力图周频 24 周', 'normalized': '宽度百分比'},
+    'gold-daily.json': {'unit': '美元/盎司等', 'adjust': 'COMEX 期货主力连续，不复权',
+        'universe': 'GC/SI/CL/HG + BTC + GVZ + Au99.99', 'sample': '共同交易日', 'normalized': '起点归一 = 100'},
+    'market-amount.json': {'unit': '亿元', 'adjust': '上证 + 深证成指 K 线成交额之和（近似）',
+        'universe': '两市', 'sample': '柱形周频（5/10 年）', 'normalized': '柱形单独归一'},
+    'index-gz2000.json': {'unit': '点', 'adjust': '不复权收盘', 'universe': '国证2000',
+        'sample': '逐交易日增量', 'normalized': '否（原始点位）'},
+    'index-csi-patch.json': {'unit': '点', 'adjust': '腾讯 qt 实时收盘', 'universe': '4 只中证指数',
+        'sample': '逐交易日增量', 'normalized': '否（原始点位）'},
+}
+
+
 def save(name, obj):
-    if isinstance(obj, dict) and name in CHAIN_OF and "chain" not in obj:
+    if isinstance(obj, dict) and name in CHAIN_OF:
         obj = dict(obj)
-        obj["chain"] = CHAIN_OF[name]
-        obj["contract"] = "chain/1"
+        ch = obj.get("chain") or CHAIN_OF[name]
+        obj["chain"] = ch
+        obj["contract"] = {"chain": ch, "formatVersion": 2, "minClient": "v0.87"}
+        if not obj.get("source"):
+            obj["source"] = CHAIN_OF[name] + " 链生成（源详见 note / warnings）"
+        if not isinstance(obj.get("warnings"), list):
+            obj["warnings"] = []
+        if not obj.get("basis"):
+            obj["basis"] = BASIS_EXT.get(name, {})
+        # P1④：角色 / 交叉核验 / 冷却标注（运行时派生，不改数值）
+        src = str(obj.get("source") or "")
+        role = SOURCE_ROLE.get(name) or ("fallback" if ("兜底" in src or "不可用" in src) else "primary")
+        obj["sourceRole"] = role
+        if name in CROSS_CHECK:
+            obj["crossCheck"] = CROSS_CHECK[name]
     with open(os.path.join(ROOT, name), "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
     print("写回", name, os.path.getsize(os.path.join(ROOT, name)), "bytes")

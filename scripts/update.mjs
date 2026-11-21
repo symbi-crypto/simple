@@ -434,6 +434,7 @@ function countNewSeries(raw) {
   const finalAsOf = keys.reduce((m, k) => { const d = lastDate(ls[k]); return d > m ? d : m; }, '') || (old && old.dataAsOf) || '';
   const state = {
     format: 'wufu-offline-state-v2',
+    contract: { chain: 'R', formatVersion: 2, minClient: 'v0.87' },
     exportedAt: (old && old.exportedAt) || new Date().toISOString(),
     origin: PUBLIC_SITE || SITE,
     dataAsOf: finalAsOf,

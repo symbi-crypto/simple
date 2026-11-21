@@ -105,10 +105,12 @@ def judge_px(row):
 
 
 def judge_contract(c):
-    """§4.3 链标识不是版本契约"""
+    """§4.3 链标识不是版本契约（P1③：目标态为对象）"""
     if isinstance(c, dict) and 'formatVersion' in c and 'minClient' in c:
         return 'accept'
-    return 'gap'
+    if c is None or isinstance(c, str):
+        return 'legacy'          # 旧 chain/1：向后兼容放行，但非目标态
+    return 'reject'
 
 
 def judge_pair(a, b, guard_present):
@@ -116,6 +118,22 @@ def judge_pair(a, b, guard_present):
     if a == b:
         return 'accept'
     return 'accept' if guard_present else 'reject'
+
+
+def judge_crosscheck(a, b, threshold=0.2):
+    """§2.3 两源都拿到时：价差超阈值标 divergent，绝不静默取一个"""
+    if a is None or b is None or a == 0:
+        return 'single-source'
+    diff = abs(a - b) / abs(a) * 100
+    return 'divergent' if diff > threshold else 'matched'
+
+
+def judge_minclient(mc, client='0.87'):
+    """§4.3 minClient 高于前端则拒收（回退），不强行渲染"""
+    def n(v):
+        m = re.findall(r'\d+', str(v or ''))
+        return int(m[0]) * 1000 + (int(m[1]) if len(m) > 1 else 0) if m else 0
+    return 'reject' if n(mc) > n(client) else 'accept'
 
 
 def judge_docs(rule, ledger, readme):
@@ -227,9 +245,13 @@ def snapshot_checks(root, valid_fn):
 
     bad_contract = [n for n in DATA_FILES
                     if judge_contract(json.loads(blob(root, n) or b'{}').get('contract')) != 'accept']
-    gap('A5', '§4.3 contract 格式版本',
-        '%d/%d 份仍为链标识（contract: chain/1），缺 {formatVersion,minClient}' %
-        (len(bad_contract), len(DATA_FILES)))
+    if bad_contract:
+        gap('A5', '§4.3 contract 格式版本',
+            '%d/%d 份未升级为 {formatVersion,minClient}：%s' %
+            (len(bad_contract), len(DATA_FILES), ', '.join(bad_contract)))
+    else:
+        add('A5', '§4.3 contract 格式版本', 'advisory', True,
+            '全部数据快照已升级为对象契约', status='pass')
 
     # 控制类文件用 at 而非 dataAsOf（§4.1 不得互相替代）
     at_only = [n for n in STATE_FILES if 'at' in json.loads(blob(root, n) or b'{}')]
@@ -285,9 +307,12 @@ def static_checks(root, valid_fn):
 
     # advisory：P1/P2 源码层待补项
     sr = text(root, 'scripts/build-external.py')
-    if not ('sourceRole' in sr or 'crossCheck' in sr):
-        gap('A6', '§2.1–2.3 双源标注与冷却',
-            '生成端缺 sourceRole / 两源价差标注 / 失败冷却窗口')
+    need = [k for k in ('sourceRole', 'crossCheck', 'cooldown', 'note_crosscheck', 'cool_down') if k not in sr]
+    if need:
+        gap('A6', '§2.1–2.3 双源标注与冷却', '生成端缺：' + ', '.join(need))
+    else:
+        add('A6', '§2.1–2.3 双源标注与冷却', 'advisory', True,
+            'build-external.py 含 sourceRole / crossCheck / cooldown 标注与控制', status='pass')
     if not os.path.isfile(os.path.join(root, 'previous')):
         gap('A7', '§6 留一份可回退副本', '未发现 previous 完整副本目录/标记')
     gap('A8', '§3.6 部分降级退出码',
@@ -336,10 +361,18 @@ def run_fixtures(ctx, root, valid_fn):
         ('台账含历史改判记录', '## 4. 历史改判记录' in ledger, True),
         ('README 不得内嵌规则正文', '## 2. 取数规则' in readme, False),
     ])
-    fixture('R8', '「其次才加 contract」→ 链标识不等于格式版本契约', '§4.3', [
-        ('chain/1 判为 gap', judge_contract('chain/1'), 'gap'),
-        ('缺 contract 判为 gap', judge_contract(None), 'gap'),
-        ('含 formatVersion/minClient 放行', judge_contract({'formatVersion': 2, 'minClient': 'v0.90'}), 'accept'),
+    fixture('R8', '「其次才加 contract」→ 链标识不等于格式版本契约；旧格式仍须兼容放行', '§4.3', [
+        ('chain/1 判为 legacy（兼容放行）', judge_contract('chain/1'), 'legacy'),
+        ('缺 contract 判为 legacy（兼容放行）', judge_contract(None), 'legacy'),
+        ('含 formatVersion/minClient 判为 accept', judge_contract({'formatVersion': 2, 'minClient': 'v0.87'}), 'accept'),
+        ('畸形对象判为 reject', judge_contract(123), 'reject'),
+    ])
+    fixture('R10', '「qt 跨日跌幅被整只丢弃」→ 双源冲突须标 divergent，且 minClient 超前须回退', '§2.3 / §4.3', [
+        ('两源一致 → matched', judge_crosscheck(5404.77, 5404.80), 'matched'),
+        ('价差 40% → divergent（不静默取一个）', judge_crosscheck(100, 60), 'divergent'),
+        ('单源 → single-source', judge_crosscheck(100, None), 'single-source'),
+        ('minClient v0.87 == 前端 → 放行', judge_minclient('v0.87'), 'accept'),
+        ('minClient v9.99 > 前端 → 拒收回退', judge_minclient('v9.99'), 'reject'),
     ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),

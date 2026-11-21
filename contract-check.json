@@ -10,11 +10,11 @@
   },
   "advisory": {
    "total": 10,
-   "gaps": 10
+   "gaps": 5
   },
   "fixtures": {
-   "total": 9,
-   "passed": 9,
+   "total": 10,
+   "passed": 10,
    "failed": 0
   },
   "snapshots": 16
@@ -23,39 +23,14 @@
  "failedFixtures": [],
  "gaps": [
   {
-   "id": "A1",
-   "rule": "§4.1 source",
-   "detail": "2/8 份数据快照缺 source：cb-daily.json, index-daily.json"
-  },
-  {
-   "id": "A2",
-   "rule": "§4.1 warnings",
-   "detail": "2/8 份数据快照缺 warnings：cb-daily.json, index-daily.json"
-  },
-  {
-   "id": "A3",
-   "rule": "§4.1 basis",
-   "detail": "8/8 份数据快照缺 basis：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
-  },
-  {
    "id": "A4",
    "rule": "§2.5 / §4.1 availableAt",
    "detail": "8/8 份数据快照缺 availableAt：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
   },
   {
-   "id": "A5",
-   "rule": "§4.3 contract 格式版本",
-   "detail": "8/8 份仍为链标识（contract: chain/1），缺 {formatVersion,minClient}"
-  },
-  {
    "id": "A5b",
    "rule": "§4.1 asOf 与 at 分离",
    "detail": "5 份状态文件用 at（ISO 时间戳）代替 dataAsOf：external-warnings-A.json, external-warnings-G.json, external-warnings-I.json, external-warnings-L.json, external-warnings.json"
-  },
-  {
-   "id": "A6",
-   "rule": "§2.1–2.3 双源标注与冷却",
-   "detail": "生成端缺 sourceRole / 两源价差标注 / 失败冷却窗口"
   },
   {
    "id": "A7",
@@ -365,22 +340,22 @@
    "id": "A1",
    "rule": "§4.1 source",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "2/8 份数据快照缺 source：cb-daily.json, index-daily.json"
+   "status": "pass",
+   "detail": "全部数据快照已带 source"
   },
   {
    "id": "A2",
    "rule": "§4.1 warnings",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "2/8 份数据快照缺 warnings：cb-daily.json, index-daily.json"
+   "status": "pass",
+   "detail": "全部数据快照已带 warnings"
   },
   {
    "id": "A3",
    "rule": "§4.1 basis",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "8/8 份数据快照缺 basis：cb-daily.json, gold-daily.json, industry-daily.json, index-daily.json, index-gz2000.json, index-csi-patch.json, market-amount.json, us-etf-daily.json"
+   "status": "pass",
+   "detail": "全部数据快照已带 basis"
   },
   {
    "id": "A4",
@@ -393,8 +368,8 @@
    "id": "A5",
    "rule": "§4.3 contract 格式版本",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "8/8 份仍为链标识（contract: chain/1），缺 {formatVersion,minClient}"
+   "status": "pass",
+   "detail": "全部数据快照已升级为对象契约"
   },
   {
    "id": "A5b",
@@ -477,8 +452,8 @@
    "id": "A6",
    "rule": "§2.1–2.3 双源标注与冷却",
    "severity": "advisory",
-   "status": "gap",
-   "detail": "生成端缺 sourceRole / 两源价差标注 / 失败冷却窗口"
+   "status": "pass",
+   "detail": "build-external.py 含 sourceRole / crossCheck / cooldown 标注与控制"
   },
   {
    "id": "A7",
@@ -673,24 +648,63 @@
   },
   {
    "id": "R8",
-   "case": "「其次才加 contract」→ 链标识不等于格式版本契约",
+   "case": "「其次才加 contract」→ 链标识不等于格式版本契约；旧格式仍须兼容放行",
    "rule": "§4.3",
    "status": "pass",
    "checks": [
     {
-     "name": "chain/1 判为 gap",
-     "actual": "gap",
-     "expect": "gap"
+     "name": "chain/1 判为 legacy（兼容放行）",
+     "actual": "legacy",
+     "expect": "legacy"
     },
     {
-     "name": "缺 contract 判为 gap",
-     "actual": "gap",
-     "expect": "gap"
+     "name": "缺 contract 判为 legacy（兼容放行）",
+     "actual": "legacy",
+     "expect": "legacy"
     },
     {
-     "name": "含 formatVersion/minClient 放行",
+     "name": "含 formatVersion/minClient 判为 accept",
      "actual": "accept",
      "expect": "accept"
+    },
+    {
+     "name": "畸形对象判为 reject",
+     "actual": "reject",
+     "expect": "reject"
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R10",
+   "case": "「qt 跨日跌幅被整只丢弃」→ 双源冲突须标 divergent，且 minClient 超前须回退",
+   "rule": "§2.3 / §4.3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "两源一致 → matched",
+     "actual": "matched",
+     "expect": "matched"
+    },
+    {
+     "name": "价差 40% → divergent（不静默取一个）",
+     "actual": "divergent",
+     "expect": "divergent"
+    },
+    {
+     "name": "单源 → single-source",
+     "actual": "single-source",
+     "expect": "single-source"
+    },
+    {
+     "name": "minClient v0.87 == 前端 → 放行",
+     "actual": "accept",
+     "expect": "accept"
+    },
+    {
+     "name": "minClient v9.99 > 前端 → 拒收回退",
+     "actual": "reject",
+     "expect": "reject"
     }
    ],
    "failed": []
@@ -725,9 +739,10 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-cb-v1",
-   "bytes": 33487,
-   "sha1": "b32236bc4785",
+   "bytes": 33895,
+   "sha1": "c9d1ff52b743",
    "fields": [
+    "basis",
     "chain",
     "contract",
     "count",
@@ -739,18 +754,22 @@
     "note",
     "quantiles",
     "sampleNote",
+    "source",
+    "sourceRole",
     "summary",
     "trend",
-    "trendNote"
+    "trendNote",
+    "warnings"
    ]
   },
   "gold-daily.json": {
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-gold-v1",
-   "bytes": 59313,
-   "sha1": "133c49ac731a",
+   "bytes": 59667,
+   "sha1": "a1136b850865",
    "fields": [
+    "basis",
     "chain",
     "contract",
     "dataAsOf",
@@ -763,6 +782,7 @@
     "sampleNote",
     "shGold",
     "source",
+    "sourceRole",
     "trend",
     "warnings"
    ]
@@ -771,10 +791,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-industry-v2",
-   "bytes": 31304,
-   "sha1": "6d62d3b073be",
+   "bytes": 31641,
+   "sha1": "61d6e450d0f3",
    "fields": [
     "area",
+    "basis",
     "boardCount",
     "boardTotal",
     "chain",
@@ -791,6 +812,7 @@
     "sampleFrom",
     "sampleNote",
     "source",
+    "sourceRole",
     "warnings"
    ]
   },
@@ -798,9 +820,10 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-idx-v2",
-   "bytes": 21551,
-   "sha1": "9741e3fc5bd0",
+   "bytes": 21982,
+   "sha1": "61fdf5cd3960",
    "fields": [
+    "basis",
     "chain",
     "contract",
     "coverage",
@@ -810,17 +833,21 @@
     "idxTrend",
     "note",
     "sampleNote",
-    "trendNote"
+    "source",
+    "sourceRole",
+    "trendNote",
+    "warnings"
    ]
   },
   "index-gz2000.json": {
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-patch-v1",
-   "bytes": 958,
-   "sha1": "8c20805b127d",
+   "bytes": 1218,
+   "sha1": "fcc4e8407fdd",
    "fields": [
     "baselineLastDate",
+    "basis",
     "chain",
     "contract",
     "dataAsOf",
@@ -828,6 +855,7 @@
     "format",
     "note",
     "source",
+    "sourceRole",
     "warnings"
    ]
   },
@@ -835,9 +863,10 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-csi-patch-v1",
-   "bytes": 765,
-   "sha1": "119eb303a933",
+   "bytes": 1069,
+   "sha1": "9a977da7c3f2",
    "fields": [
+    "basis",
     "chain",
     "codes",
     "contract",
@@ -847,6 +876,7 @@
     "note",
     "series",
     "source",
+    "sourceRole",
     "warnings"
    ]
   },
@@ -854,11 +884,12 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-amount-v1",
-   "bytes": 16117,
-   "sha1": "f2076f45e056",
+   "bytes": 16438,
+   "sha1": "679fcfe1abf4",
    "fields": [
     "10",
     "5",
+    "basis",
     "chain",
     "contract",
     "dataAsOf",
@@ -866,6 +897,7 @@
     "note",
     "ok",
     "source",
+    "sourceRole",
     "warnings"
    ]
   },
@@ -873,10 +905,11 @@
    "status": "pass",
    "asOf": "2026-11-16",
    "format": "us-etf-daily/1",
-   "bytes": 1122249,
-   "sha1": "3c1293e32d3d",
+   "bytes": 1122499,
+   "sha1": "d301816f7024",
    "fields": [
     "adjust",
+    "basis",
     "chain",
     "cols",
     "commonDays",
@@ -888,6 +921,7 @@
     "sampleNote",
     "series",
     "source",
+    "sourceRole",
     "symbols",
     "warnings"
    ]

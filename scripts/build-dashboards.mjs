@@ -8,12 +8,25 @@ const read = p => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch
 /* 三条链统一落库契约：L=本地 gz / A=东财+申万 / G=Yahoo+CBOE。
    上游源不合并，合并的是快照契约（chain / contract / source / dataAsOf / warnings）。 */
 const CHAIN_OF = { 'cb-daily.json': 'L', 'index-daily.json': 'L' };
-const save = (p, o) => {
-  if (CHAIN_OF[p] && o && typeof o === 'object' && !o.chain) {
-    o = { ...o, chain: CHAIN_OF[p], contract: 'chain/1' };
+/* v0.87 / P1：契约字段单一收口。旧链标识升级为对象；source/warnings/basis/sourceRole 补齐。
+   业务数值一个不动，note / sampleNote / trendNote 一律保留。 */
+const BASIS_CB = { unit: '元 / %', adjust: '不复权收盘价、转股价值与溢价率',
+  universe: '沪深可转债全市场，含退市债', sample: '趋势按自然周取点',
+  normalized: '趋势序列起点归一 = 100' };
+const SOURCE_CB = '本地 cb/data/cb-data.gz + state.json 可转债日更增量（链 L，零抓取，含退市债）';
+const stamp = (p, o) => {
+  if (CHAIN_OF[p] && o && typeof o === 'object') {
+    const ch = o.chain || CHAIN_OF[p];
+    o.chain = ch;
+    o.contract = { chain: ch, formatVersion: 2, minClient: 'v0.87' };
+    if (!o.source) o.source = SOURCE_CB;
+    if (!Array.isArray(o.warnings)) o.warnings = [];
+    if (!o.basis) o.basis = BASIS_CB;
+    if (!o.sourceRole) o.sourceRole = 'primary';
   }
-  fs.writeFileSync(p, JSON.stringify(o));
+  return o;
 };
+const save = (p, o) => { fs.writeFileSync(p, JSON.stringify(stamp(p, o))); };
 const med = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); if (!a.length) return null; a.sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 const avg = a => { a = a.filter(x => typeof x === 'number' && isFinite(x)); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
 const pct = (s, v) => { s = s.filter(x => typeof x === 'number' && isFinite(x)); return v == null || !s.length ? null : Math.round(100 * s.filter(x => x <= v).length / s.length); };
