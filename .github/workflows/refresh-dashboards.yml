@@ -29,7 +29,7 @@ jobs:
       # ---------------- 链 L：本地 gz ----------------
       - name: 链 L · 本地看板快照（可转债 / 指数）
         if: always()
-        run: node scripts/build-dashboards.mjs && python3 scripts/build-index-daily.py
+        run: node scripts/build-dashboards.mjs
 
       # ---------------- 链 A：东财 + 申万 ----------------
       - name: 安装申万行业数据源（链 A 专用）
@@ -39,6 +39,15 @@ jobs:
         if: always()
         id: chain_a_industry
         run: python3 scripts/build-external.py --chain=A
+
+      - name: 链 I · 国证2000 日更增量 + 成交额兜底（v0.85）
+        if: always()
+        id: chain_i
+        run: python3 scripts/build-external.py --chain=I
+
+      - name: 链 L2 · 合并链 I 增量重算指数看板（必须在链 A/I 之后）
+        if: always()
+        run: python3 scripts/build-index-daily.py
 
       - name: 链 A · 美股 ETF 日线（只追加新交易日）
         if: always()
@@ -87,9 +96,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for f in cb-daily.json index-daily.json industry-daily.json gold-daily.json \
+          for f in cb-daily.json index-daily.json index-gz2000.json industry-daily.json gold-daily.json \
                    market-amount.json us-etf-daily.json external-warnings.json \
-                   external-warnings-L.json external-warnings-A.json external-warnings-G.json; do
+                   external-warnings-L.json external-warnings-A.json external-warnings-G.json external-warnings-I.json; do
             [ -f "$f" ] && git add "$f"
           done
           if git diff --cached --quiet; then

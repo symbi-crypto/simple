@@ -1,0 +1,62 @@
+name: 补指数链（国证2000 + 两市成交额）
+
+# v0.85 · 轻量手动补数：不等周五，只跑链 I 与指数看板重算。
+# 东财在 Actions 出口常拿不到 K 线；链 I 自动兜底腾讯财经，失败则沿用上次真值，不摆空壳。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wufu-index-chain
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 链 I · 国证2000 日更增量 + 成交额兜底
+        run: python3 scripts/build-external.py --chain=I
+
+      - name: 重算指数看板（合并基线 + QPatch + 链 I）
+        run: python3 scripts/build-index-daily.py
+
+      - name: 打印结果
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, os
+          for f in ['index-gz2000.json','market-amount.json','index-daily.json']:
+              if not os.path.exists(f):
+                  print(f, '未生成'); continue
+              d=json.load(open(f,encoding='utf-8'))
+              print('===',f,'| dataAsOf',d.get('dataAsOf'),'| ok',d.get('ok'),'===')
+              if f=='market-amount.json':
+                  print('  5年末点', list(zip(d['5']['labels'][-2:], d['5']['amount'][-2:])))
+              if f=='index-daily.json':
+                  print('  缺口', [(g['name'],g['lastValidDate']) for g in d['coverage']['gaps']])
+              if f=='index-gz2000.json':
+                  print('  增量天数', len(d['days']), '源', d.get('source'))
+          PY
+
+      - name: 写回仓库
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in index-gz2000.json market-amount.json index-daily.json                    external-warnings-I.json external-warnings.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "链 I 无变化，不提交"
+          else
+            git commit -m "chore: 补指数链 国证2000 + 两市成交额 $(date -u +%F)"
+            git push
+          fi

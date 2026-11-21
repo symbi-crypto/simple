@@ -26,11 +26,11 @@ except Exception:
     qp = {}
 base_last = cal0[-1] if cal0 else ''
 
-# 增量日：去重、只要基线末日之后、只要 index.gz 里已登记的指数代码
-seen, inc = set(), []
+# 增量日：QPatch（14 条指数）+ 链 I 的国证2000 增量（index-gz2000.json）
+seen, qp_rows = set(), {}
 for day in (qp.get('days') or []):
     dt = day.get('date')
-    if not dt or dt <= base_last or dt in seen:
+    if not dt or dt <= base_last:
         continue
     row = {}
     for c, v in (day.get('series') or {}).items():
@@ -42,15 +42,42 @@ for day in (qp.get('days') or []):
         if isinstance(x, (int, float)) and x > 0:
             row[c] = float(x)
     if row:
+        # 同日多组求并集：后一组只补前一组没有的代码，避免丢掉 930915.CSI 等只出现在前组的增量
+        qp_rows.setdefault(dt, {}).update(row)
         seen.add(dt)
-        inc.append((dt, row))
-inc.sort(key=lambda t: t[0])
 
-cal = cal0 + [d for d, _ in inc]
+# 链 I 补丁：国证2000 真实日线；含基线末日（原值 -1）及其后交易日
+gz_patch = {}
+try:
+    gp = load('index-gz2000.json')
+    if gp.get('format') == 'wufu-index-patch-v1':
+        for row in (gp.get('days') or []):
+            d, v = row.get('date'), row.get('close')
+            if isinstance(d, str) and isinstance(v, (int, float)) and v > 0:
+                gz_patch[d] = float(v)
+except Exception:
+    gz_patch = {}
+
+inc_dates = sorted(seen | set(d for d in gz_patch if d > base_last))
+cal = cal0 + inc_dates
+DATE0 = {d: i for i, d in enumerate(cal0)}
 ext = {}
 for c, base in idxm.items():
-    ext[c] = list(base) + [r.get(c) for _, r in inc]
-inc_codes = set(c for _, r in inc for c in r)
+    a = list(base)
+    if c == '399303.SZ':
+        # 用链 I 真值覆盖基线里无效占位（如 10-30 的 -1），不编造平线
+        for d, v in gz_patch.items():
+            if d in DATE0:
+                a[DATE0[d]] = v
+    for d in inc_dates:
+        v = (qp_rows.get(d) or {}).get(c)
+        if c == '399303.SZ' and d in gz_patch:
+            v = gz_patch[d]
+        a.append(v if isinstance(v, (int, float)) and v > 0 else None)
+    ext[c] = a
+inc_codes = set(c for row in qp_rows.values() for c in row)
+if any(d > base_last for d in gz_patch):
+    inc_codes.add('399303.SZ')
 
 GROUPS = {
     'A': [['000001.SH','上证指数'],['000300.SH','沪深300'],['000510.SH','中证A500'],
@@ -139,7 +166,7 @@ out = {
     'format': 'wufu-dash-idx-v2',
     'dataAsOf': asof,
     'sampleNote': '指数基线 %s 起 %d 交易日 + 日更增量 %d 天至 %s；分位与曲线由真实日线计算'
-                  % (cal0[0] if cal0 else '—', len(cal0), len(inc), asof or '—'),
+                  % (cal0[0] if cal0 else '—', len(cal0), len(inc_dates), asof or '—'),
     'idx': {}, 'idxTrend': {}, 'trendNote': {},
     'note': '15 条指数与 5/10 年分位、沪深300/国证2000 双线均由内嵌真实日线 + state 日更增量计算；'
             '不含外部抓取与占位值；无增量的序列在最后有效日断开并列入 coverage.gaps。',
@@ -178,10 +205,13 @@ for c in flat:
         gaps.append({'name': name, 'code': c, 'lastValidDate': last_date,
                      'reason': ('日更增量止于该日，未编造缺口' if c in inc_codes
                                 else '日更补丁无该指数，未编造缺口')})
-out['coverage'] = {'asOf': asof, 'baseDays': len(cal0), 'incDays': len(inc),
-                   'incCodes': sorted(inc_codes), 'gaps': gaps}
+out['coverage'] = {'asOf': asof, 'baseDays': len(cal0), 'incDays': len(inc_dates),
+                   'incCodes': sorted(inc_codes), 'gaps': gaps,
+                   'gz2000Patch': {'source': 'chain I / index-gz2000.json',
+                                   'days': len([d for d in gz_patch if d > base_last]),
+                                   'lastDate': max([d for d in gz_patch], default=None)}}
 
 with open(os.path.join(R, 'index-daily.json'), 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
-print('index-daily.json ->', asof, '基线', len(cal0), '增量', len(inc),
+print('index-daily.json ->', asof, '基线', len(cal0), '增量', len(inc_dates),
       '指数覆盖', len(inc_codes), '缺口', [(g['name'], g['lastValidDate']) for g in gaps], flush=True)

@@ -5,6 +5,8 @@
 产出：
   industry-daily.json  申万一级行业指数口径的 A股行业宽度全景 + 全行业热力图
   gold-daily.json      国际金/银/油/铜/BTC + GVZ + 上海金 + 三项比价
+  market-amount.json   两市成交额（东财 f57 历史 + 腾讯 qt 最新交易日兜底）
+  index-gz2000.json    国证2000 日更增量（链 I，供 build-index-daily.py 合并，v0.85 新增）
 
 原则：
   · 只写算好的小 JSON，原始日线不进仓库、不进页面。
@@ -104,7 +106,7 @@ def window(days, years):
 # 上游源不合并，合并的是"快照带哪条链、哪天、失败是否沿用真值"这套契约。
 CHAIN_OF = {
     "industry-daily.json": "A", "market-amount.json": "A",
-    "gold-daily.json": "G",
+    "gold-daily.json": "G", "index-gz2000.json": "I",
 }
 
 def save(name, obj):
@@ -548,50 +550,192 @@ def amt_index(secid):
     return out
 
 
+def qq_qt_amount():
+    """腾讯财经 qt 收盘快照：返回 (交易日, 两市成交额亿元) 或 None。
+       qt 里 '现价/成交量(手)/成交额(元)' 三段是真实成交金额，与东财 f57 同口径；
+       只在 15:00 之后采信，避免把盘中未收盘值写进周频序列。"""
+    total, trade_day, stamps = 0.0, None, []
+    for code in ("sh000001", "sz399001"):
+        url = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get"
+               "?param=%s,day,2026-01-01,2026-12-31,320,qfq" % code)
+        st, txt = get(url, timeout=12, tries=2)
+        if st != 200:
+            return None
+        node = ((jload(txt).get("data") or {}).get(code) or {})
+        qt = (node.get("qt") or {}).get(code) or []
+        trip = next((x for x in qt if isinstance(x, str) and x.count("/") >= 2 and len(x) > 20), None)
+        stamp = next((x for x in qt if isinstance(x, str) and len(x) == 14 and x.isdigit()), None)
+        if not trip or not stamp:
+            return None
+        try:
+            amt_yuan = float(trip.split("/")[2])
+        except Exception:
+            return None
+        if amt_yuan <= 0:
+            return None
+        total += amt_yuan / 1e8          # 亿元
+        stamps.append(stamp)
+        trade_day = stamp[:4] + "-" + stamp[4:6] + "-" + stamp[6:8]
+    if len(stamps) != 2 or any(int(x[8:14]) < 150000 for x in stamps):
+        return None
+    if stamps[0][:8] != stamps[1][:8]:
+        return None
+    return trade_day, round(total, 1)
+
+
+def qq_day(code):
+    """腾讯日K：[date, open, close, high, low, volume]；返回 [(date, close)]。
+       腾讯对超大数量/跨度请求返回空，按「去年 + 今年」两段各 500 根抓取后合并。"""
+    y = datetime.date.today().year
+    out, seen = [], set()
+    for yr in (y - 1, y):
+        url = ("https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get"
+               "?param=%s,day,%d-01-01,%d-12-31,500,qfq" % (code, yr, yr))
+        st, txt = get(url, timeout=15, tries=2)
+        if st != 200:
+            continue
+        node = ((jload(txt).get("data") or {}).get(code) or {})
+        arr = node.get("day") or node.get("qfqday") or []
+        for row in arr:
+            if not isinstance(row, list) or len(row) < 3:
+                continue
+            try:
+                v = float(row[2])
+            except Exception:
+                continue
+            if v > 0 and isinstance(row[0], str) and len(row[0]) == 10 and row[0] not in seen:
+                seen.add(row[0])
+                out.append((row[0], v))
+    out.sort(key=lambda t: t[0])
+    return out
+
+
+def build_gz2000():
+    """链 I：国证2000 日更增量。东财 0.399303 主源，腾讯 sz399303 兜底。
+       失败不写空壳，沿用上次真值（与全站「失败不摆空壳」纪律一致）。"""
+    try:
+        gd = json.loads(gzip.decompress(open("common/index.gz", "rb").read()).decode("utf8"))
+        base_last = (gd.get("calendar") or [])[-1]
+    except Exception:
+        base_last = "2026-10-30"
+    em = []
+    st, txt = get(AMT_KL_CLOSE % "0.399303", timeout=12, tries=2)
+    if st == 200:
+        for line in (jload(txt).get("data") or {}).get("klines") or []:
+            p = line.split(",")
+            if len(p) >= 3:
+                try:
+                    em.append((p[0], float(p[2])))
+                except Exception:
+                    pass
+    src = "东财指数 K 线 f53（0.399303 国证2000）"
+    rows = em
+    if len(rows) < 10:
+        rows = qq_day("sz399303")
+        src = "腾讯财经 sz399303 日K（东财主源不可用，自动兜底）"
+    days = [{"date": d, "close": v} for d, v in rows if d >= base_last and v > 0]
+    if len(days) < 3:
+        WARN.append("国证2000：主源与兜底均不足 3 个交易日，本次不写 index-gz2000.json")
+        return
+    save("index-gz2000.json", {
+        "format": "wufu-index-patch-v1", "dataAsOf": days[-1]["date"],
+        "source": src, "baselineLastDate": base_last,
+        "note": "含基线末日（原值为无效占位 -1）及其后全部真实交易日收盘；由 build-index-daily.py 合并，不改 index.gz 文件。",
+        "days": days, "warnings": list(WARN),
+    })
+    print("国证2000 增量 %d 天，末日 %s，源 %s" % (len(days), days[-1]["date"], src), flush=True)
+
+
+AMT_KL_CLOSE = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s&klt=101&fqt=1"
+                "&beg=20100101&end=20500101&fields1=f1,f2,f3"
+                "&fields2=f51,f52,f53,f54,f55,f56,f57,f58")
+
+
+def same_iso_week(a, b):
+    try:
+        return (datetime.date.fromisoformat(a).isocalendar()[:2]
+                == datetime.date.fromisoformat(b).isocalendar()[:2])
+    except Exception:
+        return False
+
+
 def build_amount():
     sh = amt_index("1.000001")
     sz = amt_index("0.399001")
     ok = len(sh) > 200 and len(sz) > 200
-    if not ok:
-        WARN.append("两市成交额：上证 %d 根 / 深证 %d 根，不足，本次不叠柱" % (len(sh), len(sz)))
+    cur = None
+    if os.path.exists("market-amount.json"):
+        try:
+            c = json.load(open("market-amount.json", encoding="utf-8"))
+            if c.get("ok") is not False and (c.get("5") or {}).get("labels"):
+                cur = c
+        except Exception:
+            cur = None
     days = sorted(set(sh) & set(sz)) if ok else []
-    out = {
-        "format": "wufu-dash-amount-v1",
-        "dataAsOf": days[-1] if days else None,
-        "ok": ok,
-        "source": "东财指数 K 线成交额 f57：上证指数(1.000001) + 深证成指(0.399001)",
-        "note": "两市成交额 ≈ 上证指数 + 深证成指成交额之和（亿元），非全A逐股加总；柱形单独归一，不与指数点位混算。",
-        "5": {"labels": [], "amount": []},
-        "10": {"labels": [], "amount": []},
-        "warnings": list(WARN),
-    }
-    if ok:
-        vals = [round((sh[d] + sz[d]) / 1e8, 1) for d in days]   # 亿元
+    if ok and days:
+        vals = [round((sh[d] + sz[d]) / 1e8, 1) for d in days]
+        out = {
+            "format": "wufu-dash-amount-v1", "dataAsOf": days[-1], "ok": True,
+            "source": "东财指数 K 线成交额 f57：上证指数(1.000001) + 深证成指(0.399001)",
+            "note": "两市成交额 ≈ 上证指数 + 深证成指成交额之和（亿元），非全A逐股加总；柱形单独归一，不与指数点位混算。",
+            "5": {"labels": [], "amount": []}, "10": {"labels": [], "amount": []},
+            "warnings": list(WARN),
+        }
         for Y in (5, 10):
             wset = set(window(days, Y))
             pick = [i for i in week_pick(days) if days[i] in wset]
-            if not pick:
-                continue
-            out[str(Y)] = {"labels": [days[i] for i in pick],
-                           "amount": [vals[i] for i in pick], "points": len(pick)}
-        print("两市成交额 共同交易日", len(days), "末日", days[-1], "亿元", vals[-1])
-    save("market-amount.json", out)
-
+            if pick:
+                out[str(Y)] = {"labels": [days[i] for i in pick],
+                               "amount": [vals[i] for i in pick], "points": len(pick)}
+        save("market-amount.json", out)
+        print("两市成交额 共同交易日", len(days), "末日", days[-1], "亿元", vals[-1], flush=True)
+        return
+    WARN.append("两市成交额：上证 %d 根 / 深证 %d 根，不足；改用腾讯 qt 补最新交易日"
+                % (len(sh), len(sz)))
+    qq = qq_qt_amount()
+    if qq and cur:
+        d, val = qq
+        if d > str(cur.get("dataAsOf") or ""):
+            for Y in ("5", "10"):
+                blk = cur.get(Y) or {}
+                labels = list(blk.get("labels") or [])
+                amounts = list(blk.get("amount") or [])
+                if labels and same_iso_week(labels[-1], d):
+                    labels[-1], amounts[-1] = d, val   # 同一周：取更晚的交易日
+                else:
+                    labels.append(d)
+                    amounts.append(val)
+                cur[Y] = {"labels": labels, "amount": amounts, "points": len(labels)}
+            cur["dataAsOf"] = d
+            cur["ok"] = True
+            cur["source"] = ("东财指数 K 线成交额 f57（历史）+ 腾讯财经 qt 收盘成交额（最新交易日兜底）："
+                             "上证指数(1.000001) + 深证成指(0.399001) 之和")
+            cur["warnings"] = list(WARN)
+            save("market-amount.json", cur)
+            print("腾讯 qt 兜底：两市成交额推进到", d, val, "亿元", flush=True)
+            return
+    # 两个源都不行：绝不写空壳，沿用包内上次真值
+    if cur:
+        print("两市成交额两源均不可用，沿用上次真值", cur.get("dataAsOf"), flush=True)
+    else:
+        WARN.append("两市成交额：无上次真值可沿用，本次不写 market-amount.json（不摆空壳）")
 
 def main():
-    # --chain=A|G|ALL：三条链可独立跑、独立失败、独立写状态；互不牵连。
+    # --chain=A|G|I|ALL：各链可独立跑、独立失败、独立写状态；互不牵连。
     # ALL 只是兼容旧调用的串行模式，编排上已不再使用。
     chain = "ALL"
     for a in sys.argv[1:]:
         if a.startswith("--chain="):
             chain = a.split("=", 1)[1].upper()
-        elif a.upper() in ("A", "G", "ALL"):
+        elif a.upper() in ("A", "G", "I", "ALL"):
             chain = a.upper()
     jobs = []
     if chain in ("ALL", "A"):
         jobs += [("两市成交额", build_amount), ("行业宽度", build_industry)]
     if chain in ("ALL", "G"):
         jobs += [("黄金看板", build_gold)]
+    if chain in ("ALL", "I"):
+        jobs += [("国证2000 日更增量", build_gz2000), ("两市成交额兜底", build_amount)]
     errs = []
     for name, fn in jobs:
         print("=== [链 %s] %s ===" % (chain, name), flush=True)
@@ -612,7 +756,7 @@ def main():
 
     # 汇总：读取各链自己的状态文件合并，前端 external-warnings.json 结构不变
     by_chain, all_warn, all_fail = {}, [], []
-    for c in ("L", "A", "G"):
+    for c in ("L", "A", "G", "I"):
         p = os.path.join(ROOT, "external-warnings-%s.json" % c)
         if os.path.exists(p):
             try:
