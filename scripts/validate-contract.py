@@ -489,7 +489,7 @@ def static_checks(root, valid_fn):
     a9 = []
     for k in ('onRefresh', 'wasHidden', 'judgeForeground', 'FG_GAP', 'Date.now'):
         if k not in seg: a9.append('P3 段缺 ' + k)
-    if "document.addEventListener('visibilitychange', maybeRefresh)" not in seg:
+    if "/* P3-L1 */ document.addEventListener('visibilitychange', maybeRefresh)" not in seg:
         a9.append('缺 visibilitychange 监听注册')
     if "window.addEventListener('pageshow', maybeRefresh)" not in seg:
         a9.append('缺 pageshow 兜底注册')
