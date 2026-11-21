@@ -140,12 +140,17 @@ def judge_minclient(mc, client='0.87'):
     return 'reject' if n(mc) > n(client) else 'accept'
 
 
-def judge_available_at(v):
-    """§2.5：null=历史不回填（合规）、ISO 真实时刻=新数据（合规）、其余=伪造/非法（拒）。"""
+def judge_available_at(v, asof=None):
+    """§2.5：null=历史不回填（合规）；ISO 时刻且不早于数据末日=新数据（合规）；
+    早于数据末日的 ISO 时刻、非 ISO 值一律判伪造/非法（拒收）。"""
     if v is None:
         return 'legacy-null'
     s = str(v)
-    return 'accept' if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}', s) else 'reject'
+    if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}', s):
+        return 'reject'
+    if asof and re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(asof)) and s[:10] < str(asof):
+        return 'reject'          # 可得时刻早于数据末日 = 伪造历史
+    return 'accept'
 
 
 def judge_degrade(gate, level):
@@ -313,7 +318,7 @@ def snapshot_checks(root, valid_fn):
         d = json.loads(blob(root, n) or b'{}')
         if 'availableAt' not in d:
             a4_bad.append(n + ':缺键')
-        elif judge_available_at(d.get('availableAt')) == 'reject':
+        elif judge_available_at(d.get('availableAt'), d.get('dataAsOf')) == 'reject':
             a4_bad.append(n + ':值非法')
     gens = ['scripts/build-dashboards.mjs', 'scripts/build-external.py',
             'scripts/build-index-daily.py', 'scripts/build-us-etf.py', 'scripts/update.mjs']
@@ -529,7 +534,8 @@ def run_fixtures(ctx, root, valid_fn):
     ])
     fixture('R11', '「历史快照空着 availableAt 是待补」→ 实为 §2.5 明令不得伪造历史', '§2.5 / §4.1', [
         ('历史 null 合规（不回填）', judge_available_at(None), 'legacy-null'),
-        ('新数据真实 ISO 时刻合规', judge_available_at('2026-11-21T15:30:12+00:00'), 'accept'),
+        ('新数据真实 ISO 时刻合规', judge_available_at('2026-11-21T15:30:12+00:00', '2026-11-20'), 'accept'),
+        ('伪造早于数据末日的可得时刻拒收', judge_available_at('2020-01-01T00:00:00', '2026-11-20'), 'reject'),
         ('伪造/非法可得时间拒收', judge_available_at('不确定'), 'reject'),
         ('拿 dataAsOf 冒充可得时间拒收', judge_available_at('2026-11-20'), 'reject'),
     ])

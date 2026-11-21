@@ -764,6 +764,11 @@
      "expect": "accept"
     },
     {
+     "name": "伪造早于数据末日的可得时刻拒收",
+     "actual": "reject",
+     "expect": "reject"
+    },
+    {
      "name": "伪造/非法可得时间拒收",
      "actual": "reject",
      "expect": "reject"
