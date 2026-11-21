@@ -487,9 +487,12 @@ def static_checks(root, valid_fn):
     dsrc = text(root, 'common/dash-source.js')
     seg = dsrc[dsrc.find('/* P3 BEGIN'):dsrc.find('/* P3 END')] if '/* P3 BEGIN' in dsrc else ''
     a9 = []
-    for k in ('onRefresh', 'visibilitychange', 'pageshow', 'wasHidden',
-              'judgeForeground', 'FG_GAP', 'Date.now'):
+    for k in ('onRefresh', 'wasHidden', 'judgeForeground', 'FG_GAP', 'Date.now'):
         if k not in seg: a9.append('P3 段缺 ' + k)
+    if "document.addEventListener('visibilitychange', maybeRefresh)" not in seg:
+        a9.append('缺 visibilitychange 监听注册')
+    if "window.addEventListener('pageshow', maybeRefresh)" not in seg:
+        a9.append('缺 pageshow 兜底注册')
     if 'setInterval' in seg or 'setTimeout' in seg:
         a9.append('P3 段含定时器（规则禁止分钟级轮询）')
     if 'textContent' in seg or 'innerHTML' in seg:
