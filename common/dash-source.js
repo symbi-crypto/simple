@@ -30,6 +30,13 @@
     return s.slice(s.lastIndexOf('/') + 1);
   }
   function isDate(v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')); }
+  /* v0.90 / §2.5：覆盖之外的日期不具备新鲜数据资格。
+     浏览器侧同步查周末；节假日表与覆盖年份由打包侧 pull-snapshots.calendar_check 完整校验。 */
+  function calendarOK(v) {
+    if (!isDate(v)) return false;
+    try { return new Date(String(v) + 'T00:00:00Z').getUTCDay() % 6 !== 0; }
+    catch (e) { return false; }
+  }
   /* v0.87 / P1③：contract 从链标识升为 {chain,formatVersion,minClient}。
      旧字符串契约（chain/1）向后兼容放行；minClient 高于本前端则拒收该份，
      让 load() 继续回退包内副本，绝不强行渲染或白屏。 */
@@ -49,7 +56,7 @@
   /* 只认结构完整的真值；失败态 / 空壳（ok=false、dataAsOf=null、空数组）一律拒收 */
   function valid(name, d) {
     if (!d || typeof d !== 'object' || d.ok === false) return false;
-    if (!d.format || !isDate(d.dataAsOf)) return false;
+    if (!d.format || !isDate(d.dataAsOf) || !calendarOK(d.dataAsOf)) return false;
     if (!contractOK(d)) return false;   // P1③：版本不匹配则回退，不渲染
     var t = (d.trend && typeof d.trend === 'object') ? d.trend : {};
     var t5 = (t['5'] && typeof t['5'] === 'object') ? t['5'] : {};
@@ -210,6 +217,7 @@
     load: load,
     badge: badge,
     valid: valid,
+    calendarOK: calendarOK,
     onRefresh: onRefresh,
     judgeForeground: judgeForeground,
     maybeRefresh: maybeRefresh,

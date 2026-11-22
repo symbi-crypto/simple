@@ -12,8 +12,9 @@
   · 校验不过的文件写进警告清单，不中断打包；打包仍能用包内副本出包。
   · 不推 GitHub，只读，不改动仓库内容。
 """
-import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib, re, shutil, tempfile
+import os, sys, json, base64, argparse, urllib.request, urllib.error, hashlib, re, shutil, tempfile, datetime
 
+ROOT_FOR_CAL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = 'symbi-crypto/simple'
 BRANCH = 'main'
 CLIENT_VER = '0.87'   # P1③：与前端 dash-source.js 的 CLIENT_VER 同步
@@ -120,6 +121,42 @@ def contract_ok(d):
     return True, 'v%s' % c.get('formatVersion')
 
 
+HOLIDAY_FILE = 'common/holiday-cn.json'
+DATA_SNAPSHOTS = ('cb-daily.json', 'gold-daily.json', 'industry-daily.json', 'index-daily.json',
+                  'index-gz2000.json', 'index-csi-patch.json', 'market-amount.json', 'us-etf-daily.json')
+A_SHARE_SNAPSHOTS = ('cb-daily.json', 'industry-daily.json', 'index-daily.json',
+                     'market-amount.json', 'index-gz2000.json', 'index-csi-patch.json')
+
+
+def calendar_check(name, date_str):
+    """§2.5 / METHODOLOGY L11：覆盖之外的日期不具备新鲜数据资格。
+    仅对 8 份数据快照生效；状态/警告文件的 at 是生成时刻，不属数据快照，不参与日历校验。
+    A 股链查节假日表与覆盖年份；海外/混合链至少查周末。返回 (ok, reason)。"""
+    if name not in DATA_SNAPSHOTS:
+        return True, '状态/警告文件不属数据快照，跳过日历校验'
+    try:
+        dt = datetime.date.fromisoformat(str(date_str)[:10])
+    except Exception:
+        return False, 'dataAsOf 非合法日期'
+    if dt.weekday() >= 5:
+        return False, 'dataAsOf 落在周末 %s' % dt
+    if name not in A_SHARE_SNAPSHOTS:
+        return True, '非 A 股链：仅校验周末'
+    try:
+        h = json.load(open(os.path.join(ROOT_FOR_CAL, HOLIDAY_FILE), encoding='utf-8'))
+        years = sorted((h.get('Years') or {}).keys())
+        if not years or str(dt.year) not in years:
+            return False, '日历未覆盖 %d 年（已验证 %s）' % (dt.year, ','.join(years) or '无')
+        for hol in (h.get('Years') or {}).get(str(dt.year), []):
+            a = datetime.date.fromisoformat(hol['StartDate'])
+            b = datetime.date.fromisoformat(hol['EndDate'])
+            if a <= dt <= b:
+                return False, 'dataAsOf 落在节假日 %s' % hol.get('Name', '')
+    except Exception as e:
+        return False, '节假日表不可用：%s' % str(e)[:80]
+    return True, '交易日历校验通过'
+
+
 def asof(d):
     if not isinstance(d, dict):
         return ''
@@ -139,6 +176,9 @@ def valid(name, d):
     a = asof(d)
     if not a:
         return False, 'dataAsOf 缺失'
+    cal_ok, cal_why = calendar_check(name, a)
+    if not cal_ok:
+        return False, cal_why
     # 状态/警告类文件本来就没有 format 字段，只校验日期与失败态
     if d.get('format') is None and not (name in ('sync-status.json', 'chain-R-status.json')
                                         or name.startswith('external-warnings')):

@@ -15,7 +15,7 @@
   · 判定器是最小可执行化，仅用于回归，**不是生产实现、不进产品**（规则 §2.6）
   · 规则文件是断言的唯一依据；规则改了要同步改这里的 id 与 § 映射
 """
-import os, sys, json, hashlib, re, argparse, importlib.util, shutil
+import os, sys, json, hashlib, re, argparse, importlib.util, shutil, datetime
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
@@ -212,6 +212,34 @@ def judge_foreground(hidden, was, now, last, gap):
     if not was: return 'skip:never-left'
     if last and now - last < gap: return 'skip:coalesced'
     return 'refresh'
+
+
+def judge_crosscheck_status(currency_match, skew_seconds, same_session, freshness_ok, diff_pct, threshold=1.0):
+    """对齐参考项目 crossCheckQuotes 的判定顺序（core.mjs L711-723）。"""
+    if not freshness_ok: return 'stale'
+    if not same_session or (skew_seconds is not None and skew_seconds > 120): return 'time-mismatch'
+    if not currency_match: return 'currency-mismatch'
+    return 'divergent' if (diff_pct is not None and diff_pct > threshold) else 'matched'
+
+
+def judge_session_complete(hhmmss, close_hhmmss='150000'):
+    """§2.5 / market-rules.mjs dailyBarMetadata：未完成当日 K 线不定稿。"""
+    return str(hhmmss) >= str(close_hhmmss)
+
+
+def judge_calendar(date_str, covered_years=('2026', '2027'), holidays=(), a_share=True):
+    """§2.5：周末、节假日、覆盖外年份都不具备新鲜数据资格。"""
+    try:
+        y, m, d = (int(x) for x in str(date_str).split('-'))
+        wd = datetime.date(y, m, d).weekday()
+    except Exception:
+        return 'invalid'
+    if wd >= 5: return 'weekend'
+    if a_share:
+        if str(y) not in covered_years: return 'unverified-calendar'
+        for a, b in holidays:
+            if a <= date_str <= b: return 'holiday'
+    return 'trading-day'
 
 
 def judge_docs(rule, ledger, readme):
@@ -507,6 +535,33 @@ def static_checks(root, valid_fn):
     else:
         add('A9', '§6 回前台重取', 'advisory', True,
             '单次去重（无定时器）+ 3 渲染器注册 + 回前台不改状态文字', status='pass')
+    # ── v0.90：文章源码二次核查后新增的硬断言（不是"写文档就算落实"）──
+    ext = text(root, 'scripts/build-external.py')
+    cc_calls = len(re.findall(r'^\s+note_crosscheck\(', ext, re.M))
+    role_calls = len(re.findall(r'^\s+note_role\(', ext, re.M))
+    add('U1', '§4.1 unmodeled 必填', 'blocking',
+        all('unmodeled' in json.loads(blob(root, n) or b'{}') for n in DATA_FILES),
+        '8/8 份带 unmodeled 且指向集中清单')
+    cc_bad = [n for n in DATA_FILES if 'crossCheck' not in json.loads(blob(root, n) or b'{}')]
+    fake = [n for n in DATA_FILES
+            if isinstance(json.loads(blob(root, n) or b'{}').get('crossCheck'), dict)
+            and json.loads(blob(root, n) or b'{}').get('crossCheck', {}).get('status') == 'matched'
+            and json.loads(blob(root, n) or b'{}').get('crossCheck', {}).get('priceDiffPct') is None]
+    add('U2', '§2.1 单源显式标注 / 不伪装 matched', 'blocking',
+        not cc_bad and not fake,
+        '缺 crossCheck=%s；伪造 matched=%s' % (cc_bad or '无', fake or '无'))
+    add('U3', '§2.3 双源核验真调用（不是空函数）', 'blocking',
+        cc_calls >= 3 and role_calls >= 3 and 'overlap_check(' in ext,
+        'note_crosscheck 调用 %d 处 / note_role %d 处 / overlap_check 已接入' % (cc_calls, role_calls))
+    pull = text(root, 'scripts/pull-snapshots.py')
+    dash = text(root, 'common/dash-source.js')
+    add('U4', '§2.5 交易日历覆盖校验进 valid()', 'blocking',
+        'calendar_check' in pull and 'HOLIDAY_FILE' in pull and 'calendarOK' in dash,
+        '打包侧 calendar_check + 浏览器侧 calendarOK')
+    add('U5', '§2.5 未完成当日 K 线不定稿', 'blocking',
+        'int(hh) < 150000' in ext and '150000' in ext,
+        'CSI/成交额 qt 收盘前不采信（源码已有判定，本轮由断言钉住）')
+
     return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn}
 
 
@@ -582,6 +637,20 @@ def run_fixtures(ctx, root, valid_fn):
         ('离开后首次回来重取', judge_foreground(False, True, 10000, 0, 2000), 'refresh'),
         ('2 秒内再回来合并跳过', judge_foreground(False, True, 11000, 10000, 2000), 'skip:coalesced'),
         ('超过窗口再回来仍重取', judge_foreground(False, True, 13000, 10000, 2000), 'refresh'),
+    ])
+    fixture('R14', '「双源比个价差就行」→ 币种/时间戳/新鲜度依次判；当日未收盘与日历外不定稿',
+            '§2.3 / §2.5（METHODOLOGY L7/L11/L15、core.mjs L711-723）', [
+        ('价差 0.1% 全通过 → matched', judge_crosscheck_status(True, 5, True, True, 0.1), 'matched'),
+        ('币种不一致 → currency-mismatch', judge_crosscheck_status(False, 5, True, True, 0.1), 'currency-mismatch'),
+        ('时间戳偏 300s → time-mismatch', judge_crosscheck_status(True, 300, True, True, 0.1), 'time-mismatch'),
+        ('新鲜度不合格 → stale', judge_crosscheck_status(True, 5, True, False, 0.1), 'stale'),
+        ('价差 40% → divergent', judge_crosscheck_status(True, 5, True, True, 40), 'divergent'),
+        ('14:30 未收盘 → 不定稿', judge_session_complete('143000'), False),
+        ('15:00 已收盘 → 定稿', judge_session_complete('150000'), True),
+        ('周六 → weekend', judge_calendar('2026-11-21'), 'weekend'),
+        ('覆盖外 2030 → unverified-calendar', judge_calendar('2030-01-03'), 'unverified-calendar'),
+        ('节假日（周一）→ holiday', judge_calendar('2027-01-04', ('2026','2027'), [('2027-01-01','2027-01-04')]), 'holiday'),
+        ('普通交易日 → trading-day', judge_calendar('2026-11-20'), 'trading-day'),
     ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),

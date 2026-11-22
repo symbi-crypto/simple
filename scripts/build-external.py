@@ -79,16 +79,47 @@ def note_role(name, role):
     SOURCE_ROLE[name] = role
 
 
-def note_crosscheck(name, a, b, asof_match=True, threshold=0.2):
-    """两源都拿到时记一笔：价差超阈值标 divergent，绝不静默取一个。"""
-    if a is None or b is None or a == 0:
-        CROSS_CHECK[name] = {'agreement': None, 'priceDiffPct': None,
-                             'asOfMatch': asof_match, 'status': 'single-source'}
-        return
+def note_crosscheck(name, a, b, asof_match=True, threshold=1.0,
+                    currency_match=True, timestamp_skew_seconds=0,
+                    freshness_ok=True, same_session=True):
+    """§2.3 双源交叉校验：币种 / 价差 / 时间戳 / 新鲜度依次比对，记录状态机。
+    对齐参考项目 crossCheckQuotes() 的判定顺序；任一不过都不得静默取其中一个。"""
+    if a is None or b is None or a == 0 or b == 0:
+        CROSS_CHECK[name] = {'status': 'single-source', 'priceDiffPct': None,
+                             'asOfMatch': asof_match, 'currencyMatch': currency_match,
+                             'timestampSkewSeconds': None, 'freshnessOk': freshness_ok,
+                             'sameSession': same_session,
+                             'note': '仅一源可用，显式标注，不伪装 matched'}
+        return 'single-source'
     diff = abs(a - b) / abs(a) * 100
-    CROSS_CHECK[name] = {'agreement': round(100 - min(diff, 100), 4),
-                         'priceDiffPct': round(diff, 4), 'asOfMatch': asof_match,
-                         'status': 'divergent' if diff > threshold else 'matched'}
+    if not freshness_ok:
+        status = 'stale'
+    elif not same_session or (timestamp_skew_seconds is not None and timestamp_skew_seconds > 120):
+        status = 'time-mismatch'
+    elif not currency_match:
+        status = 'currency-mismatch'
+    else:
+        status = 'divergent' if diff > threshold else 'matched'
+    CROSS_CHECK[name] = {'status': status, 'priceDiffPct': round(diff, 4),
+                         'agreement': round(100 - min(diff, 100), 4),
+                         'asOfMatch': asof_match, 'currencyMatch': currency_match,
+                         'timestampSkewSeconds': timestamp_skew_seconds,
+                         'freshnessOk': freshness_ok, 'sameSession': same_session,
+                         'maxPriceDifferencePct': threshold,
+                         'maxTimestampSkewSeconds': 120}
+    return status
+
+
+def overlap_check(primary, fallback, tol_pct=1.0):
+    """§2.2 主源恢复后先用重叠日逐值校验再切回；不通过返回 divergent，不硬拼两条序列。"""
+    a = dict(primary or []); b = dict(fallback or [])
+    common = sorted(set(a) & set(b))
+    if len(common) < 3:
+        return 'single-source', 0, None
+    diffs = [abs(a[d] - b[d]) / a[d] * 100 for d in common if a[d] > 0 and b[d] > 0]
+    worst = round(max(diffs), 4) if diffs else None
+    return ('divergent' if (worst is not None and worst > tol_pct) else 'matched',
+            len(common), worst)
 
 
 def get(url, timeout=12, tries=2):
@@ -236,11 +267,15 @@ def save(name, obj):
         src = str(obj.get("source") or "")
         role = SOURCE_ROLE.get(name) or ("fallback" if ("兜底" in src or "不可用" in src) else "primary")
         obj["sourceRole"] = role
+        obj["sourceRoleBasis"] = "runtime" if name in SOURCE_ROLE else "text-inference"
+        obj["unmodeled"] = "数据契约落地台账.md §5 未建模项清单（集中维护，本快照只做指向）"
         ws = obj.get("warnings") or []
         obj["warningClasses"] = [classify_warning(w) for w in ws]
         obj["degradeLevel"] = degrade_level(ws, obj.get("ok", True))
-        if name in CROSS_CHECK:
-            obj["crossCheck"] = CROSS_CHECK[name]
+        # §2.1 单源必须显式标注：无两源记录时写 null，绝不留缺字段或伪装 matched
+        obj["crossCheck"] = CROSS_CHECK.get(name)
+        if obj["crossCheck"] is None:
+            obj["crossCheckNote"] = "本次仅一源可用，显式标注，不伪装双源一致"
     with open(os.path.join(ROOT, name), "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
     print("写回", name, os.path.getsize(os.path.join(ROOT, name)), "bytes")
@@ -769,10 +804,34 @@ def build_gz2000():
                 except Exception:
                     pass
     src = "东财指数 K 线 f53（0.399303 国证2000）"
-    rows = em
-    if len(rows) < 10:
-        rows = qq_day("sz399303")
+    # 两源都尽力取：主源恢复/兜底切换都要有重叠日证据，不静默换源
+    try:
+        qq = qq_day("sz399303") or []
+    except Exception:
+        qq = []
+    if len(em) >= 10:
+        rows, role = em, "primary"
+        if qq:
+            st_ov, n_ov, worst = overlap_check(em, qq)
+            note_crosscheck("index-gz2000.json",
+                            em[-1][1] if em else None, qq[-1][1] if qq else None,
+                            asof_match=(em[-1][0] == qq[-1][0]) if em and qq else False,
+                            same_session=(em[-1][0] == qq[-1][0]) if em and qq else False)
+            note_role("index-gz2000.json", "cross-check")
+            if st_ov == "divergent":
+                WARN.append("国证2000：主源与腾讯重叠 %d 日价差 %.4f%% 超阈值，不切回主源、保留兜底真值"
+                            % (n_ov, worst))
+                rows, role, src = qq, "fallback", "腾讯财经 sz399303 日K（双源 divergent，按降级处理）"
+            elif st_ov == "single-source":
+                WARN.append("国证2000：双源重叠日不足 3 天，标单源、不宣称交叉一致")
+        else:
+            note_role("index-gz2000.json", "primary")
+            note_crosscheck("index-gz2000.json", em[-1][1] if em else None, None)
+    else:
+        rows, role = qq, "fallback"
         src = "腾讯财经 sz399303 日K（东财主源不可用，自动兜底）"
+        note_role("index-gz2000.json", "fallback")
+        note_crosscheck("index-gz2000.json", None, qq[-1][1] if qq else None)
     days = [{"date": d, "close": v} for d, v in rows if d >= base_last and v > 0]
     if len(days) < 3:
         WARN.append("国证2000：主源与兜底均不足 3 个交易日，本次不写 index-gz2000.json")
@@ -913,6 +972,8 @@ def build_amount():
             cur = None
     days = sorted(set(sh) & set(sz)) if ok else []
     if ok and days:
+        note_role("market-amount.json", "primary")
+        note_crosscheck("market-amount.json", (sh.get(days[-1], 0) + sz.get(days[-1], 0)) / 1e8, None)
         vals = [round((sh[d] + sz[d]) / 1e8, 1) for d in days]
         out = {
             "format": "wufu-dash-amount-v1", "dataAsOf": days[-1], "ok": True,
@@ -933,6 +994,8 @@ def build_amount():
     WARN.append("两市成交额：上证 %d 根 / 深证 %d 根，不足；改用腾讯 qt 补最新交易日"
                 % (len(sh), len(sz)))
     qq = qq_qt_amount()
+    note_role("market-amount.json", "fallback")
+    note_crosscheck("market-amount.json", None, qq[1] if qq else None)
     if qq and cur:
         d, val = qq
         if d > str(cur.get("dataAsOf") or ""):

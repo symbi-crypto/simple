@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 51,
-   "passed": 51,
+   "total": 56,
+   "passed": 56,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 13,
-   "passed": 13,
+   "total": 14,
+   "passed": 14,
    "failed": 0
   },
   "snapshots": 16
@@ -507,6 +507,41 @@
    "severity": "advisory",
    "status": "pass",
    "detail": "单次去重（无定时器）+ 3 渲染器注册 + 回前台不改状态文字"
+  },
+  {
+   "id": "U1",
+   "rule": "§4.1 unmodeled 必填",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "8/8 份带 unmodeled 且指向集中清单"
+  },
+  {
+   "id": "U2",
+   "rule": "§2.1 单源显式标注 / 不伪装 matched",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "缺 crossCheck=无；伪造 matched=无"
+  },
+  {
+   "id": "U3",
+   "rule": "§2.3 双源核验真调用（不是空函数）",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "note_crosscheck 调用 5 处 / note_role 5 处 / overlap_check 已接入"
+  },
+  {
+   "id": "U4",
+   "rule": "§2.5 交易日历覆盖校验进 valid()",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "打包侧 calendar_check + 浏览器侧 calendarOK"
+  },
+  {
+   "id": "U5",
+   "rule": "§2.5 未完成当日 K 线不定稿",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "CSI/成交额 qt 收盘前不采信（源码已有判定，本轮由断言钉住）"
   }
  ],
  "fixtures": [
@@ -839,6 +874,70 @@
    "failed": []
   },
   {
+   "id": "R14",
+   "case": "「双源比个价差就行」→ 币种/时间戳/新鲜度依次判；当日未收盘与日历外不定稿",
+   "rule": "§2.3 / §2.5（METHODOLOGY L7/L11/L15、core.mjs L711-723）",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "价差 0.1% 全通过 → matched",
+     "actual": "matched",
+     "expect": "matched"
+    },
+    {
+     "name": "币种不一致 → currency-mismatch",
+     "actual": "currency-mismatch",
+     "expect": "currency-mismatch"
+    },
+    {
+     "name": "时间戳偏 300s → time-mismatch",
+     "actual": "time-mismatch",
+     "expect": "time-mismatch"
+    },
+    {
+     "name": "新鲜度不合格 → stale",
+     "actual": "stale",
+     "expect": "stale"
+    },
+    {
+     "name": "价差 40% → divergent",
+     "actual": "divergent",
+     "expect": "divergent"
+    },
+    {
+     "name": "14:30 未收盘 → 不定稿",
+     "actual": false,
+     "expect": false
+    },
+    {
+     "name": "15:00 已收盘 → 定稿",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "周六 → weekend",
+     "actual": "weekend",
+     "expect": "weekend"
+    },
+    {
+     "name": "覆盖外 2030 → unverified-calendar",
+     "actual": "unverified-calendar",
+     "expect": "unverified-calendar"
+    },
+    {
+     "name": "节假日（周一）→ holiday",
+     "actual": "holiday",
+     "expect": "holiday"
+    },
+    {
+     "name": "普通交易日 → trading-day",
+     "actual": "trading-day",
+     "expect": "trading-day"
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R9",
    "case": "「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离",
    "rule": "§11",
@@ -868,8 +967,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-cb-v1",
-   "bytes": 34084,
-   "sha1": "421fdf21d3f7",
+   "bytes": 34373,
+   "sha1": "b2eccdece7e6",
    "fields": [
     "availableAt",
     "availableAtNote",
@@ -877,6 +976,8 @@
     "chain",
     "contract",
     "count",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "dist",
@@ -891,6 +992,7 @@
     "summary",
     "trend",
     "trendNote",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -899,14 +1001,16 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-gold-v1",
-   "bytes": 59873,
-   "sha1": "831c1d842660",
+   "bytes": 60162,
+   "sha1": "0fdea50b64d5",
    "fields": [
     "availableAt",
     "availableAtNote",
     "basis",
     "chain",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -920,6 +1024,7 @@
     "source",
     "sourceRole",
     "trend",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -928,8 +1033,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-industry-v2",
-   "bytes": 31847,
-   "sha1": "f70892211da6",
+   "bytes": 32136,
+   "sha1": "4eb1bd97191a",
    "fields": [
     "area",
     "availableAt",
@@ -939,6 +1044,8 @@
     "boardTotal",
     "chain",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -953,6 +1060,7 @@
     "sampleNote",
     "source",
     "sourceRole",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -961,8 +1069,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-idx-v2",
-   "bytes": 22171,
-   "sha1": "0fca504e1400",
+   "bytes": 22460,
+   "sha1": "3ff5e2ebc30f",
    "fields": [
     "availableAt",
     "availableAtNote",
@@ -970,6 +1078,8 @@
     "chain",
     "contract",
     "coverage",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -980,6 +1090,7 @@
     "source",
     "sourceRole",
     "trendNote",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -988,8 +1099,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-patch-v1",
-   "bytes": 1407,
-   "sha1": "5fd83ed49c50",
+   "bytes": 1696,
+   "sha1": "bf636d03cdc9",
    "fields": [
     "availableAt",
     "availableAtNote",
@@ -997,6 +1108,8 @@
     "basis",
     "chain",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "days",
     "degradeLevel",
@@ -1004,6 +1117,7 @@
     "note",
     "source",
     "sourceRole",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -1012,8 +1126,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-csi-patch-v1",
-   "bytes": 1258,
-   "sha1": "5f1b308f90e0",
+   "bytes": 1547,
+   "sha1": "632efe34dc8c",
    "fields": [
     "availableAt",
     "availableAtNote",
@@ -1021,6 +1135,8 @@
     "chain",
     "codes",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -1029,6 +1145,7 @@
     "series",
     "source",
     "sourceRole",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -1037,8 +1154,8 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-amount-v1",
-   "bytes": 16627,
-   "sha1": "f2f66497ca55",
+   "bytes": 16916,
+   "sha1": "ba63c810e0c5",
    "fields": [
     "10",
     "5",
@@ -1047,6 +1164,8 @@
     "basis",
     "chain",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -1054,6 +1173,7 @@
     "ok",
     "source",
     "sourceRole",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
@@ -1062,8 +1182,8 @@
    "status": "pass",
    "asOf": "2026-11-16",
    "format": "us-etf-daily/1",
-   "bytes": 1122688,
-   "sha1": "839b40a9177e",
+   "bytes": 1122977,
+   "sha1": "ca8d4b1412c2",
    "fields": [
     "adjust",
     "availableAt",
@@ -1073,6 +1193,8 @@
     "cols",
     "commonDays",
     "contract",
+    "crossCheck",
+    "crossCheckNote",
     "dataAsOf",
     "degradeLevel",
     "format",
@@ -1083,6 +1205,7 @@
     "source",
     "sourceRole",
     "symbols",
+    "unmodeled",
     "warningClasses",
     "warnings"
    ]
