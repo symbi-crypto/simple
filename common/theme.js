@@ -374,22 +374,45 @@
       sel.style.setProperty(p, LOCK[p], "important");
     });
 
-    /* 全站统一定位：顶栏右上角，绝对定位，不参与宿主 flex 流。
-       原因：etf/tool.html 的数据徽标比 cb 宽得多，若切换键参与 flex 换行，
-       只有这一页会被挤到下一行左侧 —— 正是上一版「位置不统一」的根因。
-       绝对定位后所有页面的 x/y 与宿主内容宽度无关，逐位一致。 */
+    /* 顶栏位置按结构分两类（用户 v0.97 要求，同类页面逐位一致）：
+         首页   无「返回首页」行 → 控件与标题同一行、靠右、垂直居中对齐；
+         系统页 有「返回首页」行 → 日期回到标题同一行右侧（不再为控件让位），
+                 控件放到返回首页那一行右侧，与返回按钮垂直居中、右边缘与日期对齐。
+       不再用绝对定位硬钉容器顶边：绝对定位会让控件比标题高一截（首页截图的问题），
+       也会把日期徽标挤到中间。改为参与所在行的布局流，靠自动外边距推到右侧。 */
+    var whRoot = host.closest ? host.closest(".wh") : null;
+    var second = (whRoot ? whRoot.querySelector(".wh-row") : null) ||
+                 host.querySelector(".homestrip");
+    var target = second || host;
+    /* cb/tool.html 的 .homestrip 是块级；补成 flex 才能让 auto 外边距生效。
+       两类系统页因此得到完全一致的第二行布局。 */
     try {
-      if (g.getComputedStyle(host).position === "static") host.style.position = "relative";
-    } catch (e4) { }
-    sel.style.setProperty("position", "absolute", "important");
-    sel.style.setProperty("right", "14px", "important");
-    sel.style.setProperty("top", "14px", "important");
-    sel.style.setProperty("margin", "0", "important");
-    sel.style.setProperty("z-index", "5", "important");
-    /* 徽标让出右上角，避免与切换键重叠（两主题下同一处理，位置规则唯一）。 */
-    var badge = host.querySelector(".wh-badge, .databadge");
-    if (badge) badge.style.setProperty("margin-right", "96px", "important");
-    host.appendChild(sel);
+      if (g.getComputedStyle(target).display.indexOf("flex") < 0) {
+        target.style.setProperty("display", "flex", "important");
+        target.style.setProperty("align-items", "center", "important");
+        target.style.setProperty("flex-wrap", "wrap", "important");
+        target.style.setProperty("gap", "8px", "important");
+      }
+    } catch (e5) { }
+    sel.style.setProperty("margin-left", "auto", "important");
+    sel.style.setProperty("margin-right", "0", "important");
+    sel.style.setProperty("margin-top", "0", "important");
+    sel.style.setProperty("margin-bottom", "0", "important");
+    sel.style.setProperty("flex", "0 0 auto", "important");
+    sel.style.setProperty("align-self", "center", "important");
+    /* 日期徽标不再让位：原先的 margin-right:96px 正是它跑到中间的原因。 */
+    var badge = host.querySelector(".wh-badge, .databadge") ||
+                (whRoot ? whRoot.querySelector(".wh-badge, .databadge") : null);
+    if (badge) badge.style.removeProperty("margin-right");
+    /* header.js 的 .wh-slot 平时是空 span，但 .wh-top 的 gap:12px 仍占一格，
+       会把日期徽标推离右边缘 12px。挪到第二行后第一行只剩标题+日期，
+       两者右边缘与第二行控件逐位对齐；「检测到新版本」提示也回到操作行。 */
+    var slot = whRoot ? whRoot.querySelector(".wh-slot") : null;
+    if (slot) {
+      if (second && slot.parentNode !== second) second.appendChild(slot);
+      slot.style.setProperty("margin-left", "0", "important");
+    }
+    target.appendChild(sel);
 
     /* 首屏：业务 JS 里登记的遗留色写死的是深色字面量，浅色下换成当前主题值。
        深色下 css(var) 返回原值，逐字不变。 */

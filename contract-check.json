@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 74,
-   "passed": 74,
+   "total": 75,
+   "passed": 75,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 20,
-   "passed": 20,
+   "total": 21,
+   "passed": 21,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 2513 字节"
+   "detail": "契约 2714 字节"
   },
   {
    "id": "V2",
@@ -503,10 +503,10 @@
   },
   {
    "id": "V5",
-   "rule": "界面契约 §3 切换键全站唯一 class / 统一注入",
+   "rule": "界面契约 §3 切换键唯一外观 / 按行归位",
    "severity": "blocking",
    "status": "pass",
-   "detail": "统一 class + 绝对定位顶栏右上角"
+   "detail": "唯一 class + 参与布局流 + 自动外边距 + 无绝对定位"
   },
   {
    "id": "V6",
@@ -556,6 +556,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "深=#4fc3f7 浅=#147d5e"
+  },
+  {
+   "id": "V13",
+   "rule": "界面契约 §3 数据日期回到标题右侧、不为控件让位",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "无让位外边距 / 徽标自动右推"
   },
   {
    "id": "B11",
@@ -706,6 +713,45 @@
    "failed": []
   },
   {
+   "id": "R21",
+   "case": "「绝对定位硬钉顶边 + 日期让位」→ 必须按结构分两类归位",
+   "rule": "界面契约 §3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "不再绝对定位",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "自动外边距右推",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "日期不让位",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "识别两类系统行",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约写明分两类",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色配色未连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R19",
    "case": "「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色",
    "rule": "界面契约 §2/§3",
@@ -771,7 +817,7 @@
      "expect": true
     },
     {
-     "name": "定位不参与 flex 换行",
+     "name": "参与布局流且自动右推",
      "actual": true,
      "expect": true
     }

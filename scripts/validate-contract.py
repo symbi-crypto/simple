@@ -517,11 +517,14 @@ def static_checks(root, valid_fn):
         len(ui_names)>=25 and set(ui_names)==set(dark_names),
         '深浅各 %d 个'%len(ui_names))
     tjs = text(root, 'common/theme.js')
-    add('V5', '界面契约 §3 切换键全站唯一 class / 统一注入', 'blocking',
+    add('V5', '界面契约 §3 切换键唯一外观 / 按行归位', 'blocking',
         'wufu-theme-toggle' in tjs and 'wh-theme' not in tjs
-        and '"position", "absolute"' in tjs and '"right", "14px"' in tjs
-        and '"top", "14px"' in tjs and 'margin-right", "96px"' in tjs,
-        '统一 class + 绝对定位顶栏右上角')
+        and '"margin-left", "auto"' in tjs and '"flex", "0 0 auto"' in tjs
+        and '"position", "absolute"' not in tjs
+        and 'margin-right", "96px"' not in tjs
+        and '.wh-row' in tjs and '.homestrip' in tjs
+        and '分两类' in ui_rule,
+        '唯一 class + 参与布局流 + 自动外边距 + 无绝对定位')
     add('V6', '界面契约 §3 浅色选中态用 tone 而非实心块', 'blocking',
         ':root[data-theme="light"] .on' in tcss and 'var(--ui-accent-soft)' in tcss
         and 'var(--ui-accent-ink)' in tcss, 'accent-soft/line/ink 三档')
@@ -599,6 +602,22 @@ def static_checks(root, valid_fn):
         ('浅色值未被连带改动', lv.get('--c-bg','').lower()=='#f6f8f7', True),
     ])
 
+    # ── v0.97 顶栏按结构归位 ──────────────────────────────────────
+    add('V13', '界面契约 §3 数据日期回到标题右侧、不为控件让位', 'blocking',
+        'margin-right", "96px"' not in tjs
+        and 'margin-left:auto' in text(root, 'common/header.css')
+        and '数据日期**必须**位于标题同一行右侧' in ui_rule,
+        '无让位外边距 / 徽标自动右推')
+    fixture('R21', '「绝对定位硬钉顶边 + 日期让位」→ 必须按结构分两类归位',
+        '界面契约 §3', [
+        ('不再绝对定位', '"position", "absolute"' not in tjs, True),
+        ('自动外边距右推', '"margin-left", "auto"' in tjs, True),
+        ('日期不让位', 'margin-right", "96px"' not in tjs, True),
+        ('识别两类系统行', '.wh-row' in tjs and '.homestrip' in tjs, True),
+        ('契约写明分两类', '位置**必须**按顶栏结构分两类' in ui_rule, True),
+        ('浅色配色未连带改动', lv.get('--c-accent','').lower()=='#147d5e', True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
@@ -616,7 +635,7 @@ def static_checks(root, valid_fn):
         ('浅色选中非实心', 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss, True),
         ('参考配色取自截图墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
         ('遗留色已登记', all(x in tjs for x in LEGACY_LITS), True),
-        ('定位不参与 flex 换行', '"position", "absolute"' in tjs and '"right", "14px"' in tjs, True),
+        ('参与布局流且自动右推', '"margin-left", "auto"' in tjs and '"position", "absolute"' not in tjs, True),
     ])
 
     rule, ledger, readme = (text(root, x) for x in (RULE_FILE, LEDGER_FILE, README_FILE))
