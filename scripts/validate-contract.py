@@ -799,19 +799,44 @@ def static_checks(root, valid_fn):
     _tab_ok = all('position:static !important' in text(root,_f)
                   and 'max-height:none !important' in text(root,_f)
                   and '(hover:none) and (pointer:coarse)' in text(root,_f)
-                  and 'flex-direction:column !important' in text(root,_f)
+                  and 'flex-direction:row !important' in text(root,_f)
                   for _f in _tab_files)
-    add('V27', '界面契约 §7 平板取消 sticky 限高、单列自然滚动', 'blocking',
-        _tab_ok and '## §7 热力图层次与平板布局' in ui_rule
-        and '粘滞定位加限高的内部滚动' in ui_rule,
-        '%d 个文件含平板规则'%sum(1 for _f in _tab_files if 'position:static !important' in text(root,_f)))
+    _tab_files = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','common/combo-system.css']
+    _rule_ok = all('position:static !important' in text(root,_f)
+                   and 'max-height:none !important' in text(root,_f)
+                   and '(min-width:1081px)' in text(root,_f)
+                   and 'flex-direction:row !important' in text(root,_f)
+                   and 'flex-direction:column !important' not in text(root,_f)
+                   and 'width:400px !important' in text(root,_f)
+                   and '.cards{grid-template-columns:1fr !important' not in text(root,_f)
+                   for _f in _tab_files)
+    add('V27', '界面契约 §7 平板取消 sticky 限高、>1080px 恢复左右两列', 'blocking',
+        _rule_ok and '## §7 热力图层次与平板布局' in ui_rule
+        and '保持原有的左右两列布局' in ui_rule
+        and '改变列数实现' in ui_rule,
+        '%d 个文件含两列规则'%sum(1 for _f in _tab_files if 'flex-direction:row !important' in text(root,_f)))
+    # v0.9903：防止再把 ≥1081 的窗口强制单列（用户指出的回归）
+    _no_col = all('flex-direction:column !important' not in text(root,_f) for _f in _tab_files)
+    add('V33', '界面契约 §7 中小桌面窗口不得被改成单列（防回归）', 'blocking',
+        _no_col and all('(min-width:1081px) and (max-width:1279px)' in text(root,_f)
+                        for _f in _tab_files),
+        '残留 column 强制 %d 文件'%sum(1 for _f in _tab_files if 'flex-direction:column !important' in text(root,_f)))
+    fixture('R27', '「平板/电脑被改成手机单列」→ 必须保持两列',
+        '界面契约 §7', [
+        ('无强制单列规则', _no_col, True),
+        ('>1080 明确两列', all('flex-direction:row !important' in text(root,_f) for _f in _tab_files), True),
+        ('参数区仍 400px', all('width:400px !important' in text(root,_f) for _f in _tab_files), True),
+        ('sticky 仍已取消', all('position:static !important' in text(root,_f) for _f in _tab_files), True),
+        ('卡片不再强制单列', all('.cards{grid-template-columns:1fr !important' not in text(root,_f) for _f in _tab_files), True),
+        ('契约明文禁止改列数', '改变列数实现' in ui_rule, True),
+    ])
     # 版本号约定：不得跨到 1.00，须在 0.99 后加两位数
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9902' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9902' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9902' in _sw, '0.9902' in _rd))
+        'wufu-all-v0.9903' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9903' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9903' in _sw, '0.9903' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -869,7 +894,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9902' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9903' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

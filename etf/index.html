@@ -614,20 +614,31 @@ h3.l2t{margin-bottom:8px !important}
 .srow:hover{border-color:var(--acc) !important;}
 
 
-/* ── v0.9901 平板（iPad 横/竖屏）参数面板 ──────────────────────────
-   ≥1024px 的旧规则把 aside 设成 sticky + max-height:100vh + overflow:auto，
-   面板内容约 1600px 却只露 790px；iOS Safari 下手指滑动常被判成页面滚动，
-   内部拉不下去，「运行回测」看不到，滚上来的 KPI/曲线又与钉住的参数面板打架。
-   平板一律取消 sticky 与限高，恢复自然高度整页滚动，结果区按文档流排在其后。 */
+/* ── v0.9903 平板 / 中小桌面窗口：恢复左右两列，仅取消 sticky 限高 ──
+   v0.9901 为修「参数区拉不下去」把 1024–1279px 与所有粗指针平板一律改成
+   flex-direction:column，等于把 iPad 横屏和不少电脑窗口变成手机单列——
+   这是回归。原设计里 >1080px 是左右两列（参数区 400px 在左、结果区在右），
+   ≥1280px 结果区卡片再分两列；1024–1080px 与 <1024px 原本就是单列，不动。
+
+   修复拆成两件互不牵连的事：
+   A 取消 sticky + max-height:100vh + 内部滚动（这才是「拉不下去」的根因）：
+     参数区恢复自然高度，整页滚动即可看到底部的「运行回测」；两列下
+     aside 在左、main 在右，矩形不重叠，KPI/曲线不会再与钉住的面板打架。
+   B >1080px 明确恢复 row 两列；桌面 ≥1280 且细指针不命中本规则，
+     保持原有的 sticky 两列体验（用户未反馈这部分有问题）。 */
 @media (min-width:1024px) and (max-width:1279px),
-       (min-width:761px) and (hover:none) and (pointer:coarse){
-  .wrap{flex-direction:column !important;align-items:stretch !important;gap:12px !important;padding:12px !important}
+       (min-width:1024px) and (hover:none) and (pointer:coarse){
   aside{position:static !important;top:auto !important;max-height:none !important;
-        height:auto !important;overflow:visible !important;width:100% !important;
-        flex-shrink:1 !important;-webkit-overflow-scrolling:auto !important}
-  main{width:100% !important;min-width:0 !important}
-  .cards{grid-template-columns:1fr !important;display:flex !important;flex-direction:column !important}
-  .cards > .card.wide{grid-column:span 1 !important}
+        height:auto !important;overflow:visible !important;
+        -webkit-overflow-scrolling:auto !important}
+}
+@media (min-width:1081px) and (max-width:1279px),
+       (min-width:1081px) and (hover:none) and (pointer:coarse){
+  .wrap{flex-direction:row !important;align-items:flex-start !important;
+        gap:16px !important;padding:16px !important}
+  aside{width:400px !important;flex-shrink:0 !important}
+  main{min-width:0 !important;flex:1 !important}
+}
 }
 </style>
 
@@ -7235,7 +7246,7 @@ function buildChips() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99029 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99039 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];

@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 94,
-   "passed": 94,
+   "total": 95,
+   "passed": 95,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 26,
-   "passed": 26,
+   "total": 27,
+   "passed": 27,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 4116 字节"
+   "detail": "契约 4232 字节"
   },
   {
    "id": "V2",
@@ -657,10 +657,17 @@
   },
   {
    "id": "V27",
-   "rule": "界面契约 §7 平板取消 sticky 限高、单列自然滚动",
+   "rule": "界面契约 §7 平板取消 sticky 限高、>1080px 恢复左右两列",
    "severity": "blocking",
    "status": "pass",
-   "detail": "5 个文件含平板规则"
+   "detail": "5 个文件含两列规则"
+  },
+  {
+   "id": "V33",
+   "rule": "界面契约 §7 中小桌面窗口不得被改成单列（防回归）",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "残留 column 强制 0 文件"
   },
   {
    "id": "V28",
@@ -990,6 +997,45 @@
     },
     {
      "name": "外观主色未连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R27",
+   "case": "「平板/电脑被改成手机单列」→ 必须保持两列",
+   "rule": "界面契约 §7",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "无强制单列规则",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": ">1080 明确两列",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "参数区仍 400px",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "sticky 仍已取消",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "卡片不再强制单列",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约明文禁止改列数",
      "actual": true,
      "expect": true
     }
