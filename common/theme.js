@@ -166,6 +166,33 @@
     "0139": "--c-r047",
     "0140": "--c-r048"
   };
+  /* ── v0.9902 热力图色阶硬兜底 ────────────────────────────────────
+     13 档原先只靠渲染瞬间读 CSS 变量；某些浏览器/缓存状态下 getComputedStyle
+     返回空，ECharts 收到空色值即退回默认黑白灰。这里内置深浅两套常量，
+     与 theme.css / FALLBACK / LIGHT 三份由门禁 V29 逐值校验，杜绝双真源漂移。 */
+  var HEAT_STOPS = ["n6","n5","n4","n3","n2","n1","mid","p1","p2","p3","p4","p5","p6"];
+  var HEAT_HARD = {
+    dark: ["#F87173", "#D95859", "#B94546", "#8E3536", "#632A2B", "#40222B", "#22354A", "#1E4039", "#27604D", "#318566", "#3EAE83", "#4CCB97", "#4ADE81"],
+    light: ["#C0392D", "#D6535B", "#DF8085", "#E9A3A7", "#F1C3C6", "#F8E1E3", "#F6F8F7", "#DFEFE8", "#C2E4D5", "#96D2B9", "#63BC99", "#2E9C77", "#147D60"]
+  };
+  function heatName(i) { return "--chart-heat-" + HEAT_STOPS[i]; }
+  function isColor(c) {
+    return typeof c === "string" &&
+      (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(c.trim()) ||
+       /^rgba?\(/i.test(c.trim()));
+  }
+  /* 唯一取色入口：先读当前主题 CSS 变量，任一为空/非法则用内置常量补齐。
+     返回值恒为 13 个合法色值，绝不把空串交给 ECharts。 */
+  function heatColors() {
+    var hard = HEAT_HARD[curEff === "light" ? "light" : "dark"];
+    var out = [];
+    for (var i = 0; i < HEAT_STOPS.length; i++) {
+      var v = "";
+      try { v = rawCss(heatName(i)); } catch (e) { }
+      out.push(isColor(v) ? v.trim() : hard[i]);
+    }
+    return out;
+  }
   function rawCss(name) {
     var v = "";
     try {
@@ -174,6 +201,14 @@
       }
     } catch (e) { }
     v = String(v).trim();
+    if (!v || !isColor(v)) {
+      /* v0.9902：热力图变量若读到空或 var() token 流，直接取内置常量，
+         不把非法值交给 ECharts（否则整张热力图退回默认黑白灰）。 */
+      var hi = HEAT_STOPS.indexOf(name.slice("--chart-heat-".length));
+      if (name.indexOf("--chart-heat-") === 0 && hi >= 0) {
+        return HEAT_HARD[curEff === "light" ? "light" : "dark"][hi];
+      }
+    }
     if (!v) {
       // CSS 未加载时按当前主题取值，避免浅色下误回退深色字面量
       if (curEff === "light" && LIGHT[name] != null) v = LIGHT[name];
@@ -364,11 +399,8 @@
       /* visualMap / 热力图：深底用深红-深灰-深绿，浅底用粉-浅灰-浅绿，不再装反 */
       /* v0.9901：13 档色阶。旧版重绘时降成 [neg,mid,mid,pos]，
          中间两段完全同色，±3% 看不出层次；首屏与重绘必须同一套档位。 */
-      var HEAT_STOPS = ["--chart-heat-n6","--chart-heat-n5","--chart-heat-n4",
-        "--chart-heat-n3","--chart-heat-n2","--chart-heat-n1","--chart-heat-mid",
-        "--chart-heat-p1","--chart-heat-p2","--chart-heat-p3","--chart-heat-p4",
-        "--chart-heat-p5","--chart-heat-p6"];
-      var heat = HEAT_STOPS.map(function (k) { return css(k); });
+      /* v0.9902：统一走 heatColors()，含硬兜底，不再逐档裸读 CSS 变量。 */
+      var heat = heatColors();
       if (heat[0] && opt.visualMap && opt.visualMap.length) {
         for (var v = 0; v < opt.visualMap.length; v++) {
           var vm = opt.visualMap[v]; if (!vm) continue;
@@ -600,5 +632,5 @@
   g.WufuTheme = { css: css, sub: sub, tokens: TOKENS, fallback: FALLBACK,
     light: LIGHT, mode: mode, effective: effective, apply: apply,
     set: set, refresh: refresh, onChange: onChange, syncCharts: syncCharts, watchCharts: watchCharts,
-    colors: colors, setColors: setColors, applyColors: applyColors, onColorsChange: onColorsChange };
+    heatColors: heatColors, heatStops: HEAT_STOPS, heatHard: HEAT_HARD, colors: colors, setColors: setColors, applyColors: applyColors, onColorsChange: onColorsChange };
 })(typeof window !== "undefined" ? window : this);

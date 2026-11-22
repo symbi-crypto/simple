@@ -701,14 +701,14 @@ def static_checks(root, valid_fn):
     # 首屏 heatmap 必须直接取语义变量（事后改 option 不会触发 ECharts 重绘格子）
     _vmfiles = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','combos/index.html']
     _vmold = [f for f in _vmfiles if re.search(r'inRange\s*:\s*\{\s*color\s*:\s*\[[^\]]*WFT', text(root, f))]
-    _vmnew = sum(len(re.findall(r"css\('--chart-heat-", text(root, f))) for f in _vmfiles)
+    _vmnew = sum(len(re.findall(r"css\('--chart-heat-", text(root, f))) + len(re.findall(r'WufuTheme\.heatColors\(\)', text(root, f))) for f in _vmfiles)
     add('V19', '界面契约 §5 热力图首屏取语义变量、不靠事后重绘', 'blocking',
-        not _vmold and _vmnew >= 30,
+        not _vmold and _vmnew >= 11,
         '旧 token 残留 %d 页 / 语义变量引用 %d 处'%(len(_vmold), _vmnew))
     fixture('R23', '「热力图首屏写死旧 token，只靠 syncCharts 事后改」→ 必须直接取语义变量',
         '界面契约 §5', [
         ('无旧 token 残留', not _vmold, True),
-        ('语义变量引用充足', _vmnew >= 30, True),
+        ('语义变量引用充足', _vmnew >= 11, True),
         ('深浅三档已定义', all(k in dmap and k in lmap for k in
             ['--chart-heat-neg','--chart-heat-mid','--chart-heat-pos']), True),
     ])
@@ -784,9 +784,10 @@ def static_checks(root, valid_fn):
             # 13 档里本来就含 --chart-heat-mid（零档），旧别名 neg/pos 才属残留
             if _n != 13 or '--chart-heat-neg' in _arr or '--chart-heat-pos' in _arr:
                 _vm_bad.append((_f,_n))
-    add('V25', '界面契约 §7 首屏 visualMap 全部 13 档、无旧三档残留', 'blocking',
-        _vm_cnt >= 10 and not _vm_bad,
-        '数组 %d 处，异常 %s'%(_vm_cnt,str(_vm_bad[:3])))
+    _hm_cnt = sum(text(root,f).count('WufuTheme.heatColors()') for f in _vmfiles)
+    add('V25', '界面契约 §7 首屏 visualMap 全走唯一取色入口、无旧三档残留', 'blocking',
+        (_vm_cnt >= 10 or _hm_cnt == 11) and not _vm_bad and _hm_cnt == 11,
+        'heatColors() %d 处，数组 %d 处，异常 %s'%(_hm_cnt,_vm_cnt,str(_vm_bad[:3])))
     add('V26', '界面契约 §7 重绘不降档、theme.js 字典逐值一致', 'blocking',
         'var HEAT_STOPS = [' in tjs and 'vm.inRange.color = heat.slice()' in tjs
         and '[hn, hm, hm, hp]' not in tjs
@@ -808,18 +809,61 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9901' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9901' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9901' in _sw, '0.9901' in _rd))
+        'wufu-all-v0.9902' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9902' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9902' in _sw, '0.9902' in _rd))
+
+    # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
+    _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
+    _hd = re.findall(r'"(#[0-9A-Fa-f]{6})"', _hard.group(1).split('light:')[0]) if _hard else []
+    _hl = re.findall(r'"(#[0-9A-Fa-f]{6})"', _hard.group(1).split('light:')[1]) if _hard and 'light:' in _hard.group(1) else []
+    _css_d = [dmap.get('--chart-heat-'+k,'').lower() for k in _stops]
+    _css_l = [lmap.get('--chart-heat-'+k,'').lower() for k in _stops]
+    add('V29', '界面契约 §8 热力图唯一入口 + 内置常量三份一致 + 恒合法', 'blocking',
+        'function heatColors()' in tjs and 'heatColors: heatColors' in tjs
+        and 'var heat = heatColors();' in tjs
+        and len(_hd)==13 and len(_hl)==13
+        and [x.lower() for x in _hd]==_css_d and [x.lower() for x in _hl]==_css_l
+        and 'HEAT_HARD[curEff === "light" ? "light" : "dark"][hi]' in tjs,
+        '硬兜底深%d浅%d / CSS 逐值一致=%s'%(len(_hd),len(_hl),
+            [x.lower() for x in _hd]==_css_d and [x.lower() for x in _hl]==_css_l))
+    _hmfiles = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','combos/index.html']
+    _hm_bad = [f for f in _hmfiles
+               if "WufuTheme.css('--chart-heat-n6')" in text(root,f)
+               or "WufuTheme.css('--chart-heat-neg')" in text(root,f)]
+    _hm_n = sum(text(root,f).count('WufuTheme.heatColors()') for f in _hmfiles)
+    add('V30', '界面契约 §8 首屏 11 处色阶全走唯一入口', 'blocking',
+        _hm_n==11 and not _hm_bad,
+        'heatColors() %d 处，裸读残留 %s'%(_hm_n,str(_hm_bad[:3])))
+    _rjs = text(root,'common/range.js')
+    _rseg = _rjs[_rjs.index('var CSS = ['):_rjs.index("].join('\\n');")]
+    add('V31', '界面契约 §8 注入样式用 var(--…)、无字面色值、无硬编码色彩方案', 'blocking',
+        'function subVar(s)' in _rjs and 'subVar(' in _rseg
+        and 'WufuTheme.sub(' not in _rseg and '"var(" + t[n]' in _rjs
+        and 'color-scheme:dark' not in _rseg
+        and ':root[data-theme="light"] .wr-quick-btns button{' in tcss
+        and '## §8 动态样式与图表色阶' in ui_rule
+        and '字面色值' in ui_rule,
+        '注入段 %d 字符'%len(_rseg))
+    fixture('R26', '「读空变黑白 / 注入字面色值不跟随 / 硬编码暗色方案」→ 必须全挡',
+        '界面契约 §8', [
+        ('唯一取色入口', 'function heatColors()' in tjs, True),
+        ('恒返回 13 合法色', len(_hd)==13 and len(_hl)==13, True),
+        ('内置常量与 CSS 一致', [x.lower() for x in _hd]==_css_d and [x.lower() for x in _hl]==_css_l, True),
+        ('首屏全走入口', _hm_n==11 and not _hm_bad, True),
+        ('注入样式变量化', 'subVar(' in _rseg and 'WufuTheme.sub(' not in _rseg, True),
+        ('无硬编码 color-scheme:dark', 'color-scheme:dark' not in _rseg, True),
+        ('浅色按钮显式兜底', ':root[data-theme="light"] .wr-quick-btns button{' in tcss, True),
+    ])
 
     fixture('R25', '「三档同色 / 重绘降档 / iPad 面板 sticky 拉不动」→ 必须全挡',
         '界面契约 §7', [
         ('13 档深浅唯一', len(set(_dvals))==13 and len(set(_lvals))==13, True),
         ('零两侧不同色', _lvals[5]!=_lvals[6] and _lvals[6]!=_lvals[7], True),
-        ('首屏数组全 13 档', _vm_cnt>=10 and not _vm_bad, True),
+        ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', 'v0.9901' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9902' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

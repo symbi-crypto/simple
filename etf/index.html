@@ -7235,7 +7235,7 @@ function buildChips() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99019 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99029 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];
@@ -8152,7 +8152,7 @@ function renderKpis(r) {
       xAxis: { type: "category", data: years, splitArea: { show: true }, axisLabel: { fontSize: 10, interval: 0, rotate: 30, margin: 8 } },
       yAxis: { type: "category", data: monthIdx, splitArea: { show: true }, axisLabel: { fontSize: 10 } },
       visualMap: { min: -absMax, max: absMax, calculable: true, orient: "horizontal", left: "center", bottom: 0,
-        textStyle: { fontSize: 10 }, inRange: { color: [WufuTheme.css('--chart-heat-n6'), WufuTheme.css('--chart-heat-n5'), WufuTheme.css('--chart-heat-n4'), WufuTheme.css('--chart-heat-n3'), WufuTheme.css('--chart-heat-n2'), WufuTheme.css('--chart-heat-n1'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-p1'), WufuTheme.css('--chart-heat-p2'), WufuTheme.css('--chart-heat-p3'), WufuTheme.css('--chart-heat-p4'), WufuTheme.css('--chart-heat-p5'), WufuTheme.css('--chart-heat-p6')] } },
+        textStyle: { fontSize: 10 }, inRange: { color: WufuTheme.heatColors() } },
       series: [{ type: "heatmap", data: cells, label: { show: false }, emphasis: { itemStyle: { borderColor: WufuTheme.sub("§WFT0001§"), borderWidth: 1 } } }]
     });
   }
@@ -11732,7 +11732,7 @@ function showStrategyDetail(name) {
       yAxis: { type: "category", data: names, inverse: true, splitArea: { show: false }, axisLine: { lineStyle: { color: WufuTheme.sub("§WFT0001§") } }, axisTick: { show: false }, axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 10, interval: 0 } },
       visualMap: {
         min: vlo, max: vhi, calculable: false, show: false,
-        inRange: { color: [WufuTheme.css('--chart-heat-n6'), WufuTheme.css('--chart-heat-n5'), WufuTheme.css('--chart-heat-n4'), WufuTheme.css('--chart-heat-n3'), WufuTheme.css('--chart-heat-n2'), WufuTheme.css('--chart-heat-n1'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-p1'), WufuTheme.css('--chart-heat-p2'), WufuTheme.css('--chart-heat-p3'), WufuTheme.css('--chart-heat-p4'), WufuTheme.css('--chart-heat-p5'), WufuTheme.css('--chart-heat-p6')] }
+        inRange: { color: WufuTheme.heatColors() }
       },
       series: [{
         type: "heatmap", data: data,

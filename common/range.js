@@ -6,31 +6,43 @@
    纯原生实现，只回报归一化区间 [a,b]，不碰数据。 */
 (function () {
   'use strict';
+  var g = (typeof window !== 'undefined' ? window : this);
   var R = {};
 
+  /* v0.9902：注入 <style> 的样式必须跟随主题。
+     旧写法在模块加载时用 WufuTheme.sub() 把 §WFT…§ 换成字面色值，
+     是静态快照，切主题后按钮/日期框/白条永远停在首屏那一套颜色；
+     refresh() 只扫元素属性，扫不到 <style> 的 textContent。
+     改为注入 var(--变量名)，由浏览器按当前主题实时解析。 */
+  function subVar(s) {
+    return String(s).replace(/§WFT(\d{4})§/g, function (_, n) {
+      var t = (g.WufuTheme && g.WufuTheme.tokens) || {};
+      return t[n] ? "var(" + t[n] + ")" : _;
+    });
+  }
   var CSS = [
     '.wr-host{margin:6px 2px 4px}',
     '.wr{position:relative;height:46px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}',
-    WufuTheme.sub('.wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:§WFT0116§;border:1px solid §WFT0093§}'),
-    WufuTheme.sub('.wr-sel{position:absolute;top:8px;height:16px;border-radius:6px;background:§WFT0117§;border:1px solid §WFT0118§;box-shadow:inset 0 0 8px §WFT0093§}'),
-    WufuTheme.sub('.wr-h{position:absolute;top:4px;width:12px;height:24px;border-radius:4px;background:§WFT0119§;border:1px solid §WFT0109§;box-shadow:0 0 0 2px §WFT0113§;z-index:2}'),
-    WufuTheme.sub('.wr-h::after{content:\'\';position:absolute;left:4px;top:7px;width:2px;height:10px;background:§WFT0024§;border-radius:1px}'),
-    WufuTheme.sub('.wr-lab{position:absolute;top:30px;font-size:9px;color:§WFT0003§;white-space:nowrap}'),
+    subVar('.wr-track{position:absolute;left:0;right:0;top:8px;height:16px;border-radius:6px;background:§WFT0116§;border:1px solid §WFT0093§}'),
+    subVar('.wr-sel{position:absolute;top:8px;height:16px;border-radius:6px;background:§WFT0117§;border:1px solid §WFT0118§;box-shadow:inset 0 0 8px §WFT0093§}'),
+    subVar('.wr-h{position:absolute;top:4px;width:12px;height:24px;border-radius:4px;background:§WFT0119§;border:1px solid §WFT0109§;box-shadow:0 0 0 2px §WFT0113§;z-index:2}'),
+    subVar('.wr-h::after{content:\'\';position:absolute;left:4px;top:7px;width:2px;height:10px;background:§WFT0024§;border-radius:1px}'),
+    subVar('.wr-lab{position:absolute;top:30px;font-size:9px;color:§WFT0003§;white-space:nowrap}'),
     '.wr-lab-l{left:0;transform:none}',
     '.wr-lab-r{right:0;left:auto;transform:none;text-align:right}',
-    WufuTheme.sub('.wr-tip{font-size:9.5px;color:§WFT0002§;margin:2px 2px 0;text-align:right}'),
-    WufuTheme.sub('.wr-info{font-size:9.5px;color:§WFT0003§;line-height:1.6;margin:2px 2px 6px;word-break:break-all}'),
-    WufuTheme.sub('.wr-info b{color:§WFT0006§;font-weight:600}'),
+    subVar('.wr-tip{font-size:9.5px;color:§WFT0002§;margin:2px 2px 0;text-align:right}'),
+    subVar('.wr-info{font-size:9.5px;color:§WFT0003§;line-height:1.6;margin:2px 2px 6px;word-break:break-all}'),
+    subVar('.wr-info b{color:§WFT0006§;font-weight:600}'),
     '.wr-host svg{cursor:crosshair}',
     /* v0.69b：看板曲线同款「展示区间」控件 */
     '.wr-quick{margin:2px 2px 10px;display:flex;flex-direction:column;gap:8px}',
     '.wr-quick-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
-    WufuTheme.sub('.wr-quick-lab{font-size:11px;color:§WFT0003§;white-space:nowrap}'),
-    WufuTheme.sub('.wr-quick-sep{font-size:11px;color:§WFT0002§}'),
-    WufuTheme.sub('.wr-quick input[type=date]{background:§WFT0008§;color:§WFT0131§;border:1px solid §WFT0098§;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:dark}'),
+    subVar('.wr-quick-lab{font-size:11px;color:§WFT0003§;white-space:nowrap}'),
+    subVar('.wr-quick-sep{font-size:11px;color:§WFT0002§}'),
+    subVar('.wr-quick input[type=date]{background:§WFT0008§;color:§WFT0131§;border:1px solid §WFT0098§;border-radius:6px;font-size:11px;padding:3px 6px;min-width:0;flex:1 1 108px;color-scheme:inherit}'),
     '.wr-quick-btns{display:flex;flex-wrap:wrap;gap:6px}',
-    WufuTheme.sub('.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:§WFT0008§;color:§WFT0003§;border:1px solid §WFT0098§;white-space:nowrap}'),
-    WufuTheme.sub('.wr-quick-btns button.on{background:§WFT0124§;color:§WFT0006§;border:1px solid §WFT0006§}'),
+    subVar('.wr-quick-btns button{cursor:pointer;font-size:11px;padding:4px 10px;border-radius:6px;background:§WFT0008§;color:§WFT0003§;border:1px solid §WFT0098§;white-space:nowrap}'),
+    subVar('.wr-quick-btns button.on{background:§WFT0124§;color:§WFT0006§;border:1px solid §WFT0006§}'),
   /* v0.71：锁定控件高度，按按钮时说明文字/日期框/卡片数变化不再推动整页 */
   '.wr-quick{min-height:76px;box-sizing:border-box}',
   '.wr-info{min-height:36px;line-height:1.45;box-sizing:border-box}',

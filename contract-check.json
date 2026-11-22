@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 90,
-   "passed": 90,
+   "total": 93,
+   "passed": 93,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 25,
-   "passed": 25,
+   "total": 26,
+   "passed": 26,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 3835 字节"
+   "detail": "契约 4116 字节"
   },
   {
    "id": "V2",
@@ -604,7 +604,7 @@
    "rule": "界面契约 §5 热力图首屏取语义变量、不靠事后重绘",
    "severity": "blocking",
    "status": "pass",
-   "detail": "旧 token 残留 0 页 / 语义变量引用 143 处"
+   "detail": "旧 token 残留 0 页 / 语义变量引用 11 处"
   },
   {
    "id": "V20",
@@ -643,10 +643,10 @@
   },
   {
    "id": "V25",
-   "rule": "界面契约 §7 首屏 visualMap 全部 13 档、无旧三档残留",
+   "rule": "界面契约 §7 首屏 visualMap 全走唯一取色入口、无旧三档残留",
    "severity": "blocking",
    "status": "pass",
-   "detail": "数组 11 处，异常 []"
+   "detail": "heatColors() 11 处，数组 0 处，异常 []"
   },
   {
    "id": "V26",
@@ -668,6 +668,27 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "缓存=True / README 命中=True"
+  },
+  {
+   "id": "V29",
+   "rule": "界面契约 §8 热力图唯一入口 + 内置常量三份一致 + 恒合法",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "硬兜底深13浅13 / CSS 逐值一致=True"
+  },
+  {
+   "id": "V30",
+   "rule": "界面契约 §8 首屏 11 处色阶全走唯一入口",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "heatColors() 11 处，裸读残留 []"
+  },
+  {
+   "id": "V31",
+   "rule": "界面契约 §8 注入样式用 var(--…)、无字面色值、无硬编码色彩方案",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "注入段 2582 字符"
   },
   {
    "id": "B11",
@@ -969,6 +990,50 @@
    "failed": []
   },
   {
+   "id": "R26",
+   "case": "「读空变黑白 / 注入字面色值不跟随 / 硬编码暗色方案」→ 必须全挡",
+   "rule": "界面契约 §8",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "唯一取色入口",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "恒返回 13 合法色",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "内置常量与 CSS 一致",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "首屏全走入口",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "注入样式变量化",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "无硬编码 color-scheme:dark",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色按钮显式兜底",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R25",
    "case": "「三档同色 / 重绘降档 / iPad 面板 sticky 拉不动」→ 必须全挡",
    "rule": "界面契约 §7",
@@ -985,7 +1050,7 @@
      "expect": true
     },
     {
-     "name": "首屏数组全 13 档",
+     "name": "首屏色阶全走唯一入口",
      "actual": true,
      "expect": true
     },
