@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 75,
-   "passed": 75,
+   "total": 80,
+   "passed": 80,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 21,
-   "passed": 21,
+   "total": 22,
+   "passed": 22,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 2714 字节"
+   "detail": "契约 3150 字节"
   },
   {
    "id": "V2",
@@ -538,10 +538,10 @@
   },
   {
    "id": "V10",
-   "rule": "界面契约 §2 图表序列不得出现紫/粉",
+   "rule": "界面契约 §5 图表序列多色相、不塌成单一色系",
    "severity": "blocking",
    "status": "pass",
-   "detail": "紫色序列 0 个"
+   "detail": "浅色序列 6 色 / 绿 1 个"
   },
   {
    "id": "V11",
@@ -563,6 +563,41 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "无让位外边距 / 徽标自动右推"
+  },
+  {
+   "id": "V14",
+   "rule": "界面契约 §5 浮层随主题、热力图深浅不装反",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深tip=#233247 浅tip=#FFFFFF"
+  },
+  {
+   "id": "V15",
+   "rule": "界面契约 §5 序列色多色相、不以绿为主",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深绿数=1 浅绿数=1"
+  },
+  {
+   "id": "V16",
+   "rule": "界面契约 §5 切主题整份重绘、不靠字面量反查",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "归一化 + 显式重设 + 首屏 watch"
+  },
+  {
+   "id": "V17",
+   "rule": "界面契约 §5 刻度精度足以区分相邻刻度",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "2 页 yFmt 2 位小数，旧写法残留 0"
+  },
+  {
+   "id": "V18",
+   "rule": "界面契约 §2 颜色单一真源：theme.js 字典与 theme.css 逐值一致",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "漂移 0 项"
   },
   {
    "id": "B11",
@@ -752,6 +787,50 @@
    "failed": []
   },
   {
+   "id": "R22",
+   "case": "「浮层固定深灰 / 热力图深浅装反 / 序列全绿 / 不重绘」→ 必须全挡",
+   "rule": "界面契约 §5",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "浅色浮层为白底",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深色热力图为深底",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色热力图为浅底",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深色序列绿<=1",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色 --c-purple 非绿",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "切主题显式重设",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "字体/顶栏主色未连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R19",
    "case": "「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色",
    "rule": "界面契约 §2/§3",
@@ -778,7 +857,7 @@
      "expect": true
     },
     {
-     "name": "图表无紫",
+     "name": "序列多色相且绿<=1",
      "actual": true,
      "expect": true
     },

@@ -30,7 +30,7 @@
   --c-h123329:#123329;
   --c-h131c28:#131C28;
   --c-h14532d:#14532D;
-  --c-h14b8a6:#14B8A6;
+  --c-h14b8a6:#FBBF24;
   --c-h15202e:#15202E;
   --c-h16202e:#16202E;
   --c-h162131:#162131;
@@ -42,7 +42,7 @@
   --c-h2a3546:#2A3546;
   --c-h2a3b50:#2A3B50;
   --c-h2c3b4e:#2C3B4E;
-  --c-h2dd4bf:#2DD4BF;
+  --c-h2dd4bf:#38BDF8;
   --c-h2e3d50:#2E3D50;
   --c-h334155:#334155;
   --c-h33465c:#33465C;
@@ -71,7 +71,7 @@
   --c-hb9c8d9:#B9C8D9;
   --c-hbfdbfe:#BFDBFE;
   --c-hc084fc:#C084FC;
-  --c-hccfbf1:#CCFBF1;
+  --c-hccfbf1:#A78BFA;
   --c-hd8e6f2:#D8E6F2;
   --c-hdce6f0:#DCE6F0;
   --c-he2e8f0:#E2E8F0;
@@ -180,6 +180,13 @@
   --ui-legacy-line:#2b6cb0;
   --ui-legacy-surface:rgba(127,127,127,.07);
   --ui-legacy-bad:#c0392b;
+  /* ── v0.98 图表主题：浮层 / 热力图 / 序列色（深色）── */
+  --chart-tip-bg:#233247;--chart-tip-ink:#E8EEF6;--chart-tip-line:#3E4E63;
+  --chart-axis-ink:#9FB0C4;--chart-grid:#243244;
+  --chart-heat-neg:#7F1D1D;--chart-heat-mid:#22354A;--chart-heat-pos:#14532D;
+  --chart-s1:#4FC3F7;--chart-s2:#FBBF24;--chart-s3:#A78BFA;
+  --chart-s4:#F87171;--chart-s5:#34D399;--chart-s6:#94A3B8;
+
 }
 
 /* 兼容层：旧页面里已有的 --bg/--acc/--up 等变量名继续可用，
@@ -213,7 +220,7 @@
   --c-warn-ink:#8A5A10;
   --c-bad-ink:#C0392B;
   --c-info:#0E7490;
-  --c-purple:#5B8C7A;
+  --c-purple:#7C5CBF;
   --c-white:#FFFFFE;
   --c-white-full:#FFFFFC;
   --c-brand-a:#FFFFFB;
@@ -231,8 +238,8 @@
   --c-h111827:#1F2937;
   --c-h123329:#E8EDEC;
   --c-h131c28:#EAECEE;
-  --c-h14532d:#E4EAE6;
-  --c-h14b8a6:#189183;
+  --c-h14532d:#BFE3D2;
+  --c-h14b8a6:#B45309;
   --c-h15202e:#E9EBEE;
   --c-h16202e:#E9EBED;
   --c-h162131:#E8EAED;
@@ -244,7 +251,7 @@
   --c-h2a3546:#E2E5E9;
   --c-h2a3b50:#D4DAE1;
   --c-h2c3b4e:#D4DAE2;
-  --c-h2dd4bf:#1D9485;
+  --c-h2dd4bf:#1A769F;
   --c-h2e3d50:#D3D9E1;
   --c-h334155:#334156;
   --c-h33465c:#CFD6DE;
@@ -259,7 +266,7 @@
   --c-h5a6b80:#BFC7D2;
   --c-h6e7f93:#B8C0CA;
   --c-h6ee7b7:#1BA46E;
-  --c-h7f1d1d:#841D1D;
+  --c-h7f1d1d:#F3C7C9;
   --c-h7f3a3a:#D7C6C6;
   --c-h818cf8:#2A9C99;
   --c-h8a97a8:#282E36;
@@ -273,7 +280,7 @@
   --c-hb9c8d9:#2F4054;
   --c-hbfdbfe:#2BA19D;
   --c-hc084fc:#26A177;
-  --c-hccfbf1:#1DAF90;
+  --c-hccfbf1:#5B4B9E;
   --c-hd8e6f2:#379592;
   --c-hdce6f0:#374D62;
   --c-he2e8f0:#384B64;
@@ -287,14 +294,14 @@
   --c-hf97316:#9A4E19;
   --c-hfb7185:#A81B30;
   --c-hfecaca:#AF1D1D;
-  --c-hfef2f2:#AF1D1E;
+  --c-hfef2f2:#F3C7C9;
   --c-r001:rgba(31,129,173,0.2207);
   --c-r002:rgba(31,129,173,0.3014);
   --c-r003:rgba(18,86,105,0.1621);
   --c-r004:rgba(15,23,42,0.3928);
   --c-r005:rgba(173,134,31,0.1235);
   --c-r006:rgba(31,129,173,0.0642);
-  --c-r007:rgba(15,23,42,0.741);
+  --c-r007:#FFFFFF;
   --c-r008:rgba(15,23,42,0.5627);
   --c-r009:rgba(31,129,173,0.0814);
   --c-r010:rgba(173,31,31,0.1421);
@@ -362,6 +369,13 @@
   --ui-legacy-muted-3:#73807E;
   --ui-legacy-line:#147D68;
   --ui-legacy-surface:rgba(32,39,37,.045);
+  /* ── v0.98 图表主题：白底浮层 / 浅底热力图 / 多色相序列（浅色）── */
+  --chart-tip-bg:#FFFFFF;--chart-tip-ink:#202725;--chart-tip-line:#C3DDD0;
+  --chart-axis-ink:#738079;--chart-grid:#E9EEEC;
+  --chart-heat-neg:#F3C7C9;--chart-heat-mid:#F6F8F7;--chart-heat-pos:#BFE3D2;
+  --chart-s1:#147D5E;--chart-s2:#B45309;--chart-s3:#5B4B9E;
+  --chart-s4:#D65359;--chart-s5:#1A769F;--chart-s6:#5A6B64;
+
 }
 /* 页面原有 select{color-scheme:dark!important} 会让浅色下的原生下拉仍是深色列表；
    带 [data-theme] 的选择器特异性更高，覆盖回来。深色下此规则不生效。 */

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
-<script src="../common/research-gate.js?v=98"></script>
-<script src="../common/instrument-rules.js?v=98"></script>
+<script src="../common/research-gate.js?v=99"></script>
+<script src="../common/instrument-rules.js?v=99"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -31,7 +31,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=98"></script>
+<script src="../common/range.js?v=99"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -8617,7 +8617,7 @@ function buildChips() {
     /* v0.76 坐标轴：线性 / 对数。log 轴要求所有值 > 0，统一把 <=0 的点置 null；
        对数轴不设 scale（ECharts 忽略），刻度用自适应位数。 */
     var _log = !!opts.log;
-    var _yFmt = opts.yFmt || function (v) { return v.toFixed(1); };
+    var _yFmt = opts.yFmt || function (v) { return Math.abs(v) < 2 ? v.toFixed(2) : v.toFixed(1); };
     var _logFmt = function (v) {
       if (!isFinite(v) || v <= 0) return '';
       if (v >= 10) return v.toFixed(0);

@@ -22,8 +22,8 @@
     "#2b6cb0": "--ui-legacy-line",
     "rgba(127,127,127,.07)": "--ui-legacy-surface"
   };
-  var LIGHT = {"--c-accent":"#147D5E","--c-accent-2":"#258663","--c-accent-soft":"#EDF6F0","--c-bg":"#F6F8F7","--c-bg-deep":"#E9EEEB","--c-surface":"#FFFFFF","--c-surface-2":"#FAFCFB","--c-line":"#E9EEEC","--c-edge":"#C3DDD0","--c-text":"#202725","--c-text-2":"#3D4A45","--c-muted":"#738079","--c-gray":"#73807A","--c-up":"#D65359","--c-up-rgb":"214,83,89","--c-down":"#147D5F","--c-down-rgb":"20,125,94","--c-warn":"#B45309","--c-warn-2":"#F1CEA7","--c-warn-ink":"#8A5A10","--c-bad-ink":"#C0392B","--c-info":"#0E7490","--c-purple":"#5B8C7A","--c-white":"#FFFFFE","--c-white-full":"#FFFFFC","--c-brand-a":"#FFFFFB","--c-brand-b":"#F0F6F2","--c-on-brand":"#111816","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#E4EAE6","--c-h14b8a6":"#189183","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#237D7A","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1D9485","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#27928F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#841D1D","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#2A9C99","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#2BA19D","--c-hc084fc":"#26A177","--c-hccfbf1":"#1DAF90","--c-hd8e6f2":"#379592","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#3E8E8C","--c-he6edf6":"#3A928F","--c-he6eef8":"#319B98","--c-he6f4ff":"#2BA19E","--c-he879f9":"#259F83","--c-he8a33d":"#9D681A","--c-hf472b6":"#259D97","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#AF1D1E","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"rgba(15,23,42,0.741)","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--ui-sunken":"#E9EEEE","--ui-line-strong":"#C3DDD1","--ui-ink-2":"#3D4A46","--ui-ink-3":"#73807C","--ui-accent-hover":"#0E6A4F","--ui-accent-soft":"#EDF6F1","--ui-accent-line":"#C3DDD3","--ui-accent-ink":"#0B5D46","--ui-ok":"#147D61","--ui-ok-soft":"#EDF6F3","--ui-ok-line":"#C3DDD6","--ui-warn":"#B4530A","--ui-warn-soft":"#FFF7E7","--ui-warn-line":"#F1CEA8","--ui-warn-ink":"#8A5A11","--ui-bad":"#D6535A","--ui-bad-soft":"#FFF0EF","--ui-bad-line":"#F1CCCC","--ui-legacy-warn":"#B4530C","--ui-legacy-ok":"#147D64","--ui-legacy-bad":"#C0392C","--ui-legacy-muted":"#73807F","--ui-legacy-muted-2":"#73807B","--ui-legacy-muted-3":"#73807E","--ui-legacy-line":"#147D68","--ui-legacy-surface":"rgba(32,39,37,.045)"};
-  var FALLBACK = {"--c-accent":"#4FC3F7","--c-accent-2":"#22D3EE","--c-accent-soft":"#7DD3FC","--c-bad-ink":"#FCA5A5","--c-bg":"#1B2634","--c-bg-deep":"#0F1822","--c-down":"#34D399","--c-down-rgb":"52,211,153","--c-edge":"#3E4E63","--c-gray":"#7C8DA1","--c-h06b6d4":"#06B6D4","--c-h0b1220":"#0B1220","--c-h0b131d":"#0B131D","--c-h0b1420":"#0B1420","--c-h0e1622":"#0E1622","--c-h0e7490":"#0E7490","--c-h100c2a":"#100C2A","--c-h101c29":"#101C29","--c-h10b981":"#10B981","--c-h111827":"#111827","--c-h123329":"#123329","--c-h131c28":"#131C28","--c-h14532d":"#14532D","--c-h14b8a6":"#14B8A6","--c-h15202e":"#15202E","--c-h16202e":"#16202E","--c-h162131":"#162131","--c-h1b2735":"#1B2735","--c-h1c2a3a":"#1C2A3A","--c-h1d4e7a":"#1D4E7A","--c-h1e2a38":"#1E2A38","--c-h233347":"#233347","--c-h2a3546":"#2A3546","--c-h2a3b50":"#2A3B50","--c-h2c3b4e":"#2C3B4E","--c-h2dd4bf":"#2DD4BF","--c-h2e3d50":"#2E3D50","--c-h334155":"#334155","--c-h33465c":"#33465C","--c-h344860":"#344860","--c-h38bdf8":"#38BDF8","--c-h3a2a12":"#3A2A12","--c-h3b1d1d":"#3B1D1D","--c-h3b82f6":"#3B82F6","--c-h3e7a8c":"#3E7A8C","--c-h3f1d1d":"#3F1D1D","--c-h4ade80":"#4ADE80","--c-h5a6b80":"#5A6B80","--c-h6e7f93":"#6E7F93","--c-h6ee7b7":"#6EE7B7","--c-h7f1d1d":"#7F1D1D","--c-h7f3a3a":"#7F3A3A","--c-h818cf8":"#818CF8","--c-h8a97a8":"#8A97A8","--c-h8fa3b8":"#8FA3B8","--c-h8fa3ba":"#8FA3BA","--c-h9fb3c8":"#9FB3C8","--c-h9fd8f6":"#9FD8F6","--c-ha33a36":"#A33A36","--c-ha3e635":"#A3E635","--c-ha5f3fc":"#A5F3FC","--c-hb9c8d9":"#B9C8D9","--c-hbfdbfe":"#BFDBFE","--c-hc084fc":"#C084FC","--c-hccfbf1":"#CCFBF1","--c-hd8e6f2":"#D8E6F2","--c-hdce6f0":"#DCE6F0","--c-he2e8f0":"#E2E8F0","--c-he6edf5":"#E6EDF5","--c-he6edf6":"#E6EDF6","--c-he6eef8":"#E6EEF8","--c-he6f4ff":"#E6F4FF","--c-he879f9":"#E879F9","--c-he8a33d":"#E8A33D","--c-hf472b6":"#F472B6","--c-hf97316":"#F97316","--c-hfb7185":"#FB7185","--c-hfecaca":"#FECACA","--c-hfef2f2":"#FEF2F2","--c-info":"#60A5FA","--c-line":"#243244","--c-muted":"#9FB0C3","--c-purple":"#A78BFA","--c-r001":"rgba(79,195,247,.22)","--c-r002":"rgba(79,195,247,.3)","--c-r003":"rgba(14,116,144,.16)","--c-r004":"rgba(0,0,0,.5)","--c-r005":"rgba(251,191,36,.12)","--c-r006":"rgba(79,195,247,.06)","--c-r007":"rgba(16,24,36,.95)","--c-r008":"rgba(2,6,23,.72)","--c-r009":"rgba(79,195,247,.08)","--c-r010":"rgba(248,113,113,.14)","--c-r011":"rgba(255,255,255,.02)","--c-r012":"rgba(0,0,0,.3)","--c-r013":"rgba(248,113,113,.12)","--c-r014":"rgba(255,255,255,.08)","--c-r015":"rgba(255,255,255,.18)","--c-r016":"rgba(79,195,247,.12)","--c-r017":"rgba(0,0,0,.6)","--c-r018":"rgba(14,116,144,.10)","--c-r019":"rgba(16,24,36,.9)","--c-r020":"rgba(239,68,68,0.10)","--c-r021":"rgba(248,113,113,.10)","--c-r022":"rgba(248,113,113,.4)","--c-r023":"rgba(255,255,255,.12)","--c-r024":"rgba(4,10,18,.72)","--c-r025":"rgba(62,78,99,0.4)","--c-r026":"rgba(6,12,20,.72)","--c-r027":"rgba(79,195,247,.10)","--c-r028":"rgba(14,116,144,.45)","--c-r029":"rgba(248,113,113,.08)","--c-r030":"rgba(251,191,36,.08)","--c-r031":"rgba(255,255,255,.05)","--c-r032":"rgba(255,255,255,.22)","--c-r033":"rgba(255,255,255,.55)","--c-r034":"rgba(255,255,255,.88)","--c-r035":"rgba(52,211,153,.08)","--c-r036":"rgba(56,189,248,.45)","--c-r037":"rgba(56,189,248,.5)","--c-r038":"rgba(62,78,99,.15)","--c-r039":"rgba(79,195,247,.16)","--c-r040":"rgba(0,0,0,.62)","--c-r041":"rgba(251,191,36,.06)","--c-r042":"rgba(79,195,247,.04)","--c-r043":"rgba(79,195,247,.05)","--c-r044":"rgba(79,195,247,.18)","--c-r045":"rgba(79,195,247,.28)","--c-r046":"rgba(79,195,247,.35)","--c-r047":"rgba(79,195,247,.45)","--c-r048":"rgba(79,195,247,.55)","--c-surface":"#202E3F","--c-surface-2":"#2A3A4E","--c-text":"#F1F5F9","--c-text-2":"#D8E2EF","--c-up":"#F87171","--c-up-rgb":"248,113,113","--c-warn":"#FBBF24","--c-warn-2":"#F59E0B","--c-warn-ink":"#FCD34D","--c-white":"#fff","--c-white-full":"#FFFFFF","--c-brand-a":"#1B2635","--c-brand-b":"#0E7490","--c-on-brand":"#fff ","--ui-sunken":"#2A3A4F","--ui-line-strong":"#3E4E64","--ui-ink-2":"#D8E2F0","--ui-ink-3":"#9FB0C4","--ui-accent-hover":"#22D3EE","--ui-accent-soft":"#233347","--ui-accent-line":"#1D4E7A","--ui-accent-ink":"#BFDBFE","--ui-ok":"#34D39A","--ui-ok-soft":"#12332C","--ui-ok-line":"#14532E","--ui-warn":"#FBBF25","--ui-warn-soft":"#3A2A13","--ui-warn-line":"#E8A33E","--ui-warn-ink":"#FCD34E","--ui-bad":"#F87172","--ui-bad-soft":"#3B1D1E","--ui-bad-line":"#7F1D1E","--ui-legacy-warn":"#c07a00","--ui-legacy-ok":"#1a9d5a","--ui-legacy-bad":"#c0392b","--ui-legacy-muted":"#888","--ui-legacy-muted-2":"#999","--ui-legacy-muted-3":"#aaa","--ui-legacy-line":"#2b6cb0","--ui-legacy-surface":"rgba(127,127,127,.07)"};
+  var LIGHT = {"--c-accent":"#147D5E","--c-accent-2":"#258663","--c-accent-soft":"#EDF6F0","--c-bg":"#F6F8F7","--c-bg-deep":"#E9EEEB","--c-surface":"#FFFFFF","--c-surface-2":"#FAFCFB","--c-line":"#E9EEEC","--c-edge":"#C3DDD0","--c-text":"#202725","--c-text-2":"#3D4A45","--c-muted":"#738079","--c-gray":"#73807A","--c-up":"#D65359","--c-up-rgb":"214,83,89","--c-down":"#147D5F","--c-down-rgb":"20,125,94","--c-warn":"#B45309","--c-warn-2":"#F1CEA7","--c-warn-ink":"#8A5A10","--c-bad-ink":"#C0392B","--c-info":"#0E7490","--c-purple":"#7C5CBF","--c-white":"#FFFFFE","--c-white-full":"#FFFFFC","--c-brand-a":"#FFFFFB","--c-brand-b":"#F0F6F2","--c-on-brand":"#111816","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#BFE3D2","--c-h14b8a6":"#B45309","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#237D7A","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1A769F","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#27928F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#F3C7C9","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#2A9C99","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#2BA19D","--c-hc084fc":"#26A177","--c-hccfbf1":"#5B4B9E","--c-hd8e6f2":"#379592","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#3E8E8C","--c-he6edf6":"#3A928F","--c-he6eef8":"#319B98","--c-he6f4ff":"#2BA19E","--c-he879f9":"#259F83","--c-he8a33d":"#9D681A","--c-hf472b6":"#259D97","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#F3C7C9","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"#FFFFFF","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--ui-sunken":"#E9EEEE","--ui-line-strong":"#C3DDD1","--ui-ink-2":"#3D4A46","--ui-ink-3":"#73807C","--ui-accent-hover":"#0E6A4F","--ui-accent-soft":"#EDF6F1","--ui-accent-line":"#C3DDD3","--ui-accent-ink":"#0B5D46","--ui-ok":"#147D61","--ui-ok-soft":"#EDF6F3","--ui-ok-line":"#C3DDD6","--ui-warn":"#B4530A","--ui-warn-soft":"#FFF7E7","--ui-warn-line":"#F1CEA8","--ui-warn-ink":"#8A5A11","--ui-bad":"#D6535A","--ui-bad-soft":"#FFF0EF","--ui-bad-line":"#F1CCCC","--ui-legacy-warn":"#B4530C","--ui-legacy-ok":"#147D64","--ui-legacy-bad":"#C0392C","--ui-legacy-muted":"#73807F","--ui-legacy-muted-2":"#73807B","--ui-legacy-muted-3":"#73807E","--ui-legacy-line":"#147D68","--ui-legacy-surface":"rgba(32,39,37,.045)","--chart-tip-bg":"#FFFFFF","--chart-tip-ink":"#202725","--chart-tip-line":"#C3DDD0","--chart-axis-ink":"#738079","--chart-grid":"#E9EEEC","--chart-heat-neg":"#F3C7C9","--chart-heat-mid":"#F6F8F7","--chart-heat-pos":"#BFE3D2","--chart-s1":"#147D5E","--chart-s2":"#B45309","--chart-s3":"#5B4B9E","--chart-s4":"#D65359","--chart-s5":"#1A769F","--chart-s6":"#5A6B64"};
+  var FALLBACK = {"--c-accent":"#4FC3F7","--c-accent-2":"#22D3EE","--c-accent-soft":"#7DD3FC","--c-bad-ink":"#FCA5A5","--c-bg":"#1B2634","--c-bg-deep":"#0F1822","--c-down":"#34D399","--c-down-rgb":"52,211,153","--c-edge":"#3E4E63","--c-gray":"#7C8DA1","--c-h06b6d4":"#06B6D4","--c-h0b1220":"#0B1220","--c-h0b131d":"#0B131D","--c-h0b1420":"#0B1420","--c-h0e1622":"#0E1622","--c-h0e7490":"#0E7490","--c-h100c2a":"#100C2A","--c-h101c29":"#101C29","--c-h10b981":"#10B981","--c-h111827":"#111827","--c-h123329":"#123329","--c-h131c28":"#131C28","--c-h14532d":"#14532D","--c-h14b8a6":"#FBBF24","--c-h15202e":"#15202E","--c-h16202e":"#16202E","--c-h162131":"#162131","--c-h1b2735":"#1B2735","--c-h1c2a3a":"#1C2A3A","--c-h1d4e7a":"#1D4E7A","--c-h1e2a38":"#1E2A38","--c-h233347":"#233347","--c-h2a3546":"#2A3546","--c-h2a3b50":"#2A3B50","--c-h2c3b4e":"#2C3B4E","--c-h2dd4bf":"#38BDF8","--c-h2e3d50":"#2E3D50","--c-h334155":"#334155","--c-h33465c":"#33465C","--c-h344860":"#344860","--c-h38bdf8":"#38BDF8","--c-h3a2a12":"#3A2A12","--c-h3b1d1d":"#3B1D1D","--c-h3b82f6":"#3B82F6","--c-h3e7a8c":"#3E7A8C","--c-h3f1d1d":"#3F1D1D","--c-h4ade80":"#4ADE80","--c-h5a6b80":"#5A6B80","--c-h6e7f93":"#6E7F93","--c-h6ee7b7":"#6EE7B7","--c-h7f1d1d":"#7F1D1D","--c-h7f3a3a":"#7F3A3A","--c-h818cf8":"#818CF8","--c-h8a97a8":"#8A97A8","--c-h8fa3b8":"#8FA3B8","--c-h8fa3ba":"#8FA3BA","--c-h9fb3c8":"#9FB3C8","--c-h9fd8f6":"#9FD8F6","--c-ha33a36":"#A33A36","--c-ha3e635":"#A3E635","--c-ha5f3fc":"#A5F3FC","--c-hb9c8d9":"#B9C8D9","--c-hbfdbfe":"#BFDBFE","--c-hc084fc":"#C084FC","--c-hccfbf1":"#A78BFA","--c-hd8e6f2":"#D8E6F2","--c-hdce6f0":"#DCE6F0","--c-he2e8f0":"#E2E8F0","--c-he6edf5":"#E6EDF5","--c-he6edf6":"#E6EDF6","--c-he6eef8":"#E6EEF8","--c-he6f4ff":"#E6F4FF","--c-he879f9":"#E879F9","--c-he8a33d":"#E8A33D","--c-hf472b6":"#F472B6","--c-hf97316":"#F97316","--c-hfb7185":"#FB7185","--c-hfecaca":"#FECACA","--c-hfef2f2":"#FEF2F2","--c-info":"#60A5FA","--c-line":"#243244","--c-muted":"#9FB0C3","--c-purple":"#A78BFA","--c-r001":"rgba(79,195,247,.22)","--c-r002":"rgba(79,195,247,.3)","--c-r003":"rgba(14,116,144,.16)","--c-r004":"rgba(0,0,0,.5)","--c-r005":"rgba(251,191,36,.12)","--c-r006":"rgba(79,195,247,.06)","--c-r007":"rgba(16,24,36,.95)","--c-r008":"rgba(2,6,23,.72)","--c-r009":"rgba(79,195,247,.08)","--c-r010":"rgba(248,113,113,.14)","--c-r011":"rgba(255,255,255,.02)","--c-r012":"rgba(0,0,0,.3)","--c-r013":"rgba(248,113,113,.12)","--c-r014":"rgba(255,255,255,.08)","--c-r015":"rgba(255,255,255,.18)","--c-r016":"rgba(79,195,247,.12)","--c-r017":"rgba(0,0,0,.6)","--c-r018":"rgba(14,116,144,.10)","--c-r019":"rgba(16,24,36,.9)","--c-r020":"rgba(239,68,68,0.10)","--c-r021":"rgba(248,113,113,.10)","--c-r022":"rgba(248,113,113,.4)","--c-r023":"rgba(255,255,255,.12)","--c-r024":"rgba(4,10,18,.72)","--c-r025":"rgba(62,78,99,0.4)","--c-r026":"rgba(6,12,20,.72)","--c-r027":"rgba(79,195,247,.10)","--c-r028":"rgba(14,116,144,.45)","--c-r029":"rgba(248,113,113,.08)","--c-r030":"rgba(251,191,36,.08)","--c-r031":"rgba(255,255,255,.05)","--c-r032":"rgba(255,255,255,.22)","--c-r033":"rgba(255,255,255,.55)","--c-r034":"rgba(255,255,255,.88)","--c-r035":"rgba(52,211,153,.08)","--c-r036":"rgba(56,189,248,.45)","--c-r037":"rgba(56,189,248,.5)","--c-r038":"rgba(62,78,99,.15)","--c-r039":"rgba(79,195,247,.16)","--c-r040":"rgba(0,0,0,.62)","--c-r041":"rgba(251,191,36,.06)","--c-r042":"rgba(79,195,247,.04)","--c-r043":"rgba(79,195,247,.05)","--c-r044":"rgba(79,195,247,.18)","--c-r045":"rgba(79,195,247,.28)","--c-r046":"rgba(79,195,247,.35)","--c-r047":"rgba(79,195,247,.45)","--c-r048":"rgba(79,195,247,.55)","--c-surface":"#202E3F","--c-surface-2":"#2A3A4E","--c-text":"#F1F5F9","--c-text-2":"#D8E2EF","--c-up":"#F87171","--c-up-rgb":"248,113,113","--c-warn":"#FBBF24","--c-warn-2":"#F59E0B","--c-warn-ink":"#FCD34D","--c-white":"#fff","--c-white-full":"#FFFFFF","--c-brand-a":"#1B2635","--c-brand-b":"#0E7490","--c-on-brand":"#fff ","--ui-sunken":"#2A3A4F","--ui-line-strong":"#3E4E64","--ui-ink-2":"#D8E2F0","--ui-ink-3":"#9FB0C4","--ui-accent-hover":"#22D3EE","--ui-accent-soft":"#233347","--ui-accent-line":"#1D4E7A","--ui-accent-ink":"#BFDBFE","--ui-ok":"#34D39A","--ui-ok-soft":"#12332C","--ui-ok-line":"#14532E","--ui-warn":"#FBBF25","--ui-warn-soft":"#3A2A13","--ui-warn-line":"#E8A33E","--ui-warn-ink":"#FCD34E","--ui-bad":"#F87172","--ui-bad-soft":"#3B1D1E","--ui-bad-line":"#7F1D1E","--ui-legacy-warn":"#c07a00","--ui-legacy-ok":"#1a9d5a","--ui-legacy-bad":"#c0392b","--ui-legacy-muted":"#888","--ui-legacy-muted-2":"#999","--ui-legacy-muted-3":"#aaa","--ui-legacy-line":"#2b6cb0","--ui-legacy-surface":"rgba(127,127,127,.07)","--chart-tip-bg":"#233247","--chart-tip-ink":"#E8EEF6","--chart-tip-line":"#3E4E63","--chart-axis-ink":"#9FB0C4","--chart-grid":"#243244","--chart-heat-neg":"#7F1D1D","--chart-heat-mid":"#22354A","--chart-heat-pos":"#14532D","--chart-s1":"#4FC3F7","--chart-s2":"#FBBF24","--chart-s3":"#A78BFA","--chart-s4":"#F87171","--chart-s5":"#34D399","--chart-s6":"#94A3B8"};
   var TOKENS = {
     "0001": "--c-edge",
     "0002": "--c-gray",
@@ -223,8 +223,18 @@
   /* 颜色字面量 → 变量名 的反向表。深色 142 值唯一、浅色 145 值唯一，
      且两集合不交，所以「切前主题的值 → 变量 → 切后主题的值」无歧义。 */
   var DARK_BY_VAL = {}, LIGHT_BY_VAL = {};
-  Object.keys(FALLBACK).forEach(function (k) { if (DARK_BY_VAL[FALLBACK[k]] == null) DARK_BY_VAL[FALLBACK[k]] = k; });
-  Object.keys(LIGHT).forEach(function (k) { if (LIGHT_BY_VAL[LIGHT[k]] == null) LIGHT_BY_VAL[LIGHT[k]] = k; });
+  /* ECharts getOption() 会把颜色规范化（hex 小写、rgba 补 0、去空格、.95→0.95）。
+     反查表与待替换串都走同一归一化，否则切主题时值匹配不上、图表停在首屏配色。 */
+  function normColor(c) {
+    if (!c) return c;
+    var x = String(c).trim().toLowerCase().replace(/\s+/g, "");
+    x = x.replace(/,0+(\d)/g, ",$1").replace(/,\.(\d)/g, ",0.$1");
+    x = x.replace(/,0\./g, ",.");          // 0.741 → .741 与 FALLBACK 写法统一
+    if (/^#[0-9a-f]{3}$/.test(x)) x = "#" + x[1]+x[1]+x[2]+x[2]+x[3]+x[3];
+    return x;
+  }
+  Object.keys(FALLBACK).forEach(function (k) { var n=normColor(FALLBACK[k]); if (DARK_BY_VAL[n] == null) DARK_BY_VAL[n] = k; });
+  Object.keys(LIGHT).forEach(function (k) { var n=normColor(LIGHT[k]); if (LIGHT_BY_VAL[n] == null) LIGHT_BY_VAL[n] = k; });
   var COLOR_RE = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g;
 
 
@@ -246,7 +256,7 @@
     if (typeof s !== "string" || !s) return s;
     var s2 = legacyReplace(s, fromEff);
     return s2.replace(COLOR_RE, function (tok) {
-      var name = fromMap[tok];
+      var name = fromMap[normColor(tok)];
       if (name == null) return tok;
       var nv = css(name);
       return nv || tok;
@@ -267,6 +277,87 @@
   }
 
   /* 切主题后重算 sub() 产物：CSS 变量层本来就自动生效，这里只管静态颜色值。 */
+  /* ── v0.98：图表浮层 / 热力图按语义变量显式重设 ──────────────────
+     richText tooltip 由 zrender 画在 canvas 上，DOM 扫描改不到；且很多 tooltip
+     根本没写 backgroundColor，用 ECharts 内置深灰。这里对每个实例整份重给，
+     不依赖值反查，深浅两态都拿到正确的浮层与热力图底色。 */
+  function syncCharts() {
+    if (!g.echarts || !g.echarts.getInstanceByDom || !g.document) return;
+    var doms = g.document.querySelectorAll("[_echarts_instance_]");
+    for (var d = 0; d < doms.length; d++) {
+      var inst = g.echarts.getInstanceByDom(doms[d]);
+      if (!inst || !inst.getOption || !inst.setOption) continue;
+      var opt;
+      try { opt = inst.getOption(); } catch (e) { continue; }
+      if (!opt) continue;
+      var tipBg = css("--chart-tip-bg"), tipInk = css("--chart-tip-ink"),
+          tipLine = css("--chart-tip-line"), axisInk = css("--chart-axis-ink");
+      if (!tipBg) continue;
+      var changed = false;
+      /* 幂等：标记写在容器上，不靠 option 值推断。ECharts 默认 tooltip 恰好是
+         #fff，与浅色目标归一化后相等，若按值判断会误判「已同步」而漏掉
+         textStyle / 边框 / 热力图；同时 setOption 改动内部 DOM 会再触发
+         MutationObserver，不幂等就会死循环。切主题时 tipBg 变化，标记自然失效。 */
+      try {
+        if (doms[d].getAttribute("data-wufu-chart-sync") === tipBg) continue;
+      } catch (e6) { }
+      try { doms[d].setAttribute("data-wufu-chart-sync", tipBg); } catch (e7) { }
+      /* tooltip：白底墨字（浅）/ 深底浅字（深），细边、小内边距，不再压住曲线 */
+      if (opt.tooltip && opt.tooltip.length) {
+        for (var t = 0; t < opt.tooltip.length; t++) {
+          var tt = opt.tooltip[t]; if (!tt) continue;
+          tt.backgroundColor = tipBg; tt.borderColor = tipLine; tt.borderWidth = 1;
+          tt.textStyle = Object.assign({}, tt.textStyle || {}, { color: tipInk });
+          tt.padding = [7, 9]; tt.confine = true;
+          changed = true;
+        }
+      }
+      /* visualMap / 热力图：深底用深红-深灰-深绿，浅底用粉-浅灰-浅绿，不再装反 */
+      var hn = css("--chart-heat-neg"), hm = css("--chart-heat-mid"), hp = css("--chart-heat-pos");
+      if (hn && opt.visualMap && opt.visualMap.length) {
+        for (var v = 0; v < opt.visualMap.length; v++) {
+          var vm = opt.visualMap[v]; if (!vm) continue;
+          var old = vm.inRange && vm.inRange.color;
+          if (vm.inRange) {
+            vm.inRange.color = old && old.length >= 4
+              ? [hn, hm, hm, hp] : [hn, hm, hp];
+            if (vm.textStyle) vm.textStyle.color = axisInk;
+            changed = true;
+          }
+        }
+      }
+      /* 轴 / 图例文字跟随主题 */
+      ["xAxis", "yAxis"].forEach(function (ax) {
+        (opt[ax] || []).forEach(function (a) {
+          if (a && a.axisLabel) { a.axisLabel.color = axisInk; changed = true; }
+          if (a && a.axisLine && a.axisLine.lineStyle) { a.axisLine.lineStyle.color = tipLine; changed = true; }
+          if (a && a.splitLine && a.splitLine.lineStyle) { a.splitLine.lineStyle.color = css("--chart-grid"); changed = true; }
+        });
+      });
+      (opt.legend || []).forEach(function (lg) {
+        if (lg && lg.textStyle) { lg.textStyle.color = axisInk; changed = true; }
+      });
+      if (changed) { try { inst.setOption(opt, true); } catch (e2) { } }
+    }
+  }
+  /* 首屏图表是异步 init 的：监听容器出现，防抖同步一次。切主题由 refresh() 调用。 */
+  function watchCharts() {
+    if (!g.document || !g.MutationObserver) return;
+    var timer = null;
+    var kick = function () {
+      if (timer) return;
+      timer = setTimeout(function () { timer = null; syncCharts(); }, 120);
+    };
+    try {
+      new g.MutationObserver(function (recs) {
+        for (var i = 0; i < recs.length; i++) {
+          if (recs[i].addedNodes && recs[i].addedNodes.length) { kick(); return; }
+        }
+      }).observe(g.document.documentElement || g.document, { childList: true, subtree: true });
+    } catch (e) { }
+    kick();
+  }
+
   function refresh(fromEff) {
     var fromMap = fromEff === "light" ? LIGHT_BY_VAL : DARK_BY_VAL;
     var doc = g.document;
@@ -299,6 +390,7 @@
         }
       }
     } catch (e2) { }
+    try { syncCharts(); } catch (e4) { }
     try {
       doc.dispatchEvent(new g.CustomEvent("wufuthemechange",
         { detail: { mode: mode(), effective: curEff } }));
@@ -420,13 +512,13 @@
   }
   if (g.document) {
     if (g.document.readyState === "loading")
-      g.document.addEventListener("DOMContentLoaded", injectToggle);
-    else injectToggle();
+      g.document.addEventListener("DOMContentLoaded", function () { injectToggle(); watchCharts(); });
+    else { injectToggle(); watchCharts(); }
   }
   /* head 里同步执行：首屏 paint 前设好，不闪深色 */
   apply();
 
   g.WufuTheme = { css: css, sub: sub, tokens: TOKENS, fallback: FALLBACK,
     light: LIGHT, mode: mode, effective: effective, apply: apply,
-    set: set, refresh: refresh, onChange: onChange };
+    set: set, refresh: refresh, onChange: onChange, syncCharts: syncCharts, watchCharts: watchCharts };
 })(typeof window !== "undefined" ? window : this);

@@ -578,8 +578,17 @@ def static_checks(root, valid_fn):
     for k,v in re.findall(r'(--c-h[\w-]+)\s*:\s*([^;]+);', light_css):
         hs=hex_hsl(v)
         if hs and 245<=hs[0]<=345 and hs[1]>0.24: purple_lines.append(k)
-    add('V10', '界面契约 §2 图表序列不得出现紫/粉', 'blocking',
-        not purple_lines, '紫色序列 %d 个'%len(purple_lines))
+    _lc = tcss.split(':root[data-theme="light"]{',1)[1].split('\n}',1)[0]
+    _lcm = dict((_k,_v.strip().lower()) for _k,_v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', _lc))
+    _seq_l = [_lcm.get('--chart-s%d'%_i,'') for _i in range(1,7)]
+    def _greenish(_c):
+        _m = re.match(r'#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', _c or '')
+        if not _m: return False
+        _r,_g,_b = [int(_x,16) for _x in _m.groups()]
+        return _g > _r + 18 and _g > _b + 18
+    add('V10', '界面契约 §5 图表序列多色相、不塌成单一色系', 'blocking',
+        len(set(_seq_l)) == 6 and sum(_greenish(_x) for _x in _seq_l) <= 1,
+        '浅色序列 %d 色 / 绿 %d 个'%(len(set(_seq_l)), sum(_greenish(_x) for _x in _seq_l)))
     add('V11', '界面契约 §3 主按钮与 tab 用墨绿 tone', 'blocking',
         'border-bottom:2px solid var(--c-accent)' in tcss
         and 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss
@@ -618,13 +627,78 @@ def static_checks(root, valid_fn):
         ('浅色配色未连带改动', lv.get('--c-accent','').lower()=='#147d5e', True),
     ])
 
+    # ── v0.98 图表主题 ─────────────────────────────────────────────
+    chart_vars = ['--chart-tip-bg','--chart-tip-ink','--chart-tip-line',
+                  '--chart-heat-neg','--chart-heat-mid','--chart-heat-pos',
+                  '--chart-s1','--chart-s2','--chart-s3','--chart-s4','--chart-s5','--chart-s6']
+    dark_css = tcss.split(':root{',1)[1].split('\n}',1)[0]
+    light_css = tcss.split(':root[data-theme="light"]{',1)[1].split('\n}',1)[0]
+    dmap = dict((k,v.strip()) for k,v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', dark_css))
+    lmap = dict((k,v.strip()) for k,v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', light_css))
+    add('V14', '界面契约 §5 浮层随主题、热力图深浅不装反', 'blocking',
+        all(k in dmap and k in lmap for k in chart_vars)
+        and dmap.get('--chart-tip-bg','').lower() != lmap.get('--chart-tip-bg','').lower()
+        and lmap.get('--chart-tip-bg','').lower() == '#ffffff'
+        and dmap.get('--chart-heat-mid','').lower() == '#22354a'
+        and lmap.get('--chart-heat-mid','').lower() == '#f6f8f7',
+        '深tip=%s 浅tip=%s'%(dmap.get('--chart-tip-bg'),lmap.get('--chart-tip-bg')))
+    seq_d = [dmap.get('--chart-s%d'%i,'').lower() for i in range(1,7)]
+    seq_l = [lmap.get('--chart-s%d'%i,'').lower() for i in range(1,7)]
+    def greenish(c):
+        m = re.match(r'#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', c or '')
+        if not m: return False
+        r0,g0,b0 = [int(x,16) for x in m.groups()]
+        return g0 > r0 + 18 and g0 > b0 + 18
+    add('V15', '界面契约 §5 序列色多色相、不以绿为主', 'blocking',
+        len(set(seq_d)) == 6 and len(set(seq_l)) == 6
+        and sum(greenish(x) for x in seq_d) <= 1 and sum(greenish(x) for x in seq_l) <= 1
+        and lmap.get('--c-purple','').lower() == '#7c5cbf',
+        '深绿数=%d 浅绿数=%d'%(sum(greenish(x) for x in seq_d),sum(greenish(x) for x in seq_l)))
+    add('V16', '界面契约 §5 切主题整份重绘、不靠字面量反查', 'blocking',
+        'function syncCharts' in tjs and 'function watchCharts' in tjs
+        and 'function normColor' in tjs and 'fromMap[normColor(tok)]' in tjs
+        and 'syncCharts(); } catch (e4)' in tjs
+        and '整份重给 option' in ui_rule, '归一化 + 显式重设 + 首屏 watch')
+    yfmt = 'Math.abs(v) < 2 ? v.toFixed(2) : v.toFixed(1)'
+    _yfiles = ['cb/tool.html','etf/tool.html','cb/index.html','etf/index.html']
+    _yold = 'var _yFmt = opts.yFmt || function (v) { return v.toFixed(1); };'
+    _yhit = [f for f in _yfiles if yfmt in text(root, f)]
+    _ybad = [f for f in _yfiles if _yold in text(root, f)]
+    add('V17', '界面契约 §5 刻度精度足以区分相邻刻度', 'blocking',
+        len(_yhit) >= 2 and not _ybad
+        and '保留足以区分相邻刻度的精度' in ui_rule,
+        '%d 页 yFmt 2 位小数，旧写法残留 %d'%(len(_yhit),len(_ybad)))
+    # theme.js 的 LIGHT/FALLBACK 是 css() 的兜底真源，必须与 theme.css 逐值一致
+    _ml = re.search(r'var LIGHT = (\{.*?\});\s*\n\s*var FALLBACK', tjs, re.S)
+    _mf = re.search(r'var FALLBACK = (\{.*?\});\s*\n', tjs, re.S)
+    _jl = json.loads(_ml.group(1)) if _ml else {}
+    _jf = json.loads(_mf.group(1)) if _mf else {}
+    _keys = ['--c-purple','--c-h2dd4bf','--c-h14b8a6','--c-hccfbf1','--c-r007',
+             '--c-hfef2f2','--c-h14532d','--c-h7f1d1d',
+             '--chart-tip-bg','--chart-tip-ink','--chart-heat-mid','--chart-s1','--chart-s3']
+    _drift = [k for k in _keys if
+              str(_jf.get(k,'')).lower() != str(dmap.get(k,'')).lower() or
+              str(_jl.get(k,'')).lower() != str(lmap.get(k,'')).lower()]
+    add('V18', '界面契约 §2 颜色单一真源：theme.js 字典与 theme.css 逐值一致', 'blocking',
+        not _drift, '漂移 %d 项'%len(_drift) + (' : '+','.join(_drift[:4]) if _drift else ''))
+    fixture('R22', '「浮层固定深灰 / 热力图深浅装反 / 序列全绿 / 不重绘」→ 必须全挡',
+        '界面契约 §5', [
+        ('浅色浮层为白底', lmap.get('--chart-tip-bg','').lower()=='#ffffff', True),
+        ('深色热力图为深底', dmap.get('--chart-heat-mid','').lower()=='#22354a', True),
+        ('浅色热力图为浅底', lmap.get('--chart-heat-mid','').lower()=='#f6f8f7', True),
+        ('深色序列绿<=1', sum(greenish(x) for x in seq_d)<=1, True),
+        ('浅色 --c-purple 非绿', lmap.get('--c-purple','').lower()=='#7c5cbf', True),
+        ('切主题显式重设', 'function syncCharts' in tjs, True),
+        ('字体/顶栏主色未连带改动', dmap.get('--c-accent','').lower()=='#4fc3f7', True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
         ('页底是浅灰绿', lv.get('--c-bg','').lower()=='#f6f8f7', True),
         ('浅色标题为黑', lv.get('--c-on-brand','').lower()=='#111816', True),
         ('大标题不分两色', 'color:inherit !important' in tcss, True),
-        ('图表无紫', not purple_lines, True),
+        ('序列多色相且绿<=1', len(set(lmap.get('--chart-s%d'%_i,'') for _i in range(1,7))) == 6, True),
         ('无靛蓝主色残留', not hit, True),
     ])
 
