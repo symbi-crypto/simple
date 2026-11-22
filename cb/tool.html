@@ -9090,9 +9090,18 @@ function renderKpis(r) {
       if (_sd && _sk) {
         var _rows = _sk.byReason.filter(function (x) { return x.count > 0; })
           .map(function (x) { return x.label + " " + x.count + " 次"; }).join(" · ") || "无跳过";
-        _sd.innerHTML = "<b>未成交/跳过明细（按原因）</b>：" + _rows +
-          "　<span style='color:#aaa'>" + _sk.note + "</span>" +
-          (_sk.sampleWarning ? "<br><span style='color:#c07a00'>" + _sk.sampleWarning + "</span>" : "");
+        // 指标独立节点：页面原有的「区间统计」会在本函数之后覆盖 kpis.innerHTML，
+        // 那张 KPI 卡在默认区间视图下看不见；总数另放这里，任何视图都稳定可见。
+        _sd.innerHTML =
+          '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px">' +
+            '<b style="font-size:12px">未成交/跳过</b>' +
+            '<span id="skipTotal" data-total="' + _sk.total + '" style="font-size:18px;font-weight:700;color:' +
+              (_sk.total > 0 ? '#c07a00' : '#1a9d5a') + '">' + _sk.total + '</span>' +
+            '<span style="font-size:11px">次 · 偏保守的跳过近似</span>' +
+          '</div>' +
+          '<div style="margin-top:2px"><b>按原因分列：</b>' + _rows + '</div>' +
+          '<div style="color:#aaa">' + _sk.note + '</div>' +
+          (_sk.sampleWarning ? "<div style='color:#c07a00'>" + _sk.sampleWarning + "</div>" : "");
       }
     } catch (eSd) { }
   }

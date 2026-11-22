@@ -611,10 +611,11 @@ def static_checks(root, valid_fn):
     sk = ng.get('skip', {})
     add('U9', 'P4⑥ 拒单/不可成交按原因变成指标', 'blocking',
         all('__WUFU_LIMIT_BLOCK_BUY' in s and 'skipSummary(window, r)' in s
-            and 'id = "skipDetail"' in s for s in page_src.values())
+            and 'id = "skipDetail"' in s and 'id="skipTotal"' in s
+            and 'data-total=' in s for s in page_src.values())
         and sk.get('total') == 7 and len(sk.get('byReason', [])) == 5
         and bool(sk.get('sampleWarning')),
-        '两页真计数+KPI+明细；Node 合计=%s 条/5 类，样本不足提示=%s'
+        '两页真计数+KPI+独立总数节点#skipTotal+按原因明细；Node 合计=%s 条/5 类，样本不足提示=%s'
         % (sk.get('total'), bool(sk.get('sampleWarning'))))
 
     return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn,

@@ -569,7 +569,7 @@
    "rule": "P4⑥ 拒单/不可成交按原因变成指标",
    "severity": "blocking",
    "status": "pass",
-   "detail": "两页真计数+KPI+明细；Node 合计=7 条/5 类，样本不足提示=True"
+   "detail": "两页真计数+KPI+独立总数节点#skipTotal+按原因明细；Node 合计=7 条/5 类，样本不足提示=True"
   }
  ],
  "fixtures": [
