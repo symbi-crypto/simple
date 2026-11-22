@@ -1,6 +1,6 @@
 {
  "contract": "数据方法与契约.md",
- "contractSha1": "4ed72fc15601",
+ "contractSha1": "4344178567a1",
  "gate": "pass",
  "summary": {
   "blocking": {
@@ -545,42 +545,42 @@
   },
   {
    "id": "U6",
-   "rule": "P4① 日历证据链 / 覆盖声明 / 半日时段",
+   "rule": "§2.7 日历证据链 / 覆盖声明 / 半日时段",
    "severity": "blocking",
    "status": "pass",
    "detail": "三份日历字段齐=True；calendar_check 真读；Node 证据判定 ok/bad=True/False"
   },
   {
    "id": "U7",
-   "rule": "P4③ availableAt 接回测引擎（时点可得闸门）",
+   "rule": "§2.5 收盘定稿 / §9 信号只用已完成日线",
    "severity": "blocking",
    "status": "pass",
    "detail": "8 份快照带 availableAt；两页真钳制 end_date；Node 历史/盘中=2026-11-20/2026-11-19"
   },
   {
    "id": "U8",
-   "rule": "P4④ 样本外资格闸门 qualified/observe/rejected",
+   "rule": "§7 样本外结论资格判定",
    "severity": "blocking",
    "status": "pass",
    "detail": "两页真调用；Node 三态=qualified/observe/rejected；AUC/Brier 不照搬已声明"
   },
   {
    "id": "U9",
-   "rule": "P4⑥ 拒单/不可成交按原因变成指标",
+   "rule": "§7 拒单/不可成交按原因成可见指标",
    "severity": "blocking",
    "status": "pass",
    "detail": "两页真计数+KPI+独立总数节点#skipTotal+按原因明细；Node 合计=7 条/5 类，样本不足提示=True"
   },
   {
    "id": "U10",
-   "rule": "② 板规则自带需验证标记与边界，且被两页真消费",
+   "rule": "§9 交易所默认口径需验证标记与边界",
    "severity": "blocking",
    "status": "pass",
    "detail": "两页真调用；Node requiresVerification=True 未核验证据=3 条；默认口径数值未变"
   },
   {
    "id": "U11",
-   "rule": "⑧ 费用按品种/市场拆项可配，且零值分项不改变成本",
+   "rule": "§9 费用按市场/品种拆项、零值默认",
    "severity": "blocking",
    "status": "pass",
    "detail": "两页真消费；Node 默认 extraPct=0（零值）/ 显式覆盖=0.001；7 项分项"
@@ -1080,7 +1080,7 @@
   {
    "id": "R16",
    "case": "「涨跌停硬编码就是规则」→ 默认口径必须自带未验证标记",
-   "rule": "② market-rules.mjs:43-46",
+   "rule": "§9 + 参考 market-rules.mjs:43-46",
    "status": "pass",
    "checks": [
     {
@@ -1164,7 +1164,7 @@
   {
    "id": "R17",
    "case": "「加税费分项」→ 默认必须零值，覆盖才生效，绝不偷偷改收益",
-   "rule": "⑧ DESIGN.md:63,75",
+   "rule": "§9 + 参考 DESIGN.md:63,75",
    "status": "pass",
    "checks": [
     {

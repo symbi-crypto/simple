@@ -592,14 +592,14 @@ def static_checks(root, valid_fn):
     hol_ok = all(all(k in json.loads(blob(root, f) or b'{}')
                      for k in ('Coverage', 'Evidence', 'HalfDaySessions', 'Limitations'))
                  for f in hol_files)
-    add('U6', 'P4① 日历证据链 / 覆盖声明 / 半日时段', 'blocking',
+    add('U6', '§2.7 日历证据链 / 覆盖声明 / 半日时段', 'blocking',
         hol_ok and 'Coverage' in pull and 'Evidence' in pull
         and ng.get('calOK', {}).get('ok') is True and ng.get('calBad', {}).get('ok') is False,
         '三份日历字段齐=%s；calendar_check 真读；Node 证据判定 ok/bad=%s/%s'
         % (hol_ok, ng.get('calOK', {}).get('ok'), ng.get('calBad', {}).get('ok')))
     pit = ng.get('pitHist', {}); live = ng.get('pitLive', {})
     page_src = {f: text(root, f) for f in ('cb/tool.html', 'etf/tool.html')}
-    add('U7', 'P4③ availableAt 接回测引擎（时点可得闸门）', 'blocking',
+    add('U7', '§2.5 收盘定稿 / §9 信号只用已完成日线', 'blocking',
         all('availableAt' in json.loads(blob(root, n) or b'{}') for n in
             ('cb-daily.json', 'gold-daily.json', 'industry-daily.json', 'index-daily.json',
              'index-gz2000.json', 'index-csi-patch.json', 'market-amount.json', 'us-etf-daily.json'))
@@ -610,7 +610,7 @@ def static_checks(root, valid_fn):
         and live.get('droppedDates') == ['2026-11-20'] and live.get('lastUsable') == '2026-11-19',
         '8 份快照带 availableAt；两页真钳制 end_date；Node 历史/盘中=%s/%s'
         % (pit.get('lastUsable'), live.get('lastUsable')))
-    add('U8', 'P4④ 样本外资格闸门 qualified/observe/rejected', 'blocking',
+    add('U8', '§7 样本外结论资格判定', 'blocking',
         all('qualifyWFO(segs)' in s and 'qualificationHtml(_q)' in s for s in page_src.values())
         and ng.get('qGood', {}).get('status') == 'qualified'
         and ng.get('qObserve', {}).get('status') == 'observe'
@@ -621,7 +621,7 @@ def static_checks(root, valid_fn):
         % (ng.get('qGood', {}).get('status'), ng.get('qObserve', {}).get('status'),
            ng.get('qReject', {}).get('status')))
     sk = ng.get('skip', {})
-    add('U9', 'P4⑥ 拒单/不可成交按原因变成指标', 'blocking',
+    add('U9', '§7 拒单/不可成交按原因成可见指标', 'blocking',
         all('__WUFU_LIMIT_BLOCK_BUY' in s and 'skipSummary(window, r)' in s
             and 'id = "skipDetail"' in s and 'id="skipTotal"' in s
             and 'data-total=' in s for s in page_src.values())
@@ -633,7 +633,7 @@ def static_checks(root, valid_fn):
     # ── ②⑧ 硬断言（Node 实跑产品 JS + 静态真调用检查）──────────────────
     nr = node_rules(root)
     cb, et = text(root, 'cb/tool.html'), text(root, 'etf/tool.html')
-    add('U10', '② 板规则自带需验证标记与边界，且被两页真消费', 'blocking',
+    add('U10', '§9 交易所默认口径需验证标记与边界', 'blocking',
         'common/instrument-rules.js' in text(root, 'sw.js')
         and all('instrument-rules.js' in s for s in (cb, et))
         and 'WufuRules.cbLimit(dateStr' in cb and 'WufuRules.etfLimit(code2).limR' in et
@@ -647,7 +647,7 @@ def static_checks(root, valid_fn):
         % (nr.get('board', {}).get('priceLimitRequiresVerification'),
            nr.get('board', {}).get('unverifiedEvidence')))
     fd, fo = nr.get('feeDefault', {}), nr.get('feeOverride', {})
-    add('U11', '⑧ 费用按品种/市场拆项可配，且零值分项不改变成本', 'blocking',
+    add('U11', '§9 费用按市场/品种拆项、零值默认', 'blocking',
         all('WufuRules.resolveFee' in s and '_fee.extraPct' in s
             and 'id="feeDetail"' in s for s in (cb, et))
         and fd.get('extraPct') == 0 and len(fd.get('itemized', [])) == 7
@@ -774,7 +774,7 @@ def run_fixtures(ctx, root, valid_fn):
         ('样本不足出 sampleWarning', bool(ng.get('skip', {}).get('sampleWarning')), True),
     ])
     fixture('R16', '「涨跌停硬编码就是规则」→ 默认口径必须自带未验证标记',
-            '② market-rules.mjs:43-46', [
+            '§9 + 参考 market-rules.mjs:43-46', [
         ('CB 首日 up 不变', nr.get('cbFirst', {}).get('up'), 157.3),
         ('CB 首日 dn 不变', nr.get('cbFirst', {}).get('dn'), 56.7),
         ('CB 非首日 up=prev×1.2', nr.get('cbNormal', {}).get('up'), 156),
@@ -792,7 +792,7 @@ def run_fixtures(ctx, root, valid_fn):
         ('边界写进 HTML', 'data-verify="required"' in nr.get('boundaryHtml', ''), True),
     ])
     fixture('R17', '「加税费分项」→ 默认必须零值，覆盖才生效，绝不偷偷改收益',
-            '⑧ DESIGN.md:63,75', [
+            '§9 + 参考 DESIGN.md:63,75', [
         ('默认 extraPct=0', nr.get('feeDefault', {}).get('extraPct'), 0),
         ('佣金原样回传', nr.get('feeDefault', {}).get('commissionRate'), 0.0002),
         ('滑点原样回传', nr.get('feeDefault', {}).get('slippageRate'), 0.0015),
