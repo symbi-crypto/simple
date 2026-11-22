@@ -583,7 +583,7 @@
    "rule": "界面契约 §5 切主题整份重绘、不靠字面量反查",
    "severity": "blocking",
    "status": "pass",
-   "detail": "归一化 + 显式重设 + 首屏 watch"
+   "detail": "归一化 + 显式重设 + 幂等 + 首屏 watch"
   },
   {
    "id": "V17",

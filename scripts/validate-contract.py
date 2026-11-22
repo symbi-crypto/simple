@@ -640,7 +640,9 @@ def static_checks(root, valid_fn):
         and dmap.get('--chart-tip-bg','').lower() != lmap.get('--chart-tip-bg','').lower()
         and lmap.get('--chart-tip-bg','').lower() == '#ffffff'
         and dmap.get('--chart-heat-mid','').lower() == '#22354a'
-        and lmap.get('--chart-heat-mid','').lower() == '#f6f8f7',
+        and lmap.get('--chart-heat-mid','').lower() == '#f6f8f7'
+        and '## §5 图表主题' in ui_rule
+        and '遮挡曲线与坐标标签' in ui_rule,
         '深tip=%s 浅tip=%s'%(dmap.get('--chart-tip-bg'),lmap.get('--chart-tip-bg')))
     seq_d = [dmap.get('--chart-s%d'%i,'').lower() for i in range(1,7)]
     seq_l = [lmap.get('--chart-s%d'%i,'').lower() for i in range(1,7)]
@@ -658,7 +660,11 @@ def static_checks(root, valid_fn):
         'function syncCharts' in tjs and 'function watchCharts' in tjs
         and 'function normColor' in tjs and 'fromMap[normColor(tok)]' in tjs
         and 'syncCharts(); } catch (e4)' in tjs
-        and '整份重给 option' in ui_rule, '归一化 + 显式重设 + 首屏 watch')
+        and 'inst.setOption(opt, true)' in tjs
+        and 'data-wufu-chart-sync' in tjs
+        and 'function syncCharts() { return;' not in tjs
+        and 'watchCharts();' in tjs
+        and '整份重给 option' in ui_rule, '归一化 + 显式重设 + 幂等 + 首屏 watch')
     yfmt = 'Math.abs(v) < 2 ? v.toFixed(2) : v.toFixed(1)'
     _yfiles = ['cb/tool.html','etf/tool.html','cb/index.html','etf/index.html']
     _yold = 'var _yFmt = opts.yFmt || function (v) { return v.toFixed(1); };'
