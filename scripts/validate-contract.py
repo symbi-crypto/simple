@@ -490,6 +490,75 @@ def static_checks(root, valid_fn):
         os.path.isfile(os.path.join(root, 'scripts', 'release-gate.py')),
         'release-gate.py 存在')
 
+
+    # ── 界面样式契约（§界面契约 6 节） ──────────────────────────
+    ui_rule = text(root, '界面样式契约.md')
+    add('V1', '界面契约 §1 规则文件存在且纯净', 'blocking',
+        bool(ui_rule) and not any(w in ui_rule for w in
+            ['v0.8','v0.9','2026-','已落地','上一轮','翻案','commit','HEAD','Actions run','待补'])
+        and '## 2. 颜色与主题' in ui_rule and '## 3. 按钮与控件样式' in ui_rule,
+        '契约 %d 字节'%len(ui_rule))
+    add('V2', '界面契约 §6 README 指针与台账登记', 'blocking',
+        '界面样式契约.md' in text(root,'README.md') and
+        '界面样式契约.md' in text(root,'数据契约落地台账.md'), '指针/台账均含契约')
+    tcss = text(root, 'common/theme.css')
+    REF_EXPECT = {'--c-bg':'#f4f5f7','--c-surface':'#ffffff','--c-surface-2':'#fbfbfc',
+        '--c-line':'#e4e6eb','--c-edge':'#d3d6dd','--c-text':'#15171c','--c-text-2':'#4b5160',
+        '--c-muted':'#6b7180','--c-accent':'#4338ca','--c-up':'#c92a2a','--c-down':'#15803d',
+        '--c-warn':'#b45309','--c-warn-ink':'#78350f'}
+    lv = dict((k,v.strip()) for k,v in re.findall(r'(--c-[\w-]+)\s*:\s*([^;]+);',
+        tcss.split(':root[data-theme="light"]{',1)[1].split('}',1)[0]))
+    miss = [k for k,v in REF_EXPECT.items() if lv.get(k,'').lower()!=v.lower()]
+    add('V3', '界面契约 §2 浅色值取自参考 index.css', 'blocking', not miss,
+        '对齐 %d/%d'%(len(REF_EXPECT)-len(miss),len(REF_EXPECT)) + (' 缺: '+','.join(miss) if miss else ''))
+    ui_names = sorted(set(re.findall(r'(--ui-[\w-]+)\s*:', tcss)))
+    dark_names = sorted(set(re.findall(r'(--ui-[\w-]+)\s*:', tcss.split(':root{',1)[1].split('}',1)[0])))
+    add('V4', '界面契约 §2 语义 tone 深浅成对', 'blocking',
+        len(ui_names)>=25 and set(ui_names)==set(dark_names),
+        '深浅各 %d 个'%len(ui_names))
+    tjs = text(root, 'common/theme.js')
+    add('V5', '界面契约 §3 切换键全站唯一 class / 统一注入', 'blocking',
+        'wufu-theme-toggle' in tjs and 'wh-theme' not in tjs
+        and '"position", "absolute"' in tjs and '"right", "14px"' in tjs
+        and '"top", "14px"' in tjs and 'margin-right", "96px"' in tjs,
+        '统一 class + 绝对定位顶栏右上角')
+    add('V6', '界面契约 §3 浅色选中态用 tone 而非实心块', 'blocking',
+        ':root[data-theme="light"] .on' in tcss and 'var(--ui-accent-soft)' in tcss
+        and 'var(--ui-accent-ink)' in tcss, 'accent-soft/line/ink 三档')
+    # 遗留色登记覆盖：业务文件里出现的硬编码色，必须都在 LEGACY 里
+    LEGACY_LITS = ['#c07a00','#1a9d5a','#c0392b','#888','#999','#aaa','#2b6cb0',
+                   'rgba(127,127,127,.07)']
+    business = ['cb/tool.html','etf/tool.html','common/research-gate.js','common/instrument-rules.js']
+    found=set(); unregistered=[]
+    def in_comment(src,pos):
+        a=src.rfind('/*',0,pos); b=src.rfind('*/',0,pos)
+        if a>b: return True
+        ln=src.rfind('\n',0,pos)+1
+        return '//' in src[ln:pos]
+    for bn in business:
+        bt = text(root, bn)
+        for lit in LEGACY_LITS:
+            if lit in bt: found.add(lit)
+        for m in re.finditer(r'#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)', bt):
+            tok=m.group()
+            if tok.lower() in [x.lower() for x in LEGACY_LITS]: continue
+            if in_comment(bt,m.start()): continue
+            ctx=bt[max(0,m.start()-90):m.end()+30]
+            if 'data:image' in ctx or 'theme-color' in ctx or 'content="' in ctx: continue
+            unregistered.append((bn,tok))
+    add('V7', '界面契约 §2 遗留色登记覆盖 / 无新增硬编码', 'blocking',
+        not unregistered and all(x in tjs for x in LEGACY_LITS),
+        '登记 %d 类；未登记 %d'%(len(found),len(unregistered)))
+    fixture('R18', '「按钮样式各页各写一套」→ 必须统一且浅色选中态不得为实心块',
+        '界面契约 §3', [
+        ('单一 class', 'wufu-theme-toggle' in tjs and
+            'wufu-theme-toggle' in tcss and tcss.count('wufu-theme-toggle')>=2, True),
+        ('浅色选中非实心', 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss, True),
+        ('参考配色不是算法值', lv.get('--c-text-2','').lower()=='#4b5160', True),
+        ('遗留色已登记', all(x in tjs for x in LEGACY_LITS), True),
+        ('定位不参与 flex 换行', '"position", "absolute"' in tjs and '"right", "14px"' in tjs, True),
+    ])
+
     rule, ledger, readme = (text(root, x) for x in (RULE_FILE, LEDGER_FILE, README_FILE))
     b11 = (bool(rule) and bool(ledger) and judge_docs(rule, ledger, readme) == 'accept')
     add('B11', '§11 规则 / 台账 / 版本日志三分离', 'blocking', b11,

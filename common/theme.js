@@ -11,7 +11,21 @@
    · 主题写 localStorage，同源 iframe 经 storage 事件自动同步。
    ============================================================ */
 (function (g) {
+  var UI_LIGHT = {"--ui-sunken":"#eceef1","--ui-line-strong":"#d3d6dd","--ui-ink-2":"#4b5160","--ui-ink-3":"#6b7180","--ui-accent-hover":"#3730a3","--ui-accent-soft":"#eef0fe","--ui-accent-line":"#c9ccf5","--ui-accent-ink":"#312e81","--ui-ok":"#15803d","--ui-ok-soft":"#ecfdf3","--ui-ok-line":"#bbf0d0","--ui-warn":"#b45309","--ui-warn-soft":"#fff7e6","--ui-warn-line":"#f3c677","--ui-warn-ink":"#78350f","--ui-bad":"#b91c1c","--ui-bad-soft":"#fff8f8","--ui-bad-line":"#f7c9c9","--ui-legacy-warn":"#b4530a","--ui-legacy-ok":"#15803d","--ui-legacy-muted":"#6b7180","--ui-legacy-muted-2":"#6b7181","--ui-legacy-muted-3":"#6b7182","--ui-legacy-line":"#4338ca","--ui-legacy-surface":"rgba(21,23,29,.035)"};
+  var UI_DARK  = {"--ui-sunken":"#2A3A4E","--ui-line-strong":"#3E4E63","--ui-ink-2":"#D8E2EF","--ui-ink-3":"#9FB0C3","--ui-accent-hover":"#22D3EE","--ui-accent-soft":"#233347","--ui-accent-line":"#1D4E7A","--ui-accent-ink":"#BFDBFE","--ui-ok":"#34D399","--ui-ok-soft":"#123329","--ui-ok-line":"#14532D","--ui-warn":"#FBBF24","--ui-warn-soft":"#3A2A12","--ui-warn-line":"#E8A33D","--ui-warn-ink":"#FCD34D","--ui-bad":"#F87171","--ui-bad-soft":"#3B1D1D","--ui-bad-line":"#7F1D1D","--ui-legacy-warn":"#c07a00","--ui-legacy-ok":"#1a9d5a","--ui-legacy-muted":"#888","--ui-legacy-muted-2":"#999","--ui-legacy-muted-3":"#aaa","--ui-legacy-line":"#2b6cb0","--ui-legacy-surface":"rgba(127,127,127,.07)"};
+  /* 遗留硬编码色登记：业务代码里写死的颜色字面量 → 语义变量。
+     新增界面代码禁止再写死颜色；门禁会检查登记覆盖，未登记即阻断发布。 */
+  var LEGACY = {
+    "#c07a00": "--ui-legacy-warn", "#1a9d5a": "--ui-legacy-ok",
+    "#c0392b": "--ui-legacy-bad", "#888": "--ui-legacy-muted",
+    "#999": "--ui-legacy-muted-2", "#aaa": "--ui-legacy-muted-3",
+    "#2b6cb0": "--ui-legacy-line",
+    "rgba(127,127,127,.07)": "--ui-legacy-surface"
+  };
   var LIGHT = {"--c-accent":"#4338ca","--c-accent-2":"#0e7490","--c-accent-soft":"#8b83e8","--c-bad-ink":"#b91c1c","--c-bg":"#f4f5f7","--c-bg-deep":"#eceef1","--c-down":"#0f8a5f","--c-down-rgb":"15,138,95","--c-edge":"#d7dbe2","--c-gray":"#7a8492","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#E4EAE6","--c-h14b8a6":"#189183","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#1E5282","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1D9485","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#1A4D9F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#841D1D","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#1C29AA","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#1D5EAF","--c-hc084fc":"#631CAB","--c-hccfbf1":"#1DAF90","--c-hd8e6f2":"#326A9A","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#396393","--c-he6edf6":"#356097","--c-he6eef8":"#2B5FA1","--c-he6f4ff":"#1D6FAF","--c-he879f9":"#961BA9","--c-he8a33d":"#9D681A","--c-hf472b6":"#A71B64","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#AF1D1E","--c-info":"#1d4ed8","--c-line":"#e4e6eb","--c-muted":"#5b6472","--c-purple":"#7c3aed","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"rgba(15,23,42,0.741)","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--c-surface":"#ffffff","--c-surface-2":"#fbfbfc","--c-text":"#15171c","--c-text-2":"#39414f","--c-up":"#c0392b","--c-up-rgb":"192,57,43","--c-warn":"#b45309","--c-warn-2":"#d97706","--c-warn-ink":"#92400e","--c-white":"#FFFFFE","--c-white-full":"#fffffe","--c-brand-a":"#fffffd","--c-brand-b":"#dfe7f2","--c-on-brand":"#15171d"};
+  Object.keys({"--c-bg":"#f4f5f7","--c-surface":"#ffffff","--c-surface-2":"#fbfbfc","--c-line":"#e4e6eb","--c-edge":"#d3d6dd","--c-text":"#15171c","--c-text-2":"#4b5160","--c-muted":"#6b7180","--c-gray":"#6b7180","--c-accent":"#4338ca","--c-accent-soft":"#eef0fe","--c-warn":"#b45309","--c-warn-2":"#f3c677","--c-warn-ink":"#78350f","--c-bad-ink":"#b91c1c","--c-up":"#c92a2a","--c-down":"#15803d","--c-bg-deep":"#eceef1","--c-up-rgb":"201,42,42","--c-down-rgb":"21,128,61"}).forEach(function(k){
+    LIGHT[k]={"--c-bg":"#f4f5f7","--c-surface":"#ffffff","--c-surface-2":"#fbfbfc","--c-line":"#e4e6eb","--c-edge":"#d3d6dd","--c-text":"#15171c","--c-text-2":"#4b5160","--c-muted":"#6b7180","--c-gray":"#6b7180","--c-accent":"#4338ca","--c-accent-soft":"#eef0fe","--c-warn":"#b45309","--c-warn-2":"#f3c677","--c-warn-ink":"#78350f","--c-bad-ink":"#b91c1c","--c-up":"#c92a2a","--c-down":"#15803d","--c-bg-deep":"#eceef1","--c-up-rgb":"201,42,42","--c-down-rgb":"21,128,61"}[k]; });
+  Object.keys(UI_LIGHT).forEach(function(k){ LIGHT[k]=UI_LIGHT[k]; });
   var FALLBACK = {
     "--c-accent": "#4FC3F7",
     "--c-accent-2": "#22D3EE",
@@ -156,6 +170,7 @@
     "--c-white": "#fff",
     "--c-white-full": "#FFFFFF"
   };
+  Object.keys(UI_DARK).forEach(function(k){ FALLBACK[k]=UI_DARK[k]; });
   var TOKENS = {
     "0001": "--c-edge",
     "0002": "--c-gray",
@@ -359,25 +374,41 @@
   Object.keys(LIGHT).forEach(function (k) { if (LIGHT_BY_VAL[LIGHT[k]] == null) LIGHT_BY_VAL[LIGHT[k]] = k; });
   var COLOR_RE = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g;
 
-  function replaceStr(s, fromMap) {
+
+  /* 遗留色统一替换：按「登记的字面量 → 变量 → 当前主题值」逐项换，
+     不依赖 value→name 反查表，故浅色值重复也不会歧义。 */
+  function legacyReplace(s, fromEff) {
     if (typeof s !== "string" || !s) return s;
-    return s.replace(COLOR_RE, function (tok) {
+    var out = s;
+    Object.keys(LEGACY).forEach(function (lit) {
+      var name = LEGACY[lit];
+      var oldVal = fromEff === "light" ? LIGHT[name] : UI_DARK[name];
+      if (!oldVal) return;
+      if (out.indexOf(oldVal) >= 0) out = out.split(oldVal).join(css(name));
+      if (out.indexOf(lit) >= 0) out = out.split(lit).join(css(name));
+    });
+    return out;
+  }
+  function replaceStr(s, fromMap, fromEff) {
+    if (typeof s !== "string" || !s) return s;
+    var s2 = legacyReplace(s, fromEff);
+    return s2.replace(COLOR_RE, function (tok) {
       var name = fromMap[tok];
       if (name == null) return tok;
       var nv = css(name);
       return nv || tok;
     });
   }
-  function replaceDeep(o, fromMap, seen) {
+  function replaceDeep(o, fromMap, seen, fromEff) {
     if (o == null) return o;
-    if (typeof o === "string") return replaceStr(o, fromMap);
+    if (typeof o === "string") return replaceStr(o, fromMap, fromEff);
     if (typeof o !== "object") return o;
     if (seen.indexOf(o) >= 0) return o;
     seen.push(o);
     if (Object.prototype.toString.call(o) === "[object Array]") {
-      for (var i = 0; i < o.length; i++) o[i] = replaceDeep(o[i], fromMap, seen);
+      for (var i = 0; i < o.length; i++) o[i] = replaceDeep(o[i], fromMap, seen, fromEff);
     } else {
-      Object.keys(o).forEach(function (k) { o[k] = replaceDeep(o[k], fromMap, seen); });
+      Object.keys(o).forEach(function (k) { o[k] = replaceDeep(o[k], fromMap, seen, fromEff); });
     }
     return o;
   }
@@ -396,7 +427,7 @@
           var a = ATTRS[j];
           if (!el.hasAttribute || !el.hasAttribute(a)) continue;
           var old = el.getAttribute(a);
-          var nw = replaceStr(old, fromMap);
+          var nw = replaceStr(old, fromMap, fromEff);
           if (nw !== old) el.setAttribute(a, nw);
         }
       }
@@ -410,7 +441,7 @@
           if (!inst || !inst.getOption) continue;
           var opt = inst.getOption();
           if (!opt) continue;
-          var nopt = replaceDeep(opt, fromMap, []);
+          var nopt = replaceDeep(opt, fromMap, [], fromEff);
           inst.setOption(nopt, true);
         }
       }
@@ -460,30 +491,56 @@
   function injectToggle() {
     var doc = g.document;
     if (!doc) return;
-    try { if (g.top !== g) return; } catch (e) { return; }
+    try { if (g.top !== g) return; } catch (e) { return; }   /* iframe 内不注入 */
     if (doc.getElementById("wufuThemeSel")) return;
-    var host = doc.querySelector(".wh-top") || doc.querySelector("header") || null;
+    var host = doc.querySelector(".wh-top") || doc.querySelector("header");
     if (!host) return;
+
     var sel = doc.createElement("select");
-    sel.id = "wufuThemeSel"; sel.className = "wh-theme";
+    sel.id = "wufuThemeSel"; sel.className = "wufu-theme-toggle";
     sel.setAttribute("aria-label", "界面主题");
     sel.innerHTML = '<option value="dark">深色</option>' +
                     '<option value="light">浅色</option>' +
                     '<option value="system">跟随系统</option>';
     sel.value = mode();
-    /* 内联兜底样式：tool.html 不引 header.css，必须自带；.wh-top 里 badge 已有 auto 边距 */
-    var inWhTop = host.className && String(host.className).indexOf("wh-top") >= 0;
-    sel.style.cssText = "flex:none;" + (inWhTop ? "" : "margin-left:auto;") +
-      "margin-right:2px;font-size:11px;line-height:1.4;padding:4px 6px;border-radius:6px;" +
-      "cursor:pointer;max-width:88px;outline:none;font-family:inherit";
-    /* 页面里 select{color:...!important} 会压过普通内联样式；内联 important 优先级最高 */
-    ["color", "background-color", "border-color"].forEach(function (p, i) {
-      sel.style.setProperty(p, ["var(--c-on-brand)", "var(--c-surface)", "var(--c-edge)"][i], "important");
-    });
-    sel.style.setProperty("border", "1px solid var(--c-edge)", "important");
     sel.addEventListener("change", function () { set(sel.value); });
     onChange(function () { sel.value = mode(); });
+
+    /* 样式锁死：页面里普遍有 select{...!important}，且它的选择器可能是
+       「header select」这类比单个 class 更高的特异性。内联 important 优先级最高，
+       保证 8 个页面算出来的宽高、字号、内边距、圆角逐位一致。 */
+    var LOCK = {
+      "width":"82px", "height":"28px", "min-height":"28px", "max-height":"28px",
+      "font-size":"10px", "line-height":"1.4", "padding":"4px 6px",
+      "border-radius":"9px", "box-sizing":"border-box",
+      "border":"1px solid var(--ui-line-strong)",
+      "background-color":"var(--c-surface)", "color":"var(--c-text)",
+      "font-weight":"600", "appearance":"none", "-webkit-appearance":"none"
+    };
+    Object.keys(LOCK).forEach(function (p) {
+      sel.style.setProperty(p, LOCK[p], "important");
+    });
+
+    /* 全站统一定位：顶栏右上角，绝对定位，不参与宿主 flex 流。
+       原因：etf/tool.html 的数据徽标比 cb 宽得多，若切换键参与 flex 换行，
+       只有这一页会被挤到下一行左侧 —— 正是上一版「位置不统一」的根因。
+       绝对定位后所有页面的 x/y 与宿主内容宽度无关，逐位一致。 */
+    try {
+      if (g.getComputedStyle(host).position === "static") host.style.position = "relative";
+    } catch (e4) { }
+    sel.style.setProperty("position", "absolute", "important");
+    sel.style.setProperty("right", "14px", "important");
+    sel.style.setProperty("top", "14px", "important");
+    sel.style.setProperty("margin", "0", "important");
+    sel.style.setProperty("z-index", "5", "important");
+    /* 徽标让出右上角，避免与切换键重叠（两主题下同一处理，位置规则唯一）。 */
+    var badge = host.querySelector(".wh-badge, .databadge");
+    if (badge) badge.style.setProperty("margin-right", "96px", "important");
     host.appendChild(sel);
+
+    /* 首屏：业务 JS 里登记的遗留色写死的是深色字面量，浅色下换成当前主题值。
+       深色下 css(var) 返回原值，逐字不变。 */
+    try { refresh(curEff === "light" ? "dark" : "light"); } catch (e2) { }
   }
   if (g.document) {
     if (g.document.readyState === "loading")

@@ -153,6 +153,32 @@
   --c-brand-a:#1B2634;
   --c-brand-b:#0E7490;
   --c-on-brand:#fff;
+  /* 界面语义 tone（深色值 = 现有生效字面量；浅色值取自参考项目 index.css :root） */
+  --ui-sunken:#2A3A4E;
+  --ui-line-strong:#3E4E63;
+  --ui-ink-2:#D8E2EF;
+  --ui-ink-3:#9FB0C3;
+  --ui-accent-hover:#22D3EE;
+  --ui-accent-soft:#233347;
+  --ui-accent-line:#1D4E7A;
+  --ui-accent-ink:#BFDBFE;
+  --ui-ok:#34D399;
+  --ui-ok-soft:#123329;
+  --ui-ok-line:#14532D;
+  --ui-warn:#FBBF24;
+  --ui-warn-soft:#3A2A12;
+  --ui-warn-line:#E8A33D;
+  --ui-warn-ink:#FCD34D;
+  --ui-bad:#F87171;
+  --ui-bad-soft:#3B1D1D;
+  --ui-bad-line:#7F1D1D;
+  --ui-legacy-warn:#c07a00;
+  --ui-legacy-ok:#1a9d5a;
+  --ui-legacy-muted:#888;
+  --ui-legacy-muted-2:#999;
+  --ui-legacy-muted-3:#aaa;
+  --ui-legacy-line:#2b6cb0;
+  --ui-legacy-surface:rgba(127,127,127,.07);
 }
 
 /* 兼容层：旧页面里已有的 --bg/--acc/--up 等变量名继续可用，
@@ -166,14 +192,14 @@
   color-scheme:light;
   --c-accent:#4338ca;
   --c-accent-2:#0e7490;
-  --c-accent-soft:#8b83e8;
+  --c-accent-soft:#eef0fe;
   --c-bad-ink:#b91c1c;
   --c-bg:#f4f5f7;
   --c-bg-deep:#eceef1;
-  --c-down:#0f8a5f;
-  --c-down-rgb:15,138,95;
-  --c-edge:#d7dbe2;
-  --c-gray:#7a8492;
+  --c-down:#15803d;
+  --c-down-rgb:21,128,61;
+  --c-edge:#d3d6dd;
+  --c-gray:#6b7180;
   --c-h06b6d4:#188193;
   --c-h0b1220:#ECEDF0;
   --c-h0b131d:#EDEEF1;
@@ -245,7 +271,7 @@
   --c-hfef2f2:#AF1D1E;
   --c-info:#1d4ed8;
   --c-line:#e4e6eb;
-  --c-muted:#5b6472;
+  --c-muted:#6b7180;
   --c-purple:#7c3aed;
   --c-r001:rgba(31,129,173,0.2207);
   --c-r002:rgba(31,129,173,0.3014);
@@ -298,19 +324,76 @@
   --c-surface:#ffffff;
   --c-surface-2:#fbfbfc;
   --c-text:#15171c;
-  --c-text-2:#39414f;
-  --c-up:#c0392b;
-  --c-up-rgb:192,57,43;
+  --c-text-2:#4b5160;
+  --c-up:#c92a2a;
+  --c-up-rgb:201,42,42;
   --c-warn:#b45309;
-  --c-warn-2:#d97706;
-  --c-warn-ink:#92400e;
+  --c-warn-2:#f3c677;
+  --c-warn-ink:#78350f;
   --c-white:#FFFFFE;
   --c-white-full:#fffffe;
   --c-brand-a:#fffffd;
   --c-brand-b:#dfe7f2;
   --c-on-brand:#15171d;
+  /* 界面语义 tone（取自参考 index.css :root） */
+  --ui-sunken:#eceef1;
+  --ui-line-strong:#d3d6dd;
+  --ui-ink-2:#4b5160;
+  --ui-ink-3:#6b7180;
+  --ui-accent-hover:#3730a3;
+  --ui-accent-soft:#eef0fe;
+  --ui-accent-line:#c9ccf5;
+  --ui-accent-ink:#312e81;
+  --ui-ok:#15803d;
+  --ui-ok-soft:#ecfdf3;
+  --ui-ok-line:#bbf0d0;
+  --ui-warn:#b45309;
+  --ui-warn-soft:#fff7e6;
+  --ui-warn-line:#f3c677;
+  --ui-warn-ink:#78350f;
+  --ui-bad:#b91c1c;
+  --ui-bad-soft:#fff8f8;
+  --ui-bad-line:#f7c9c9;
+  --ui-legacy-warn:#b4530a;
+  --ui-legacy-ok:#15803d;
+  --ui-legacy-muted:#6b7180;
+  --ui-legacy-muted-2:#6b7181;
+  --ui-legacy-muted-3:#6b7182;
+  --ui-legacy-line:#4338ca;
+  --ui-legacy-surface:rgba(21,23,29,.035);
 }
 /* 页面原有 select{color-scheme:dark!important} 会让浅色下的原生下拉仍是深色列表；
    带 [data-theme] 的选择器特异性更高，覆盖回来。深色下此规则不生效。 */
 :root[data-theme="light"] select{color-scheme:light !important}
+
+/* 按钮规范（参考 ui.tsx Button secondary / Tabs / Segmented）：
+   浅色下选中态用 accent-soft 底 + accent-ink 字 + accent-line 边框，
+   不使用深色主题那种 accent 实心块 + 白字；深色下不覆盖，保持零回归。 */
+:root[data-theme="light"] .on,
+:root[data-theme="light"] .active,
+:root[data-theme="light"] button.on,
+:root[data-theme="light"] nav button.on{
+  background:var(--ui-accent-soft) !important;
+  border-color:var(--ui-accent-line) !important;
+  color:var(--ui-accent-ink) !important;
+  box-shadow:none !important;
+}
+:root[data-theme="light"] .on:hover{background:var(--ui-accent-soft) !important}
+
+/* 主题切换键：全站唯一 class，所有属性 important 压过各页 select{...!important}。
+   位置由 theme.js 统一插到顶栏第一行右端；此处只管外观。 */
+.wufu-theme-toggle{
+  display:inline-block !important;flex:none !important;
+  box-sizing:border-box !important;width:88px !important;height:30px !important;
+  margin:0 0 0 8px !important;padding:4px 6px !important;
+  font-family:inherit !important;font-size:11px !important;line-height:1.4 !important;
+  font-weight:600 !important;white-space:nowrap !important;text-align:left !important;
+  border:1px solid var(--ui-line-strong) !important;border-radius:9px !important;
+  background:var(--c-surface) !important;color:var(--c-text) !important;
+  cursor:pointer !important;outline:none !important;appearance:none !important;
+  -webkit-appearance:none !important;
+}
+.wufu-theme-toggle:focus-visible{outline:2px solid var(--c-accent) !important;outline-offset:2px !important}
+@media(max-width:720px){.wufu-theme-toggle{width:82px !important;height:28px !important;font-size:10px !important}}
+
 

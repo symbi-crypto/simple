@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 62,
-   "passed": 62,
+   "total": 69,
+   "passed": 69,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 17,
-   "passed": 17,
+   "total": 18,
+   "passed": 18,
    "failed": 0
   },
   "snapshots": 16
@@ -474,6 +474,55 @@
    "detail": "release-gate.py 存在"
   },
   {
+   "id": "V1",
+   "rule": "界面契约 §1 规则文件存在且纯净",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "契约 2060 字节"
+  },
+  {
+   "id": "V2",
+   "rule": "界面契约 §6 README 指针与台账登记",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "指针/台账均含契约"
+  },
+  {
+   "id": "V3",
+   "rule": "界面契约 §2 浅色值取自参考 index.css",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "对齐 13/13"
+  },
+  {
+   "id": "V4",
+   "rule": "界面契约 §2 语义 tone 深浅成对",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深浅各 25 个"
+  },
+  {
+   "id": "V5",
+   "rule": "界面契约 §3 切换键全站唯一 class / 统一注入",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "统一 class + 绝对定位顶栏右上角"
+  },
+  {
+   "id": "V6",
+   "rule": "界面契约 §3 浅色选中态用 tone 而非实心块",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "accent-soft/line/ink 三档"
+  },
+  {
+   "id": "V7",
+   "rule": "界面契约 §2 遗留色登记覆盖 / 无新增硬编码",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "登记 8 类；未登记 0"
+  },
+  {
    "id": "B11",
    "rule": "§11 规则 / 台账 / 版本日志三分离",
    "severity": "blocking",
@@ -587,6 +636,40 @@
   }
  ],
  "fixtures": [
+  {
+   "id": "R18",
+   "case": "「按钮样式各页各写一套」→ 必须统一且浅色选中态不得为实心块",
+   "rule": "界面契约 §3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "单一 class",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色选中非实心",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "参考配色不是算法值",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "遗留色已登记",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "定位不参与 flex 换行",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
   {
    "id": "R1",
    "case": "「指数基线按设计不追加」→ 实为看板未接入日更链",
