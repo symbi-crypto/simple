@@ -804,6 +804,14 @@ def static_checks(root, valid_fn):
         _tab_ok and '## §7 热力图层次与平板布局' in ui_rule
         and '粘滞定位加限高的内部滚动' in ui_rule,
         '%d 个文件含平板规则'%sum(1 for _f in _tab_files if 'position:static !important' in text(root,_f)))
+    # 版本号约定：不得跨到 1.00，须在 0.99 后加两位数
+    _sw = text(root,'sw.js')
+    _rd = text(root,'README.md')
+    add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
+        'wufu-all-v0.9901' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9901' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9901' in _sw, '0.9901' in _rd))
+
     fixture('R25', '「三档同色 / 重绘降档 / iPad 面板 sticky 拉不动」→ 必须全挡',
         '界面契约 §7', [
         ('13 档深浅唯一', len(set(_dvals))==13 and len(set(_lvals))==13, True),

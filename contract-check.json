@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 89,
-   "passed": 89,
+   "total": 90,
+   "passed": 90,
    "failed": 0
   },
   "advisory": {
@@ -661,6 +661,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "5 个文件含平板规则"
+  },
+  {
+   "id": "V28",
+   "rule": "发布版本不得跨 1.00，须为 0.9901",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "缓存=True / README 命中=True"
   },
   {
    "id": "B11",
