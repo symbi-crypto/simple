@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 69,
-   "passed": 69,
+   "total": 73,
+   "passed": 73,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 18,
-   "passed": 18,
+   "total": 19,
+   "passed": 19,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 2060 字节"
+   "detail": "契约 2433 字节"
   },
   {
    "id": "V2",
@@ -489,17 +489,17 @@
   },
   {
    "id": "V3",
-   "rule": "界面契约 §2 浅色值取自参考 index.css",
+   "rule": "界面契约 §2 浅色值取自文章界面截图",
    "severity": "blocking",
    "status": "pass",
-   "detail": "对齐 13/13"
+   "detail": "对齐 8/8"
   },
   {
    "id": "V4",
    "rule": "界面契约 §2 语义 tone 深浅成对",
    "severity": "blocking",
    "status": "pass",
-   "detail": "深浅各 25 个"
+   "detail": "深浅各 26 个"
   },
   {
    "id": "V5",
@@ -521,6 +521,34 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "登记 8 类；未登记 0"
+  },
+  {
+   "id": "V8",
+   "rule": "界面契约 §3 顶栏大标题单色（深白浅黑）",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "fu=inherit / 深#fff / 浅#111816"
+  },
+  {
+   "id": "V9",
+   "rule": "界面契约 §2 主色与浅色值不得含紫/靛蓝",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "命中 0"
+  },
+  {
+   "id": "V10",
+   "rule": "界面契约 §2 图表序列不得出现紫/粉",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "紫色序列 0 个"
+  },
+  {
+   "id": "V11",
+   "rule": "界面契约 §3 主按钮与 tab 用墨绿 tone",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "绿下划线 + 浅绿底 + 深绿字"
   },
   {
    "id": "B11",
@@ -637,6 +665,45 @@
  ],
  "fixtures": [
   {
+   "id": "R19",
+   "case": "「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色",
+   "rule": "界面契约 §2/§3",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "主色是文章墨绿",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "页底是浅灰绿",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色标题为黑",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "大标题不分两色",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "图表无紫",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "无靛蓝主色残留",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R18",
    "case": "「按钮样式各页各写一套」→ 必须统一且浅色选中态不得为实心块",
    "rule": "界面契约 §3",
@@ -653,7 +720,7 @@
      "expect": true
     },
     {
-     "name": "参考配色不是算法值",
+     "name": "参考配色取自截图墨绿",
      "actual": true,
      "expect": true
     },

@@ -15,7 +15,7 @@
   · 判定器是最小可执行化，仅用于回归，**不是生产实现、不进产品**（规则 §2.6）
   · 规则文件是断言的唯一依据；规则改了要同步改这里的 id 与 § 映射
 """
-import os, sys, json, hashlib, re, argparse, importlib.util, shutil, datetime, subprocess
+import os, sys, json, colorsys, hashlib, re, argparse, importlib.util, shutil, datetime, subprocess
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
@@ -502,14 +502,14 @@ def static_checks(root, valid_fn):
         '界面样式契约.md' in text(root,'README.md') and
         '界面样式契约.md' in text(root,'数据契约落地台账.md'), '指针/台账均含契约')
     tcss = text(root, 'common/theme.css')
-    REF_EXPECT = {'--c-bg':'#f4f5f7','--c-surface':'#ffffff','--c-surface-2':'#fbfbfc',
-        '--c-line':'#e4e6eb','--c-edge':'#d3d6dd','--c-text':'#15171c','--c-text-2':'#4b5160',
-        '--c-muted':'#6b7180','--c-accent':'#4338ca','--c-up':'#c92a2a','--c-down':'#15803d',
-        '--c-warn':'#b45309','--c-warn-ink':'#78350f'}
+    # 取自文章《我把这套看盘研究工作台开源了》界面截图的像素色板
+    REF_EXPECT = {'--c-bg':'#f6f8f7','--c-surface':'#ffffff','--c-text':'#202725',
+        '--c-muted':'#738079','--c-accent':'#147d5e','--c-up':'#d65359',
+        '--c-edge':'#c3ddd0','--c-on-brand':'#111816'}
     lv = dict((k,v.strip()) for k,v in re.findall(r'(--c-[\w-]+)\s*:\s*([^;]+);',
         tcss.split(':root[data-theme="light"]{',1)[1].split('}',1)[0]))
     miss = [k for k,v in REF_EXPECT.items() if lv.get(k,'').lower()!=v.lower()]
-    add('V3', '界面契约 §2 浅色值取自参考 index.css', 'blocking', not miss,
+    add('V3', '界面契约 §2 浅色值取自文章界面截图', 'blocking', not miss,
         '对齐 %d/%d'%(len(REF_EXPECT)-len(miss),len(REF_EXPECT)) + (' 缺: '+','.join(miss) if miss else ''))
     ui_names = sorted(set(re.findall(r'(--ui-[\w-]+)\s*:', tcss)))
     dark_names = sorted(set(re.findall(r'(--ui-[\w-]+)\s*:', tcss.split(':root{',1)[1].split('}',1)[0])))
@@ -549,12 +549,54 @@ def static_checks(root, valid_fn):
     add('V7', '界面契约 §2 遗留色登记覆盖 / 无新增硬编码', 'blocking',
         not unregistered and all(x in tjs for x in LEGACY_LITS),
         '登记 %d 类；未登记 %d'%(len(found),len(unregistered)))
+    # ── v0.95：主色绿 / 标题单色 / 图表无紫 ─────────────────────
+    light_css = tcss.split(':root[data-theme="light"]{',1)[1].split('\n}',1)[0]
+    add('V8', '界面契约 §3 顶栏大标题单色（深白浅黑）', 'blocking',
+        'h1 .fu' in tcss and 'color:inherit !important' in tcss
+        and re.search(r'--c-on-brand\s*:\s*#fff', tcss) is not None
+        and lv.get('--c-on-brand','').lower() == '#111816',
+        'fu=inherit / 深#fff / 浅#111816')
+    PURPLE = ['#4338ca','#312e81','#c9ccf5','#eef0fe','#6d66f0','#7c3aed',
+              '#8580f5','#c7c4ff','#23234a','#3f3d84','#a78bfa','#818cf8']
+    # 只查浅色块与 theme.js 的 LIGHT 字典；深色机械值保留原色相，不在禁止范围
+    mlight = re.search(r'var LIGHT = (\{.*?\});\s*\n\s*var FALLBACK', tjs, re.S)
+    scope = light_css.lower() + (mlight.group(1).lower() if mlight else '')
+    hit = [p for p in PURPLE if p in scope]
+    add('V9', '界面契约 §2 主色与浅色值不得含紫/靛蓝', 'blocking', not hit,
+        '命中 %d'%len(hit) + (' : '+','.join(hit) if hit else ''))
+    def hex_hsl(v):
+        v=v.strip().lstrip('#')
+        if len(v)==3: v=''.join(c*2 for c in v)
+        if not re.fullmatch(r'[0-9a-fA-F]{6}',v): return None
+        r,g,b=[int(v[i:i+2],16)/255 for i in (0,2,4)]
+        h,l,s=colorsys.rgb_to_hls(r,g,b)
+        return h*360,s
+    purple_lines=[]
+    for k,v in re.findall(r'(--c-h[\w-]+)\s*:\s*([^;]+);', light_css):
+        hs=hex_hsl(v)
+        if hs and 245<=hs[0]<=345 and hs[1]>0.24: purple_lines.append(k)
+    add('V10', '界面契约 §2 图表序列不得出现紫/粉', 'blocking',
+        not purple_lines, '紫色序列 %d 个'%len(purple_lines))
+    add('V11', '界面契约 §3 主按钮与 tab 用墨绿 tone', 'blocking',
+        'border-bottom:2px solid var(--c-accent)' in tcss
+        and 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss
+        and '#147d5e' in light_css.lower(), '绿下划线 + 浅绿底 + 深绿字')
+    fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
+        '界面契约 §2/§3', [
+        ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
+        ('页底是浅灰绿', lv.get('--c-bg','').lower()=='#f6f8f7', True),
+        ('浅色标题为黑', lv.get('--c-on-brand','').lower()=='#111816', True),
+        ('大标题不分两色', 'color:inherit !important' in tcss, True),
+        ('图表无紫', not purple_lines, True),
+        ('无靛蓝主色残留', not hit, True),
+    ])
+
     fixture('R18', '「按钮样式各页各写一套」→ 必须统一且浅色选中态不得为实心块',
         '界面契约 §3', [
         ('单一 class', 'wufu-theme-toggle' in tjs and
             'wufu-theme-toggle' in tcss and tcss.count('wufu-theme-toggle')>=2, True),
         ('浅色选中非实心', 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss, True),
-        ('参考配色不是算法值', lv.get('--c-text-2','').lower()=='#4b5160', True),
+        ('参考配色取自截图墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
         ('遗留色已登记', all(x in tjs for x in LEGACY_LITS), True),
         ('定位不参与 flex 换行', '"position", "absolute"' in tjs and '"right", "14px"' in tjs, True),
     ])

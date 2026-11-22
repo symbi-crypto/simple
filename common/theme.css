@@ -7,9 +7,9 @@
    主题状态、切换与图表重绘由 common/theme.js 负责。
    ============================================================ */
 :root{
-  --c-accent:#4FC3F7;
-  --c-accent-2:#22D3EE;
-  --c-accent-soft:#7DD3FC;
+  --c-accent:#3ECC9C;
+  --c-accent-2:#35B68B;
+  --c-accent-soft:#81CFB5;
   --c-bad-ink:#FCA5A5;
   --c-bg:#1B2634;
   --c-bg-deep:#0F1822;
@@ -86,10 +86,10 @@
   --c-hfb7185:#FB7185;
   --c-hfecaca:#FECACA;
   --c-hfef2f2:#FEF2F2;
-  --c-info:#60A5FA;
+  --c-info:#59C09D;
   --c-line:#243244;
   --c-muted:#9FB0C3;
-  --c-purple:#A78BFA;
+  --c-purple:#69BFA2;
   --c-r001:rgba(79,195,247,.22);
   --c-r002:rgba(79,195,247,.3);
   --c-r003:rgba(14,116,144,.16);
@@ -151,7 +151,7 @@
   --c-white-full:#FFFFFF;
   /* 品牌头专用（深色值 = 原渐变两端与白字，保证零回归） */
   --c-brand-a:#1B2634;
-  --c-brand-b:#0E7490;
+  --c-brand-b:#0E5C46;
   --c-on-brand:#fff;
   /* 界面语义 tone（深色值 = 现有生效字面量；浅色值取自参考项目 index.css :root） */
   --ui-sunken:#2A3A4E;
@@ -179,6 +179,7 @@
   --ui-legacy-muted-3:#aaa;
   --ui-legacy-line:#2b6cb0;
   --ui-legacy-surface:rgba(127,127,127,.07);
+  --ui-legacy-bad:#c0392b;
 }
 
 /* 兼容层：旧页面里已有的 --bg/--acc/--up 等变量名继续可用，
@@ -190,16 +191,34 @@
    ============================================================ */
 :root[data-theme="light"]{
   color-scheme:light;
-  --c-accent:#4338ca;
-  --c-accent-2:#0e7490;
-  --c-accent-soft:#eef0fe;
-  --c-bad-ink:#b91c1c;
-  --c-bg:#f4f5f7;
-  --c-bg-deep:#eceef1;
-  --c-down:#15803d;
-  --c-down-rgb:21,128,61;
-  --c-edge:#d3d6dd;
-  --c-gray:#6b7180;
+  --c-accent:#147D5E;
+  --c-accent-2:#258663;
+  --c-accent-soft:#EDF6F0;
+  --c-bg:#F6F8F7;
+  --c-bg-deep:#E9EEEB;
+  --c-surface:#FFFFFF;
+  --c-surface-2:#FAFCFB;
+  --c-line:#E9EEEC;
+  --c-edge:#C3DDD0;
+  --c-text:#202725;
+  --c-text-2:#3D4A45;
+  --c-muted:#738079;
+  --c-gray:#73807A;
+  --c-up:#D65359;
+  --c-up-rgb:214,83,89;
+  --c-down:#147D5F;
+  --c-down-rgb:20,125,94;
+  --c-warn:#B45309;
+  --c-warn-2:#F1CEA7;
+  --c-warn-ink:#8A5A10;
+  --c-bad-ink:#C0392B;
+  --c-info:#0E7490;
+  --c-purple:#5B8C7A;
+  --c-white:#FFFFFE;
+  --c-white-full:#FFFFFC;
+  --c-brand-a:#FFFFFB;
+  --c-brand-b:#F0F6F2;
+  --c-on-brand:#111816;
   --c-h06b6d4:#188193;
   --c-h0b1220:#ECEDF0;
   --c-h0b131d:#EDEEF1;
@@ -219,7 +238,7 @@
   --c-h162131:#E8EAED;
   --c-h1b2735:#E7E9EC;
   --c-h1c2a3a:#E6E9EB;
-  --c-h1d4e7a:#1E5282;
+  --c-h1d4e7a:#237D7A;
   --c-h1e2a38:#E6E9EC;
   --c-h233347:#E3E6E9;
   --c-h2a3546:#E2E5E9;
@@ -233,7 +252,7 @@
   --c-h38bdf8:#1A769F;
   --c-h3a2a12:#EDEBE8;
   --c-h3b1d1d:#EBE6E6;
-  --c-h3b82f6:#1A4D9F;
+  --c-h3b82f6:#27928F;
   --c-h3e7a8c:#C2D0D5;
   --c-h3f1d1d:#EBE5E5;
   --c-h4ade80:#1B9D4A;
@@ -242,7 +261,7 @@
   --c-h6ee7b7:#1BA46E;
   --c-h7f1d1d:#841D1D;
   --c-h7f3a3a:#D7C6C6;
-  --c-h818cf8:#1C29AA;
+  --c-h818cf8:#2A9C99;
   --c-h8a97a8:#282E36;
   --c-h8fa3b8:#28333F;
   --c-h8fa3ba:#273340;
@@ -252,27 +271,23 @@
   --c-ha3e635:#6B9C19;
   --c-ha5f3fc:#1DA0AF;
   --c-hb9c8d9:#2F4054;
-  --c-hbfdbfe:#1D5EAF;
-  --c-hc084fc:#631CAB;
+  --c-hbfdbfe:#2BA19D;
+  --c-hc084fc:#26A177;
   --c-hccfbf1:#1DAF90;
-  --c-hd8e6f2:#326A9A;
+  --c-hd8e6f2:#379592;
   --c-hdce6f0:#374D62;
   --c-he2e8f0:#384B64;
-  --c-he6edf5:#396393;
-  --c-he6edf6:#356097;
-  --c-he6eef8:#2B5FA1;
-  --c-he6f4ff:#1D6FAF;
-  --c-he879f9:#961BA9;
+  --c-he6edf5:#3E8E8C;
+  --c-he6edf6:#3A928F;
+  --c-he6eef8:#319B98;
+  --c-he6f4ff:#2BA19E;
+  --c-he879f9:#259F83;
   --c-he8a33d:#9D681A;
-  --c-hf472b6:#A71B64;
+  --c-hf472b6:#259D97;
   --c-hf97316:#9A4E19;
   --c-hfb7185:#A81B30;
   --c-hfecaca:#AF1D1D;
   --c-hfef2f2:#AF1D1E;
-  --c-info:#1d4ed8;
-  --c-line:#e4e6eb;
-  --c-muted:#6b7180;
-  --c-purple:#7c3aed;
   --c-r001:rgba(31,129,173,0.2207);
   --c-r002:rgba(31,129,173,0.3014);
   --c-r003:rgba(18,86,105,0.1621);
@@ -321,64 +336,97 @@
   --c-r046:rgba(31,129,173,0.3528);
   --c-r047:rgba(31,129,173,0.4535);
   --c-r048:rgba(31,129,173,0.5542);
-  --c-surface:#ffffff;
-  --c-surface-2:#fbfbfc;
-  --c-text:#15171c;
-  --c-text-2:#4b5160;
-  --c-up:#c92a2a;
-  --c-up-rgb:201,42,42;
-  --c-warn:#b45309;
-  --c-warn-2:#f3c677;
-  --c-warn-ink:#78350f;
-  --c-white:#FFFFFE;
-  --c-white-full:#fffffe;
-  --c-brand-a:#fffffd;
-  --c-brand-b:#dfe7f2;
-  --c-on-brand:#15171d;
-  /* 界面语义 tone（取自参考 index.css :root） */
-  --ui-sunken:#eceef1;
-  --ui-line-strong:#d3d6dd;
-  --ui-ink-2:#4b5160;
-  --ui-ink-3:#6b7180;
-  --ui-accent-hover:#3730a3;
-  --ui-accent-soft:#eef0fe;
-  --ui-accent-line:#c9ccf5;
-  --ui-accent-ink:#312e81;
-  --ui-ok:#15803d;
-  --ui-ok-soft:#ecfdf3;
-  --ui-ok-line:#bbf0d0;
-  --ui-warn:#b45309;
-  --ui-warn-soft:#fff7e6;
-  --ui-warn-line:#f3c677;
-  --ui-warn-ink:#78350f;
-  --ui-bad:#b91c1c;
-  --ui-bad-soft:#fff8f8;
-  --ui-bad-line:#f7c9c9;
-  --ui-legacy-warn:#b4530a;
-  --ui-legacy-ok:#15803d;
-  --ui-legacy-muted:#6b7180;
-  --ui-legacy-muted-2:#6b7181;
-  --ui-legacy-muted-3:#6b7182;
-  --ui-legacy-line:#4338ca;
-  --ui-legacy-surface:rgba(21,23,29,.035);
+  --ui-sunken:#E9EEEE;
+  --ui-line-strong:#C3DDD1;
+  --ui-ink-2:#3D4A46;
+  --ui-ink-3:#73807C;
+  --ui-accent-hover:#0E6A4F;
+  --ui-accent-soft:#EDF6F1;
+  --ui-accent-line:#C3DDD3;
+  --ui-accent-ink:#0B5D46;
+  --ui-ok:#147D61;
+  --ui-ok-soft:#EDF6F3;
+  --ui-ok-line:#C3DDD6;
+  --ui-warn:#B4530A;
+  --ui-warn-soft:#FFF7E7;
+  --ui-warn-line:#F1CEA8;
+  --ui-warn-ink:#8A5A11;
+  --ui-bad:#D6535A;
+  --ui-bad-soft:#FFF0EF;
+  --ui-bad-line:#F1CCCC;
+  --ui-legacy-warn:#B4530C;
+  --ui-legacy-ok:#147D64;
+  --ui-legacy-bad:#C0392C;
+  --ui-legacy-muted:#73807F;
+  --ui-legacy-muted-2:#73807B;
+  --ui-legacy-muted-3:#73807E;
+  --ui-legacy-line:#147D68;
+  --ui-legacy-surface:rgba(32,39,37,.045);
 }
 /* 页面原有 select{color-scheme:dark!important} 会让浅色下的原生下拉仍是深色列表；
    带 [data-theme] 的选择器特异性更高，覆盖回来。深色下此规则不生效。 */
 :root[data-theme="light"] select{color-scheme:light !important}
 
-/* 按钮规范（参考 ui.tsx Button secondary / Tabs / Segmented）：
-   浅色下选中态用 accent-soft 底 + accent-ink 字 + accent-line 边框，
-   不使用深色主题那种 accent 实心块 + 白字；深色下不覆盖，保持零回归。 */
+/* ── 界面样式（参考文章《我把这套看盘研究工作台开源了》界面截图） ──
+   墨绿主色 #147D5E、白卡、浅灰绿底、细边框、小圆角；tab 绿色下划线；
+   主按钮墨绿实心白字；数字等宽；顶栏大标题单色。 */
 :root[data-theme="light"] .on,
 :root[data-theme="light"] .active,
 :root[data-theme="light"] button.on,
 :root[data-theme="light"] nav button.on{
   background:var(--ui-accent-soft) !important;
   border-color:var(--ui-accent-line) !important;
+  border-bottom:2px solid var(--c-accent) !important;
   color:var(--ui-accent-ink) !important;
+  font-weight:600 !important;
   box-shadow:none !important;
 }
 :root[data-theme="light"] .on:hover{background:var(--ui-accent-soft) !important}
+
+/* 主操作按钮：文章「更新行情」那种墨绿实心白字 */
+:root[data-theme="light"] button.primary,
+:root[data-theme="light"] .btn-primary,
+:root[data-theme="light"] #comboRun,
+:root[data-theme="light"] #btnRun{
+  background:var(--c-accent) !important;
+  color:#fff !important;
+  border:1px solid var(--c-accent) !important;
+  border-radius:9px !important;
+  font-weight:600 !important;
+}
+
+/* 顶栏大标题：不再分两个颜色。深色主题白色、浅色主题黑色。
+   用 inherit 继承 h1 的 --c-on-brand，两主题自动取到对应值。
+   加 :root 提高特异性：header.css 在 theme.css 之后加载且带 !important，
+   不加前缀会被它压回去（各页 .fu 又变回第二个颜色）。 */
+:root .wh-top h1 .fu,
+:root header h1 .fu,
+:root .hd h1 .fu,
+:root h1 .fu{
+  color:inherit !important;
+  opacity:1 !important;
+  font-weight:inherit !important;
+}
+
+/* 文字与图表：文章风格 —— 墨色字阶、数字等宽、绿色选中态、细滚动条 */
+:root[data-theme="light"] body{
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+}
+:root[data-theme="light"] ::selection{
+  background:var(--ui-accent-soft);color:var(--ui-accent-ink);
+}
+:root[data-theme="light"] :focus-visible{
+  outline:2px solid var(--c-accent);outline-offset:2px;
+}
+:root[data-theme="light"] *::-webkit-scrollbar{width:8px;height:8px}
+:root[data-theme="light"] *::-webkit-scrollbar-track{background:transparent}
+:root[data-theme="light"] *::-webkit-scrollbar-thumb{
+  background:transparent;border-radius:8px;
+}
+:root[data-theme="light"] *:hover::-webkit-scrollbar-thumb{
+  background:var(--ui-line-strong);
+}
 
 /* 主题切换键：全站唯一 class，所有属性 important 压过各页 select{...!important}。
    位置由 theme.js 统一插到顶栏第一行右端；此处只管外观。 */
