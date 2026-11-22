@@ -698,6 +698,21 @@ def static_checks(root, valid_fn):
         ('字体/顶栏主色未连带改动', dmap.get('--c-accent','').lower()=='#4fc3f7', True),
     ])
 
+    # 首屏 heatmap 必须直接取语义变量（事后改 option 不会触发 ECharts 重绘格子）
+    _vmfiles = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','combos/index.html']
+    _vmold = [f for f in _vmfiles if re.search(r'inRange\s*:\s*\{\s*color\s*:\s*\[[^\]]*WFT', text(root, f))]
+    _vmnew = sum(len(re.findall(r"css\('--chart-heat-", text(root, f))) for f in _vmfiles)
+    add('V19', '界面契约 §5 热力图首屏取语义变量、不靠事后重绘', 'blocking',
+        not _vmold and _vmnew >= 30,
+        '旧 token 残留 %d 页 / 语义变量引用 %d 处'%(len(_vmold), _vmnew))
+    fixture('R23', '「热力图首屏写死旧 token，只靠 syncCharts 事后改」→ 必须直接取语义变量',
+        '界面契约 §5', [
+        ('无旧 token 残留', not _vmold, True),
+        ('语义变量引用充足', _vmnew >= 30, True),
+        ('深浅三档已定义', all(k in dmap and k in lmap for k in
+            ['--chart-heat-neg','--chart-heat-mid','--chart-heat-pos']), True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),

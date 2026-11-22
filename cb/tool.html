@@ -9258,7 +9258,7 @@ function renderKpis(r) {
       xAxis: { type: "category", data: years, splitArea: { show: true }, axisLabel: { fontSize: 10, interval: 0, rotate: 30, margin: 8 } },
       yAxis: { type: "category", data: monthIdx, splitArea: { show: true }, axisLabel: { fontSize: 10 } },
       visualMap: { min: -absMax, max: absMax, calculable: true, orient: "horizontal", left: "center", bottom: 0,
-        textStyle: { fontSize: 10 }, inRange: { color: [WufuTheme.sub("§WFT0029§"), WufuTheme.sub("§WFT0086§"), WufuTheme.sub("§WFT0080§"), WufuTheme.sub("§WFT0071§")] } },
+        textStyle: { fontSize: 10 }, inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos')] } },
       series: [{ type: "heatmap", data: cells, label: { show: false }, emphasis: { itemStyle: { borderColor: WufuTheme.sub("§WFT0001§"), borderWidth: 1 } } }]
     });
   }
@@ -11439,7 +11439,7 @@ function showStrategyDetail(name) {
       grid: { left: _left, right: 30, top: _top, bottom: _bottom },
       xAxis: { type: "category", data: _axN, axisLabel: { color: WufuTheme.sub("§WFT0005§"), rotate: _seqMode ? 0 : 40, hideOverlap: true, align: "left", margin: 6, fontSize: _seqMode ? 11 : 11 } },
       yAxis: { type: "category", data: _axN, axisLabel: { color: WufuTheme.sub("§WFT0005§"), width: _left - 4, overflow: "truncate", align: "left" } },
-      visualMap: { min: -1, max: 1, calculable: true, orient: "horizontal", right: 6, top: 0, itemWidth: 9, itemHeight: 60, textStyle: { color: WufuTheme.sub("§WFT0003§") }, inRange: { color: [WufuTheme.sub("§WFT0104§"), WufuTheme.sub("§WFT0009§"), WufuTheme.sub("§WFT0101§")] } },
+      visualMap: { min: -1, max: 1, calculable: true, orient: "horizontal", right: 6, top: 0, itemWidth: 9, itemHeight: 60, textStyle: { color: WufuTheme.sub("§WFT0003§") }, inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos')] } },
       series: [{ type: "heatmap", data: cells, label: { show: _fs > 0, color: WufuTheme.sub("§WFT0004§"), fontSize: _fs }, itemStyle: { borderColor: WufuTheme.sub("§WFT0007§"), borderWidth: 1 } }]
     });
     // 序号模式下渲染「序号 = 策略名」图例（放在 canvas 外，不占绘图区）
@@ -13475,7 +13475,7 @@ function showStrategyDetail(name) {
       yAxis: { type: "category", data: names, inverse: true, splitArea: { show: false }, axisLine: { lineStyle: { color: WufuTheme.sub("§WFT0001§") } }, axisTick: { show: false }, axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 10, interval: 0 } },
       visualMap: {
         min: vlo, max: vhi, calculable: false, show: false,
-        inRange: { color: [WufuTheme.sub("§WFT0012§"), WufuTheme.sub("§WFT0051§"), WufuTheme.sub("§WFT0009§"), WufuTheme.sub("§WFT0011§"), WufuTheme.sub("§WFT0010§")] }
+        inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos'), WufuTheme.css('--chart-heat-pos')] }
       },
       series: [{
         type: "heatmap", data: data,

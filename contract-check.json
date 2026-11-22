@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 80,
-   "passed": 80,
+   "total": 81,
+   "passed": 81,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 22,
-   "passed": 22,
+   "total": 23,
+   "passed": 23,
    "failed": 0
   },
   "snapshots": 16
@@ -600,6 +600,13 @@
    "detail": "漂移 0 项"
   },
   {
+   "id": "V19",
+   "rule": "界面契约 §5 热力图首屏取语义变量、不靠事后重绘",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "旧 token 残留 0 页 / 语义变量引用 45 处"
+  },
+  {
    "id": "B11",
    "rule": "§11 规则 / 台账 / 版本日志三分离",
    "severity": "blocking",
@@ -824,6 +831,30 @@
     },
     {
      "name": "字体/顶栏主色未连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R23",
+   "case": "「热力图首屏写死旧 token，只靠 syncCharts 事后改」→ 必须直接取语义变量",
+   "rule": "界面契约 §5",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "无旧 token 残留",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "语义变量引用充足",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深浅三档已定义",
      "actual": true,
      "expect": true
     }
