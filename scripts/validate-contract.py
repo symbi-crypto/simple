@@ -581,6 +581,24 @@ def static_checks(root, valid_fn):
         'border-bottom:2px solid var(--c-accent)' in tcss
         and 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss
         and '#147d5e' in light_css.lower(), '绿下划线 + 浅绿底 + 深绿字')
+    # ── 深色主色独立（用户未要求改深色，不得因浅色参考变更而连带改） ──
+    css_dark = tcss.split(':root{',1)[1].split('\n}',1)[0]
+    dv = dict((k,v.strip()) for k,v in re.findall(r'(--c-[\w-]+)\s*:\s*([^;]+);', css_dark))
+    dark_accent = dv.get('--c-accent','').lower()
+    light_accent = lv.get('--c-accent','').lower()
+    add('V12', '界面契约 §2 深色主色独立于浅色参考', 'blocking',
+        '深色主色**必须**独立于浅色参考色板' in ui_rule
+        and dark_accent == '#4fc3f7' and dark_accent != light_accent,
+        '深=%s 浅=%s'%(dark_accent,light_accent))
+    fixture('R20', '「换浅色参考配色时顺手把深色主色也改了」→ 必须保持深色独立',
+        '界面契约 §2', [
+        ('深色主色仍为既定青蓝', dark_accent=='#4fc3f7', True),
+        ('深浅主色不同', dark_accent!=light_accent, True),
+        ('契约写明独立性', '深色主色**必须**独立于浅色参考色板' in ui_rule, True),
+        ('浅色仍是文章墨绿', light_accent=='#147d5e', True),
+        ('浅色值未被连带改动', lv.get('--c-bg','').lower()=='#f6f8f7', True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),

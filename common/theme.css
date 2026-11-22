@@ -7,9 +7,9 @@
    主题状态、切换与图表重绘由 common/theme.js 负责。
    ============================================================ */
 :root{
-  --c-accent:#3ECC9C;
-  --c-accent-2:#35B68B;
-  --c-accent-soft:#81CFB5;
+  --c-accent:#4FC3F7;
+  --c-accent-2:#22D3EE;
+  --c-accent-soft:#7DD3FC;
   --c-bad-ink:#FCA5A5;
   --c-bg:#1B2634;
   --c-bg-deep:#0F1822;
@@ -86,10 +86,10 @@
   --c-hfb7185:#FB7185;
   --c-hfecaca:#FECACA;
   --c-hfef2f2:#FEF2F2;
-  --c-info:#59C09D;
+  --c-info:#60A5FA;
   --c-line:#243244;
   --c-muted:#9FB0C3;
-  --c-purple:#69BFA2;
+  --c-purple:#A78BFA;
   --c-r001:rgba(79,195,247,.22);
   --c-r002:rgba(79,195,247,.3);
   --c-r003:rgba(14,116,144,.16);
@@ -151,7 +151,7 @@
   --c-white-full:#FFFFFF;
   /* 品牌头专用（深色值 = 原渐变两端与白字，保证零回归） */
   --c-brand-a:#1B2634;
-  --c-brand-b:#0E5C46;
+  --c-brand-b:#0E7490;
   --c-on-brand:#fff;
   /* 界面语义 tone（深色值 = 现有生效字面量；浅色值取自参考项目 index.css :root） */
   --ui-sunken:#2A3A4E;

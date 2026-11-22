@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 73,
-   "passed": 73,
+   "total": 74,
+   "passed": 74,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 19,
-   "passed": 19,
+   "total": 20,
+   "passed": 20,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 2433 字节"
+   "detail": "契约 2513 字节"
   },
   {
    "id": "V2",
@@ -549,6 +549,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "绿下划线 + 浅绿底 + 深绿字"
+  },
+  {
+   "id": "V12",
+   "rule": "界面契约 §2 深色主色独立于浅色参考",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深=#4fc3f7 浅=#147d5e"
   },
   {
    "id": "B11",
@@ -664,6 +671,40 @@
   }
  ],
  "fixtures": [
+  {
+   "id": "R20",
+   "case": "「换浅色参考配色时顺手把深色主色也改了」→ 必须保持深色独立",
+   "rule": "界面契约 §2",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "深色主色仍为既定青蓝",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深浅主色不同",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约写明独立性",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色仍是文章墨绿",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色值未被连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
   {
    "id": "R19",
    "case": "「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色",
