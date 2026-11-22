@@ -20,7 +20,7 @@ select{-webkit-appearance:none;-moz-appearance:none;appearance:none;color-scheme
   background-repeat:no-repeat !important;background-position:right 9px center !important;background-size:10px 6px !important;padding-right:22px}
 
 /* ── 顶栏：与系统页 header 逐条对齐 ── */
-.hd{background:linear-gradient(135deg,var(--c-bg) 0%,var(--c-h0e7490) 130%);color:var(--c-white);padding:16px 24px 18px;
+.hd{background:linear-gradient(135deg,var(--c-brand-a) 0%,var(--c-brand-b) 130%);color:var(--c-on-brand);padding:16px 24px 18px;
   display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .hd h1{color:var(--c-white)}
 .hd h1 .fu{color:var(--acc2)}

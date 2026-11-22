@@ -5,12 +5,12 @@
    不再各自维护 .hd / <header> / .homestrip 三套实现。
    ============================================================ */
 .wh{font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  color:var(--c-white);width:100%;box-sizing:border-box;flex:none}
+  color:var(--c-on-brand);width:100%;box-sizing:border-box;flex:none}
 .wh *{box-sizing:border-box}
-.wh-top{background:linear-gradient(135deg,var(--c-bg) 0%,var(--c-h0e7490) 130%);padding:24px 24px 15px;
+.wh-top{background:linear-gradient(135deg,var(--c-brand-a) 0%,var(--c-brand-b) 130%);padding:24px 24px 15px;
   display:flex;align-items:center;gap:12px;min-height:78px}
 .wh-top h1{margin:0!important;font-size:20px!important;font-weight:700!important;letter-spacing:.5px;
-  color:var(--c-white)!important;line-height:1.35!important;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  color:var(--c-on-brand)!important;line-height:1.35!important;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wh-top h1 .fu{color:var(--c-accent-2)!important}
 .wh-row{background:var(--c-h16202e);border-bottom:1px solid var(--c-line);padding:8px 24px;
   display:flex;align-items:center;gap:10px;min-height:46px}
@@ -38,3 +38,11 @@
   .wh-badge{font-size:10px;padding:4px 7px;max-width:none}
   .wh-badge span{overflow:visible;text-overflow:clip;white-space:nowrap}
 }
+
+/* v0.93 主题切换键（三态：深色 / 浅色 / 跟随系统） */
+.wh-theme{flex:none;font-size:11px!important;line-height:1.4;padding:4px 6px!important;
+  border-radius:6px!important;border:1px solid var(--c-edge)!important;
+  background:var(--c-surface)!important;color:var(--c-on-brand)!important;
+  cursor:pointer;max-width:86px;outline:none;font-family:inherit}
+.wh-theme:focus-visible{outline:2px solid var(--c-accent);outline-offset:1px}
+@media(max-width:720px){.wh-theme{font-size:10px!important;max-width:74px;padding:3px 4px!important}}

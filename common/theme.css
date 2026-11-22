@@ -1,9 +1,10 @@
 /* ============================================================
-   common/theme.css — v0.82 颜色单一真源
-   所有 :root 变量值 = 改造前的原始字面量（区分大小写），
-   保证深色版计算样式逐位一致。此处是全站唯一写死颜色的地方。
-   浅色草稿见文件末尾注释块，【本版未启用】；v0.83 再接 data-theme。
-   color-scheme / 涨跌色开关 / 主题重绘触发 留到 v0.83，本版一律不加。
+   common/theme.css — 颜色单一真源（深 / 浅两组值）
+   :root 深色值 = 改造前的原始字面量，逐字未动，保证默认深色计算样式逐位一致。
+   :root[data-theme="light"] 是浅色覆盖，值取自 MIT 项目 hrouter-market-pulse
+   的浅色默认（浅灰底 #f4f5f7 / 白卡 / 靛蓝 #4338ca / 细边框），
+   机械变量按亮度与饱和度分档映射。此处仍是全站唯一写死颜色的地方。
+   主题状态、切换与图表重绘由 common/theme.js 负责。
    ============================================================ */
 :root{
   --c-accent:#4FC3F7;
@@ -148,21 +149,168 @@
   --c-warn-ink:#FCD34D;
   --c-white:#fff;
   --c-white-full:#FFFFFF;
+  /* 品牌头专用（深色值 = 原渐变两端与白字，保证零回归） */
+  --c-brand-a:#1B2634;
+  --c-brand-b:#0E7490;
+  --c-on-brand:#fff;
 }
 
 /* 兼容层：旧页面里已有的 --bg/--acc/--up 等变量名继续可用，
    它们各自在页面 CSS 里已改为 var(--c-*)，本文件不重复定义，避免双真源。 */
 
-/* ------------------------------------------------------------
-   【浅色草稿 · v0.83 启用，本版不生效】
-   参考 MIT 项目 hrouter-market-pulse 的浅色默认值：
-   :root[data-theme="light"]{
-     --c-bg:#f4f5f7; --c-surface:#ffffff; --c-line:#e4e6eb;
-     --c-edge:#d7dbe2; --c-text:#15171c; --c-muted:#5b6472;
-     --c-gray:#7a8492; --c-accent:#4338ca; --c-accent-2:#0e7490;
-     --c-up:#c0392b; --c-down:#0f8a5f; --c-warn:#b45309;
-     --c-white:#ffffff;
-   }
-   其余 --c-h*/--c-r* 由 v0.83 统一给出对应浅色值。
-   启用时须同步：color-scheme、iframe 主题传递、ECharts 整份 option 重绘。
-   ------------------------------------------------------------ */
+/* ============================================================
+   浅色主题（默认不启用：只有 documentElement.dataset.theme === "light" 时生效）
+   color-scheme:light 带动原生 date/select/滚动条；深色下不设，保持零回归。
+   ============================================================ */
+:root[data-theme="light"]{
+  color-scheme:light;
+  --c-accent:#4338ca;
+  --c-accent-2:#0e7490;
+  --c-accent-soft:#8b83e8;
+  --c-bad-ink:#b91c1c;
+  --c-bg:#f4f5f7;
+  --c-bg-deep:#eceef1;
+  --c-down:#0f8a5f;
+  --c-down-rgb:15,138,95;
+  --c-edge:#d7dbe2;
+  --c-gray:#7a8492;
+  --c-h06b6d4:#188193;
+  --c-h0b1220:#ECEDF0;
+  --c-h0b131d:#EDEEF1;
+  --c-h0b1420:#ECEEF0;
+  --c-h0e1622:#EBEDF0;
+  --c-h0e7490:#16718A;
+  --c-h100c2a:#EBEBEF;
+  --c-h101c29:#EAECEF;
+  --c-h10b981:#179068;
+  --c-h111827:#1F2937;
+  --c-h123329:#E8EDEC;
+  --c-h131c28:#EAECEE;
+  --c-h14532d:#E4EAE6;
+  --c-h14b8a6:#189183;
+  --c-h15202e:#E9EBEE;
+  --c-h16202e:#E9EBED;
+  --c-h162131:#E8EAED;
+  --c-h1b2735:#E7E9EC;
+  --c-h1c2a3a:#E6E9EB;
+  --c-h1d4e7a:#1E5282;
+  --c-h1e2a38:#E6E9EC;
+  --c-h233347:#E3E6E9;
+  --c-h2a3546:#E2E5E9;
+  --c-h2a3b50:#D4DAE1;
+  --c-h2c3b4e:#D4DAE2;
+  --c-h2dd4bf:#1D9485;
+  --c-h2e3d50:#D3D9E1;
+  --c-h334155:#334156;
+  --c-h33465c:#CFD6DE;
+  --c-h344860:#CED5DD;
+  --c-h38bdf8:#1A769F;
+  --c-h3a2a12:#EDEBE8;
+  --c-h3b1d1d:#EBE6E6;
+  --c-h3b82f6:#1A4D9F;
+  --c-h3e7a8c:#C2D0D5;
+  --c-h3f1d1d:#EBE5E5;
+  --c-h4ade80:#1B9D4A;
+  --c-h5a6b80:#BFC7D2;
+  --c-h6e7f93:#B8C0CA;
+  --c-h6ee7b7:#1BA46E;
+  --c-h7f1d1d:#841D1D;
+  --c-h7f3a3a:#D7C6C6;
+  --c-h818cf8:#1C29AA;
+  --c-h8a97a8:#282E36;
+  --c-h8fa3b8:#28333F;
+  --c-h8fa3ba:#273340;
+  --c-h9fb3c8:#2A3949;
+  --c-h9fd8f6:#1C7BAE;
+  --c-ha33a36:#812D2A;
+  --c-ha3e635:#6B9C19;
+  --c-ha5f3fc:#1DA0AF;
+  --c-hb9c8d9:#2F4054;
+  --c-hbfdbfe:#1D5EAF;
+  --c-hc084fc:#631CAB;
+  --c-hccfbf1:#1DAF90;
+  --c-hd8e6f2:#326A9A;
+  --c-hdce6f0:#374D62;
+  --c-he2e8f0:#384B64;
+  --c-he6edf5:#396393;
+  --c-he6edf6:#356097;
+  --c-he6eef8:#2B5FA1;
+  --c-he6f4ff:#1D6FAF;
+  --c-he879f9:#961BA9;
+  --c-he8a33d:#9D681A;
+  --c-hf472b6:#A71B64;
+  --c-hf97316:#9A4E19;
+  --c-hfb7185:#A81B30;
+  --c-hfecaca:#AF1D1D;
+  --c-hfef2f2:#AF1D1E;
+  --c-info:#1d4ed8;
+  --c-line:#e4e6eb;
+  --c-muted:#5b6472;
+  --c-purple:#7c3aed;
+  --c-r001:rgba(31,129,173,0.2207);
+  --c-r002:rgba(31,129,173,0.3014);
+  --c-r003:rgba(18,86,105,0.1621);
+  --c-r004:rgba(15,23,42,0.3928);
+  --c-r005:rgba(173,134,31,0.1235);
+  --c-r006:rgba(31,129,173,0.0642);
+  --c-r007:rgba(15,23,42,0.741);
+  --c-r008:rgba(15,23,42,0.5627);
+  --c-r009:rgba(31,129,173,0.0814);
+  --c-r010:rgba(173,31,31,0.1421);
+  --c-r011:rgba(15,23,42,0.0258);
+  --c-r012:rgba(15,23,42,0.2375);
+  --c-r013:rgba(173,31,31,0.1242);
+  --c-r014:rgba(15,23,42,0.092);
+  --c-r015:rgba(15,23,42,0.2077);
+  --c-r016:rgba(31,129,173,0.1214);
+  --c-r017:rgba(15,23,42,0.4701);
+  --c-r018:rgba(18,86,105,0.1028);
+  --c-r019:rgba(15,23,42,0.7055);
+  --c-r020:rgba(173,31,31,0.1042);
+  --c-r021:rgba(173,31,31,0.1);
+  --c-r022:rgba(173,31,31,0.4007);
+  --c-r023:rgba(15,23,42,0.1394);
+  --c-r024:rgba(15,23,42,0.5641);
+  --c-r025:rgba(48,61,77,0.4028);
+  --c-r026:rgba(15,23,42,0.5655);
+  --c-r027:rgba(31,129,173,0.1042);
+  --c-r028:rgba(18,86,105,0.45);
+  --c-r029:rgba(173,31,31,0.0807);
+  --c-r030:rgba(173,134,31,0.0814);
+  --c-r031:rgba(15,23,42,0.0596);
+  --c-r032:rgba(15,23,42,0.2558);
+  --c-r033:rgba(15,23,42,0.3035);
+  --c-r034:rgba(15,23,42,0.3042);
+  --c-r035:rgba(36,168,120,0.08);
+  --c-r036:rgba(31,130,173,0.4507);
+  --c-r037:rgba(31,130,173,0.5014);
+  --c-r038:rgba(48,61,77,0.1521);
+  --c-r039:rgba(31,129,173,0.1628);
+  --c-r040:rgba(15,23,42,0.4875);
+  --c-r041:rgba(173,134,31,0.0642);
+  --c-r042:rgba(31,129,173,0.04);
+  --c-r043:rgba(31,129,173,0.0507);
+  --c-r044:rgba(31,129,173,0.1814);
+  --c-r045:rgba(31,129,173,0.2821);
+  --c-r046:rgba(31,129,173,0.3528);
+  --c-r047:rgba(31,129,173,0.4535);
+  --c-r048:rgba(31,129,173,0.5542);
+  --c-surface:#ffffff;
+  --c-surface-2:#fbfbfc;
+  --c-text:#15171c;
+  --c-text-2:#39414f;
+  --c-up:#c0392b;
+  --c-up-rgb:192,57,43;
+  --c-warn:#b45309;
+  --c-warn-2:#d97706;
+  --c-warn-ink:#92400e;
+  --c-white:#FFFFFE;
+  --c-white-full:#fffffe;
+  --c-brand-a:#fffffd;
+  --c-brand-b:#dfe7f2;
+  --c-on-brand:#15171d;
+}
+/* 页面原有 select{color-scheme:dark!important} 会让浅色下的原生下拉仍是深色列表；
+   带 [data-theme] 的选择器特异性更高，覆盖回来。深色下此规则不生效。 */
+:root[data-theme="light"] select{color-scheme:light !important}
+

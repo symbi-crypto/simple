@@ -5,10 +5,13 @@
    · 内置 FALLBACK：theme.css 未加载 / 老浏览器读不到自定义属性时，
      返回同一原始字面量，任何加载顺序都不会改变观感。
    · sub(s) 把字符串里的 §WFT####§ token 换成当前主题值。
-     v0.82 深色值 = 原值；v0.83 切浅色时重绘即自动生效（含 ECharts option
-     与 JS 动态拼出的 HTML），无需再改业务代码。
+   · v0.93：三态主题（深 / 浅 / 跟随系统）。CSS 变量层自动切换；
+     sub() 产物（ECharts option、SVG 属性、动态 HTML）由 refresh() 重算，
+     切主题不刷新页面、不丢回测与调优状态。
+   · 主题写 localStorage，同源 iframe 经 storage 事件自动同步。
    ============================================================ */
 (function (g) {
+  var LIGHT = {"--c-accent":"#4338ca","--c-accent-2":"#0e7490","--c-accent-soft":"#8b83e8","--c-bad-ink":"#b91c1c","--c-bg":"#f4f5f7","--c-bg-deep":"#eceef1","--c-down":"#0f8a5f","--c-down-rgb":"15,138,95","--c-edge":"#d7dbe2","--c-gray":"#7a8492","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#E4EAE6","--c-h14b8a6":"#189183","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#1E5282","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1D9485","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#1A4D9F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#841D1D","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#1C29AA","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#1D5EAF","--c-hc084fc":"#631CAB","--c-hccfbf1":"#1DAF90","--c-hd8e6f2":"#326A9A","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#396393","--c-he6edf6":"#356097","--c-he6eef8":"#2B5FA1","--c-he6f4ff":"#1D6FAF","--c-he879f9":"#961BA9","--c-he8a33d":"#9D681A","--c-hf472b6":"#A71B64","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#AF1D1E","--c-info":"#1d4ed8","--c-line":"#e4e6eb","--c-muted":"#5b6472","--c-purple":"#7c3aed","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"rgba(15,23,42,0.741)","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--c-surface":"#ffffff","--c-surface-2":"#fbfbfc","--c-text":"#15171c","--c-text-2":"#39414f","--c-up":"#c0392b","--c-up-rgb":"192,57,43","--c-warn":"#b45309","--c-warn-2":"#d97706","--c-warn-ink":"#92400e","--c-white":"#FFFFFE","--c-white-full":"#fffffe","--c-brand-a":"#fffffd","--c-brand-b":"#dfe7f2","--c-on-brand":"#15171d"};
   var FALLBACK = {
     "--c-accent": "#4FC3F7",
     "--c-accent-2": "#22D3EE",
@@ -303,7 +306,11 @@
       }
     } catch (e) { }
     v = String(v).trim();
-    if (!v && FALLBACK[name] != null) v = FALLBACK[name];
+    if (!v) {
+      // CSS 未加载时按当前主题取值，避免浅色下误回退深色字面量
+      if (curEff === "light" && LIGHT[name] != null) v = LIGHT[name];
+      else if (FALLBACK[name] != null) v = FALLBACK[name];
+    }
     return v;
   }
   function sub(s) {
@@ -314,5 +321,179 @@
       return name ? css(name) : _;
     });
   }
-  g.WufuTheme = { css: css, sub: sub, tokens: TOKENS, fallback: FALLBACK };
+
+  /* ───────────────── v0.93 主题状态机 ───────────────── */
+  var KEY = "wufu_theme_v1";
+  var curEff = "dark";                 // 当前生效主题
+  var sysMQ = null;
+  try { sysMQ = g.matchMedia ? g.matchMedia("(prefers-color-scheme: light)") : null; } catch (e) { }
+
+  function mode() {
+    var m = "dark";
+    try { m = g.localStorage.getItem(KEY) || "dark"; } catch (e) { }
+    return (m === "light" || m === "system") ? m : "dark";
+  }
+  function effective(m) {
+    if (m === "light") return "light";
+    if (m === "system") return (sysMQ && sysMQ.matches) ? "light" : "dark";
+    return "dark";
+  }
+  function apply() {
+    var eff = effective(mode());
+    var de = g.document && g.document.documentElement;
+    if (de) {
+      // 默认深色【不设 data-theme】：:root 原值、无 color-scheme 变化 → 零回归
+      if (eff === "light") de.setAttribute("data-theme", "light");
+      else de.removeAttribute("data-theme");
+    }
+    var meta = g.document && g.document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", eff === "light" ? "#f4f5f7" : "#0E7490");
+    curEff = eff;
+    return eff;
+  }
+
+  /* 颜色字面量 → 变量名 的反向表。深色 142 值唯一、浅色 145 值唯一，
+     且两集合不交，所以「切前主题的值 → 变量 → 切后主题的值」无歧义。 */
+  var DARK_BY_VAL = {}, LIGHT_BY_VAL = {};
+  Object.keys(FALLBACK).forEach(function (k) { if (DARK_BY_VAL[FALLBACK[k]] == null) DARK_BY_VAL[FALLBACK[k]] = k; });
+  Object.keys(LIGHT).forEach(function (k) { if (LIGHT_BY_VAL[LIGHT[k]] == null) LIGHT_BY_VAL[LIGHT[k]] = k; });
+  var COLOR_RE = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g;
+
+  function replaceStr(s, fromMap) {
+    if (typeof s !== "string" || !s) return s;
+    return s.replace(COLOR_RE, function (tok) {
+      var name = fromMap[tok];
+      if (name == null) return tok;
+      var nv = css(name);
+      return nv || tok;
+    });
+  }
+  function replaceDeep(o, fromMap, seen) {
+    if (o == null) return o;
+    if (typeof o === "string") return replaceStr(o, fromMap);
+    if (typeof o !== "object") return o;
+    if (seen.indexOf(o) >= 0) return o;
+    seen.push(o);
+    if (Object.prototype.toString.call(o) === "[object Array]") {
+      for (var i = 0; i < o.length; i++) o[i] = replaceDeep(o[i], fromMap, seen);
+    } else {
+      Object.keys(o).forEach(function (k) { o[k] = replaceDeep(o[k], fromMap, seen); });
+    }
+    return o;
+  }
+
+  /* 切主题后重算 sub() 产物：CSS 变量层本来就自动生效，这里只管静态颜色值。 */
+  function refresh(fromEff) {
+    var fromMap = fromEff === "light" ? LIGHT_BY_VAL : DARK_BY_VAL;
+    var doc = g.document;
+    if (!doc) return;
+    var ATTRS = ["style", "fill", "stroke", "stop-color", "color", "bgcolor", "border-color"];
+    try {
+      var els = doc.querySelectorAll("*");
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        for (var j = 0; j < ATTRS.length; j++) {
+          var a = ATTRS[j];
+          if (!el.hasAttribute || !el.hasAttribute(a)) continue;
+          var old = el.getAttribute(a);
+          var nw = replaceStr(old, fromMap);
+          if (nw !== old) el.setAttribute(a, nw);
+        }
+      }
+    } catch (e) { }
+    /* ECharts：容器带 _echarts_instance_ 标记，取回当前 option 换色后整份重给 */
+    try {
+      if (g.echarts && g.echarts.getInstanceByDom) {
+        var doms = doc.querySelectorAll("[_echarts_instance_]");
+        for (var d = 0; d < doms.length; d++) {
+          var inst = g.echarts.getInstanceByDom(doms[d]);
+          if (!inst || !inst.getOption) continue;
+          var opt = inst.getOption();
+          if (!opt) continue;
+          var nopt = replaceDeep(opt, fromMap, []);
+          inst.setOption(nopt, true);
+        }
+      }
+    } catch (e2) { }
+    try {
+      doc.dispatchEvent(new g.CustomEvent("wufuthemechange",
+        { detail: { mode: mode(), effective: curEff } }));
+    } catch (e3) { }
+  }
+
+  function set(m) {
+    m = (m === "light" || m === "system") ? m : "dark";
+    var before = curEff;
+    try { g.localStorage.setItem(KEY, m); } catch (e) { }
+    var after = apply();
+    if (before !== after) refresh(before);
+    else {
+      try { g.document.dispatchEvent(new g.CustomEvent("wufuthemechange",
+        { detail: { mode: m, effective: after } })); } catch (e2) { }
+    }
+    return m;
+  }
+  function onChange(fn) {
+    if (typeof fn !== "function" || !g.document) return;
+    g.document.addEventListener("wufuthemechange", fn);
+  }
+
+  /* 同源 iframe / 其他标签页：写入方自己已 apply，这里只跟着同步 */
+  if (g.addEventListener) {
+    g.addEventListener("storage", function (e) {
+      if (!e || e.key !== KEY) return;
+      var before = curEff, after = apply();
+      if (before !== after) refresh(before);
+    }, false);
+    if (sysMQ) {
+      var sysChange = function () {
+        if (mode() !== "system") return;
+        var before = curEff, after = apply();
+        if (before !== after) refresh(before);
+      };
+      if (sysMQ.addEventListener) sysMQ.addEventListener("change", sysChange);
+      else if (sysMQ.addListener) sysMQ.addListener(sysChange);
+    }
+  }
+  /* 统一注入切换键：所有页面都引 theme.js，包括不引 header.js 的 tool.html。
+     iframe 内不注入（顶栏被隐藏），靠 storage 事件同步即可。 */
+  function injectToggle() {
+    var doc = g.document;
+    if (!doc) return;
+    try { if (g.top !== g) return; } catch (e) { return; }
+    if (doc.getElementById("wufuThemeSel")) return;
+    var host = doc.querySelector(".wh-top") || doc.querySelector("header") || null;
+    if (!host) return;
+    var sel = doc.createElement("select");
+    sel.id = "wufuThemeSel"; sel.className = "wh-theme";
+    sel.setAttribute("aria-label", "界面主题");
+    sel.innerHTML = '<option value="dark">深色</option>' +
+                    '<option value="light">浅色</option>' +
+                    '<option value="system">跟随系统</option>';
+    sel.value = mode();
+    /* 内联兜底样式：tool.html 不引 header.css，必须自带；.wh-top 里 badge 已有 auto 边距 */
+    var inWhTop = host.className && String(host.className).indexOf("wh-top") >= 0;
+    sel.style.cssText = "flex:none;" + (inWhTop ? "" : "margin-left:auto;") +
+      "margin-right:2px;font-size:11px;line-height:1.4;padding:4px 6px;border-radius:6px;" +
+      "cursor:pointer;max-width:88px;outline:none;font-family:inherit";
+    /* 页面里 select{color:...!important} 会压过普通内联样式；内联 important 优先级最高 */
+    ["color", "background-color", "border-color"].forEach(function (p, i) {
+      sel.style.setProperty(p, ["var(--c-on-brand)", "var(--c-surface)", "var(--c-edge)"][i], "important");
+    });
+    sel.style.setProperty("border", "1px solid var(--c-edge)", "important");
+    sel.addEventListener("change", function () { set(sel.value); });
+    onChange(function () { sel.value = mode(); });
+    host.appendChild(sel);
+  }
+  if (g.document) {
+    if (g.document.readyState === "loading")
+      g.document.addEventListener("DOMContentLoaded", injectToggle);
+    else injectToggle();
+  }
+  /* head 里同步执行：首屏 paint 前设好，不闪深色 */
+  apply();
+
+  g.WufuTheme = { css: css, sub: sub, tokens: TOKENS, fallback: FALLBACK,
+    light: LIGHT, mode: mode, effective: effective, apply: apply,
+    set: set, refresh: refresh, onChange: onChange };
 })(typeof window !== "undefined" ? window : this);
