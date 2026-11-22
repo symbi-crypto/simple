@@ -349,11 +349,20 @@
       timer = setTimeout(function () { timer = null; syncCharts(); }, 120);
     };
     try {
+      /* echarts.init 会给容器挂 _echarts_instance_ 属性，常晚于容器插入。
+         只监听 childList 会漏掉这类实例；加属性监听后 init 当次即触发，
+         仍是事件驱动，不引入定时轮询。 */
       new g.MutationObserver(function (recs) {
         for (var i = 0; i < recs.length; i++) {
-          if (recs[i].addedNodes && recs[i].addedNodes.length) { kick(); return; }
+          var r = recs[i];
+          if ((r.addedNodes && r.addedNodes.length) ||
+              (r.type === "attributes" && r.attributeName === "_echarts_instance_")) {
+            kick(); return;
+          }
         }
-      }).observe(g.document.documentElement || g.document, { childList: true, subtree: true });
+      }).observe(g.document.documentElement || g.document,
+                 { childList: true, subtree: true, attributes: true,
+                   attributeFilter: ["_echarts_instance_"] });
     } catch (e) { }
     kick();
   }
