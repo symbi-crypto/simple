@@ -18,6 +18,25 @@
 
 # 附：版本日志（倒序，最新在前）
 
+# v0.91 · P4 规则层四项落地（不是只写文档）
+
+- **起因**：v0.90 收尾那句「能搬到静态站上的都真执行了」只对数据层成立；规则层反查又发现四条没接上，
+  且上一轮报告误写「快照带 `availableAt`」——实际 8 份一个都没有、两个回测页命中 0 次。本轮更正。
+- **① 日历证据链**：三份 `holiday-cn.json` 补 `Coverage/Evidence/HalfDaySessions/Limitations`，
+  `calendar_check` 真读（缺字段或超出 Coverage 拒收）；明确写清是第三方公众假期表、只有 2026 附官方链接、
+  其余年份未逐年核验、HK/US 半日未建模。
+- **③ 时点可得闸门**：新增 `common/research-gate.js`，`pointInTimeCutoff` 剔除 `availableAt > now` 的交易日；
+  两个回测页 `run()` 真钳制 `params.end_date`；8 份快照补 `availableAt/availableAtBasis`；
+  `save()` 口径统一为收盘可得时刻、生成时刻另存 `generatedAt`。历史数据末日已收盘 → 钳制同值，**收益口径不变**。
+- **④ 样本外资格闸门**：`qualifyWFO` 三态 `qualified/observe/rejected` + reasons，渲染进 WFO 汇总区；
+  `AUC/Brier/logLoss/ECE/purged folds` 明确不照搬（无概率模型与标签），写进模块与页面文案。
+- **⑥ 拒单按原因成指标**：一字板买卖腿真计数、KPI「未成交/跳过」卡、`#skipDetail` 按原因明细、
+  样本不足 `sampleWarning`。
+- **门禁**：56→**60** 断言（U6–U9）、14→**15** 夹具（R15 17 例），U6–U9 **用 Node 实跑交付的 JS**；
+  `gaps` 仍 0、`--strict` 通过。负例 5 组全挡。
+- 规则文件**一字未改**、`common/index.gz` 未动、页面布局与收益计算行未动；缓存 `wufu-all-v0.92`、`?v=92`。
+- 详见 `P4规则层落地说明.md`。
+
 # v0.90 · 文章源码两遍核查后的补强（不是只写文档）
 
 - **真把参考项目源码拉下来核了两遍**：`honestTai/hrouter-market-pulse` @ `90ed124`（456 文件）。

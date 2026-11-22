@@ -230,6 +230,17 @@ def window(days, years):
 
 # 三条链统一落库契约：L=本地 gz / A=东财+申万 / G=Yahoo+CBOE
 # 上游源不合并，合并的是"快照带哪条链、哪天、失败是否沿用真值"这套契约。
+OVERSEAS_SNAPSHOTS = {"gold-daily.json", "us-etf-daily.json"}
+
+
+def derive_available_at(asof, name):
+    """P4③：快照最早可得时刻 = dataAsOf 当日收盘（海外链用保守美东 16:00）。"""
+    d = str(asof or "")[:10]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+        return None
+    return d + ("T16:00:00-05:00" if name in OVERSEAS_SNAPSHOTS else "T15:00:00+08:00")
+
+
 CHAIN_OF = {
     "industry-daily.json": "A", "market-amount.json": "A",
     "gold-daily.json": "G", "index-gz2000.json": "I",
@@ -252,7 +263,12 @@ BASIS_EXT = {
 
 def save(name, obj):
     if isinstance(obj, dict) and name in CHAIN_OF:
-        obj["availableAt"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+        # P4③：availableAt = 该交易日收盘可得时刻（不是打包生成时刻），与回测引擎
+        # pointInTimeCutoff 同源；生成时刻另存 generatedAt，绝不把两者混成一个字段。
+        obj["availableAt"] = derive_available_at(obj.get("dataAsOf"), name)
+        obj["availableAtBasis"] = ("us-regular-close-1600ET-conservative"
+                                   if name in OVERSEAS_SNAPSHOTS else "a-share-regular-close-1500CST")
+        obj["generatedAt"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
         obj = dict(obj)
         ch = obj.get("chain") or CHAIN_OF[name]
         obj["chain"] = ch

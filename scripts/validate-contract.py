@@ -15,7 +15,7 @@
   · 判定器是最小可执行化，仅用于回归，**不是生产实现、不进产品**（规则 §2.6）
   · 规则文件是断言的唯一依据；规则改了要同步改这里的 id 与 § 映射
 """
-import os, sys, json, hashlib, re, argparse, importlib.util, shutil, datetime
+import os, sys, json, hashlib, re, argparse, importlib.util, shutil, datetime, subprocess
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
@@ -240,6 +240,18 @@ def judge_calendar(date_str, covered_years=('2026', '2027'), holidays=(), a_shar
         for a, b in holidays:
             if a <= date_str <= b: return 'holiday'
     return 'trading-day'
+
+
+NODE_GATE = "\nconst G = require(process.argv[1]);\nconst calOK = { Coverage: { start: '2023-01-01', end: '2027-12-31', markets: ['A'], timezone: 'Asia/Shanghai' },\n  Evidence: [{ source: 'x', verifiedAt: '2025-12-22T00:00:00Z' }], HalfDaySessions: { A: [] }, Limitations: ['x'], Years: {} };\nconst seg = (n, cagr, excess) => ({ vs: 0, ve: n, res: { cagr: cagr, excess: excess, max_dd: 0.1, total: cagr } });\nconst out = {};\nout.availableAtA = G.availableAt('2026-11-20', 'A');\nout.availableAtUS = G.availableAt('2026-11-20', 'US');\nout.availableAtBad = G.availableAt('bad', 'A');\nout.pitHist = G.pointInTimeCutoff(['2026-11-19', '2026-11-20'], '2026-11-22T00:00:00Z', 'A');\nout.pitLive = G.pointInTimeCutoff(['2026-11-19', '2026-11-20'], '2026-11-20T06:00:00Z', 'A');\nout.calOK = G.calendarEvidence(calOK);\nout.calBad = G.calendarEvidence({ Years: {} });\nout.qGood = G.qualifyWFO([seg(100, 0.08, 0.05), seg(100, 0.12, 0.03), seg(100, 0.10, 0.02)]);\nout.qObserve = G.qualifyWFO([seg(100, 0.12, 0.05), seg(100, 0.10, 0.03), seg(100, 0.08, 0.02)]);\nout.qReject = G.qualifyWFO([seg(100, 0.12, 0.05)]);\nout.qHtml = G.qualificationHtml(out.qReject);\nout.skip = G.skipSummary({ __WUFU_NO_OPEN_SKIP: 3, __WUFU_NO_REAL_CLOSE_SKIP: 1,\n  __WUFU_LIMIT_BLOCK_BUY: 2, __WUFU_LIMIT_BLOCK_SELL: 1, __CB_SCALE_FILL_ISSUE: 0 },\n  { metrics: { n_days: 30, n_trades: 4 } });\nconsole.log(JSON.stringify(out));\n"
+
+
+def node_gate(root):
+    """P4：用 Node 实跑交付的 common/research-gate.js，验证的是产品代码而非 Python 复刻。"""
+    r = subprocess.run(['node', '-e', NODE_GATE, os.path.join(root, 'common/research-gate.js')],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return {'error': r.stderr[:300]}
+    return json.loads(r.stdout)
 
 
 def judge_docs(rule, ledger, readme):
@@ -562,7 +574,51 @@ def static_checks(root, valid_fn):
         'int(hh) < 150000' in ext and '150000' in ext,
         'CSI/成交额 qt 收盘前不采信（源码已有判定，本轮由断言钉住）')
 
-    return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn}
+    # ── P4：①③④⑥ 硬断言（Node 实跑产品 JS + 静态真调用检查）──────────────
+    ng = node_gate(root)
+    hol_files = ['common/holiday-cn.json', 'cb/data/holiday-cn.json', 'etf/data/holiday-cn.json']
+    hol_ok = all(all(k in json.loads(blob(root, f) or b'{}')
+                     for k in ('Coverage', 'Evidence', 'HalfDaySessions', 'Limitations'))
+                 for f in hol_files)
+    add('U6', 'P4① 日历证据链 / 覆盖声明 / 半日时段', 'blocking',
+        hol_ok and 'Coverage' in pull and 'Evidence' in pull
+        and ng.get('calOK', {}).get('ok') is True and ng.get('calBad', {}).get('ok') is False,
+        '三份日历字段齐=%s；calendar_check 真读；Node 证据判定 ok/bad=%s/%s'
+        % (hol_ok, ng.get('calOK', {}).get('ok'), ng.get('calBad', {}).get('ok')))
+    pit = ng.get('pitHist', {}); live = ng.get('pitLive', {})
+    page_src = {f: text(root, f) for f in ('cb/tool.html', 'etf/tool.html')}
+    add('U7', 'P4③ availableAt 接回测引擎（时点可得闸门）', 'blocking',
+        all('availableAt' in json.loads(blob(root, n) or b'{}') for n in
+            ('cb-daily.json', 'gold-daily.json', 'industry-daily.json', 'index-daily.json',
+             'index-gz2000.json', 'index-csi-patch.json', 'market-amount.json', 'us-etf-daily.json'))
+        and 'derive_available_at' in text(root, 'scripts/build-external.py')
+        and all('research-gate.js' in s and 'pointInTimeCutoff' in s
+                and 'params.end_date = _pit.lastUsable' in s for s in page_src.values())
+        and pit.get('droppedDates') == [] and pit.get('lastUsable') == '2026-11-20'
+        and live.get('droppedDates') == ['2026-11-20'] and live.get('lastUsable') == '2026-11-19',
+        '8 份快照带 availableAt；两页真钳制 end_date；Node 历史/盘中=%s/%s'
+        % (pit.get('lastUsable'), live.get('lastUsable')))
+    add('U8', 'P4④ 样本外资格闸门 qualified/observe/rejected', 'blocking',
+        all('qualifyWFO(segs)' in s and 'qualificationHtml(_q)' in s for s in page_src.values())
+        and ng.get('qGood', {}).get('status') == 'qualified'
+        and ng.get('qObserve', {}).get('status') == 'observe'
+        and ng.get('qReject', {}).get('status') == 'rejected'
+        and 'data-status="rejected"' in ng.get('qHtml', '')
+        and len(ng.get('qGood', {}).get('notApplicable', [])) >= 4,
+        '两页真调用；Node 三态=%s/%s/%s；AUC/Brier 不照搬已声明'
+        % (ng.get('qGood', {}).get('status'), ng.get('qObserve', {}).get('status'),
+           ng.get('qReject', {}).get('status')))
+    sk = ng.get('skip', {})
+    add('U9', 'P4⑥ 拒单/不可成交按原因变成指标', 'blocking',
+        all('__WUFU_LIMIT_BLOCK_BUY' in s and 'skipSummary(window, r)' in s
+            and 'id = "skipDetail"' in s for s in page_src.values())
+        and sk.get('total') == 7 and len(sk.get('byReason', [])) == 5
+        and bool(sk.get('sampleWarning')),
+        '两页真计数+KPI+明细；Node 合计=%s 条/5 类，样本不足提示=%s'
+        % (sk.get('total'), bool(sk.get('sampleWarning'))))
+
+    return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn,
+            'node_gate': ng}
 
 
 # ── 九条历史改判回归夹具 ────────────────────────────────────────────────
@@ -651,6 +707,28 @@ def run_fixtures(ctx, root, valid_fn):
         ('覆盖外 2030 → unverified-calendar', judge_calendar('2030-01-03'), 'unverified-calendar'),
         ('节假日（周一）→ holiday', judge_calendar('2027-01-04', ('2026','2027'), [('2027-01-01','2027-01-04')]), 'holiday'),
         ('普通交易日 → trading-day', judge_calendar('2026-11-20'), 'trading-day'),
+    ])
+    ng = ctx.get('node_gate') or node_gate(root)
+    pit, live = ng.get('pitHist', {}), ng.get('pitLive', {})
+    fixture('R15', '「规则写了就算落实」→ ①③④⑥ 必须跑产品 JS 才算数',
+            'P4 / market-rules.mjs:7-25,124-129 · research-validation.mjs:185-197 · AGENT_ARENA.md:100-102', [
+        ('A 股收盘可得时刻', ng.get('availableAtA'), '2026-11-20T15:00:00+08:00'),
+        ('海外链保守收盘时刻', ng.get('availableAtUS'), '2026-11-20T16:00:00-05:00'),
+        ('非法日期返回 null', ng.get('availableAtBad'), None),
+        ('历史数据不误删（收益口径不变）', pit.get('droppedDates'), []),
+        ('历史数据末日', pit.get('lastUsable'), '2026-11-20'),
+        ('盘中当日未收盘 → 剔除', live.get('droppedDates'), ['2026-11-20']),
+        ('盘中钳到前一交易日', live.get('lastUsable'), '2026-11-19'),
+        ('日历证据齐 → ok', ng.get('calOK', {}).get('ok'), True),
+        ('日历证据缺 → ok=false', ng.get('calBad', {}).get('ok'), False),
+        ('3 段全优 → qualified', ng.get('qGood', {}).get('status'), 'qualified'),
+        ('有负段 → observe', ng.get('qObserve', {}).get('status'), 'observe'),
+        ('仅 1 段 → rejected', ng.get('qReject', {}).get('status'), 'rejected'),
+        ('rejected 明确写进 HTML', 'data-status="rejected"' in ng.get('qHtml', ''), True),
+        ('AUC/Brier 明确不照搬', len(ng.get('qGood', {}).get('notApplicable', [])) >= 4, True),
+        ('拒单按原因合计', ng.get('skip', {}).get('total'), 7),
+        ('拒单分成 5 类', len(ng.get('skip', {}).get('byReason', [])), 5),
+        ('样本不足出 sampleWarning', bool(ng.get('skip', {}).get('sampleWarning')), True),
     ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),

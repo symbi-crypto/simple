@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 56,
-   "passed": 56,
+   "total": 60,
+   "passed": 60,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 14,
-   "passed": 14,
+   "total": 15,
+   "passed": 15,
    "failed": 0
   },
   "snapshots": 16
@@ -542,6 +542,34 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "CSI/成交额 qt 收盘前不采信（源码已有判定，本轮由断言钉住）"
+  },
+  {
+   "id": "U6",
+   "rule": "P4① 日历证据链 / 覆盖声明 / 半日时段",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "三份日历字段齐=True；calendar_check 真读；Node 证据判定 ok/bad=True/False"
+  },
+  {
+   "id": "U7",
+   "rule": "P4③ availableAt 接回测引擎（时点可得闸门）",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "8 份快照带 availableAt；两页真钳制 end_date；Node 历史/盘中=2026-11-20/2026-11-19"
+  },
+  {
+   "id": "U8",
+   "rule": "P4④ 样本外资格闸门 qualified/observe/rejected",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "两页真调用；Node 三态=qualified/observe/rejected；AUC/Brier 不照搬已声明"
+  },
+  {
+   "id": "U9",
+   "rule": "P4⑥ 拒单/不可成交按原因变成指标",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "两页真计数+KPI+明细；Node 合计=7 条/5 类，样本不足提示=True"
   }
  ],
  "fixtures": [
@@ -938,6 +966,104 @@
    "failed": []
   },
   {
+   "id": "R15",
+   "case": "「规则写了就算落实」→ ①③④⑥ 必须跑产品 JS 才算数",
+   "rule": "P4 / market-rules.mjs:7-25,124-129 · research-validation.mjs:185-197 · AGENT_ARENA.md:100-102",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "A 股收盘可得时刻",
+     "actual": "2026-11-20T15:00:00+08:00",
+     "expect": "2026-11-20T15:00:00+08:00"
+    },
+    {
+     "name": "海外链保守收盘时刻",
+     "actual": "2026-11-20T16:00:00-05:00",
+     "expect": "2026-11-20T16:00:00-05:00"
+    },
+    {
+     "name": "非法日期返回 null",
+     "actual": null,
+     "expect": null
+    },
+    {
+     "name": "历史数据不误删（收益口径不变）",
+     "actual": [],
+     "expect": []
+    },
+    {
+     "name": "历史数据末日",
+     "actual": "2026-11-20",
+     "expect": "2026-11-20"
+    },
+    {
+     "name": "盘中当日未收盘 → 剔除",
+     "actual": [
+      "2026-11-20"
+     ],
+     "expect": [
+      "2026-11-20"
+     ]
+    },
+    {
+     "name": "盘中钳到前一交易日",
+     "actual": "2026-11-19",
+     "expect": "2026-11-19"
+    },
+    {
+     "name": "日历证据齐 → ok",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "日历证据缺 → ok=false",
+     "actual": false,
+     "expect": false
+    },
+    {
+     "name": "3 段全优 → qualified",
+     "actual": "qualified",
+     "expect": "qualified"
+    },
+    {
+     "name": "有负段 → observe",
+     "actual": "observe",
+     "expect": "observe"
+    },
+    {
+     "name": "仅 1 段 → rejected",
+     "actual": "rejected",
+     "expect": "rejected"
+    },
+    {
+     "name": "rejected 明确写进 HTML",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "AUC/Brier 明确不照搬",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "拒单按原因合计",
+     "actual": 7,
+     "expect": 7
+    },
+    {
+     "name": "拒单分成 5 类",
+     "actual": 5,
+     "expect": 5
+    },
+    {
+     "name": "样本不足出 sampleWarning",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R9",
    "case": "「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离",
    "rule": "§11",
@@ -967,10 +1093,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-cb-v1",
-   "bytes": 34373,
-   "sha1": "b2eccdece7e6",
+   "bytes": 34447,
+   "sha1": "5a06b5fd8199",
    "fields": [
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",
@@ -1001,10 +1128,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-gold-v1",
-   "bytes": 60162,
-   "sha1": "0fdea50b64d5",
+   "bytes": 60243,
+   "sha1": "775a94fb9282",
    "fields": [
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",
@@ -1033,11 +1161,12 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-industry-v2",
-   "bytes": 32136,
-   "sha1": "4eb1bd97191a",
+   "bytes": 32210,
+   "sha1": "7b893c9b2479",
    "fields": [
     "area",
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "boardCount",
@@ -1069,10 +1198,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-idx-v2",
-   "bytes": 22460,
-   "sha1": "3ff5e2ebc30f",
+   "bytes": 22534,
+   "sha1": "38c82c72a287",
    "fields": [
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",
@@ -1099,10 +1229,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-patch-v1",
-   "bytes": 1696,
-   "sha1": "bf636d03cdc9",
+   "bytes": 1770,
+   "sha1": "7a9d2e1d6137",
    "fields": [
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "baselineLastDate",
     "basis",
@@ -1126,10 +1257,11 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-index-csi-patch-v1",
-   "bytes": 1547,
-   "sha1": "632efe34dc8c",
+   "bytes": 1621,
+   "sha1": "e41374bb40e0",
    "fields": [
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",
@@ -1154,12 +1286,13 @@
    "status": "pass",
    "asOf": "2026-11-20",
    "format": "wufu-dash-amount-v1",
-   "bytes": 16916,
-   "sha1": "ba63c810e0c5",
+   "bytes": 16990,
+   "sha1": "a38887ac8c3f",
    "fields": [
     "10",
     "5",
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",
@@ -1182,11 +1315,12 @@
    "status": "pass",
    "asOf": "2026-11-16",
    "format": "us-etf-daily/1",
-   "bytes": 1122977,
-   "sha1": "ca8d4b1412c2",
+   "bytes": 1123058,
+   "sha1": "811f403f87f0",
    "fields": [
     "adjust",
     "availableAt",
+    "availableAtBasis",
     "availableAtNote",
     "basis",
     "chain",

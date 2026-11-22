@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
+<script src="../common/research-gate.js?v=92"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -29,7 +30,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=91"></script>
+<script src="../common/range.js?v=92"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -2383,7 +2384,8 @@ window.WufuExpr = (function () {
     boll_up: 'B:up', boll_mid: 'B:mid', boll_dn: 'B:dn'
   };
   function backtest(D, params) {
-    if (typeof window !== "undefined") { window.__WUFU_NO_OPEN_SKIP = 0; window.__WUFU_NO_REAL_CLOSE_SKIP = 0; window.__CB_SCALE_FILL_ISSUE = 0; window.__CB_SCALE_FILL_FIRST = 0; }
+    if (typeof window !== "undefined") { window.__WUFU_NO_OPEN_SKIP = 0; window.__WUFU_NO_REAL_CLOSE_SKIP = 0; window.__CB_SCALE_FILL_ISSUE = 0; window.__CB_SCALE_FILL_FIRST = 0;
+      window.__WUFU_LIMIT_BLOCK_BUY = 0; window.__WUFU_LIMIT_BLOCK_SELL = 0; }
     // ---- 策略配置对象化：兼容 mode 字符串（老调用）与 strategy 配置对象（新 UI），行为等价 ----
     var ST = (params.strategy && typeof params.strategy === "object") ? params.strategy : { mode: params.mode || "rotation" };
     var isReb = ST.mode === "rebalance";
@@ -3614,6 +3616,14 @@ window.WufuExpr = (function () {
             var limR = (LIM20[code2.slice(0, 3)] || LIM20[code2]) ? 1.195 : 1.095;
             if (ro0 >= rc0 * limR - 1e-9 && rcT >= ro0 * 0.999) blocked[code2] = "buy";            // 一字涨停：买不进
             else if (ro0 <= rc0 * (2 - limR) + 1e-9 && rcT <= ro0 * 1.001) blocked[code2] = "sell";  // 一字跌停：卖不出
+          }
+          // P4⑥：一字板不可成交腿按原因计数（纯计数，不改任何收益数值）
+          if (typeof window !== "undefined") {
+            for (var _bk in blocked) {
+              if (!Object.prototype.hasOwnProperty.call(blocked, _bk)) continue;
+              if (blocked[_bk] === "buy") window.__WUFU_LIMIT_BLOCK_BUY = (window.__WUFU_LIMIT_BLOCK_BUY || 0) + 1;
+              else if (blocked[_bk] === "sell") window.__WUFU_LIMIT_BLOCK_SELL = (window.__WUFU_LIMIT_BLOCK_SELL || 0) + 1;
+            }
           }
           cumCost += nav * params.initial_capital * costPct;
           // 组合日收益 = 三分解加权加法（资金并行，非串行复利）；成交价由「成交口径」决定：
@@ -7631,6 +7641,16 @@ function scheduleRun() {
   function run() {
     if (activeView === "dca") { runDCA(); return; }
     var params = getParams();
+    // P4③：时点可得闸门。当天未收盘的 K 线永远不进回测 —— 用 pointInTimeCutoff
+    // 求最后一个已收盘交易日，把 end_date 钳到它；历史数据（末日已收盘）钳制为同值，
+    // 收益口径不变。对齐 market-rules.mjs dailyBarMetadata 的 complete 语义。
+    try {
+      var _pit = (window.WufuGate && D && D.calendar)
+        ? WufuGate.pointInTimeCutoff(D.calendar, new Date(), "A") : null;
+      window.__WUFU_PIT = _pit;
+      if (_pit && _pit.lastUsable && (!params.end_date || params.end_date > _pit.lastUsable))
+        params.end_date = _pit.lastUsable;
+    } catch (ePit) { window.__WUFU_PIT = null; }
     if (params.codes.length === 0) {
       showNotice("请至少勾选 1 只标的");
       return;
@@ -8922,6 +8942,8 @@ function rangeKpi(i0, i1) {
 function renderKpis(r) {
     var m = r.metrics;
     var excess = m.total_return - m.benchmark.total;
+    // P4⑥：拒单/不可成交按原因变成可见指标（不是只留在 window 计数器里）
+    var _sk = window.WufuGate ? WufuGate.skipSummary(window, r) : null;
     var cards = [
       { t: "累计收益", v: FMT.pct(m.total_return), s: "超额 " + (excess * 100 >= 0 ? "+" : "") + (excess * 100).toFixed(1) + "pp vs " + benchNameOfRes(r), cls: m.total_return >= 0 ? "up" : "down" },
       { t: "基准相关性", v: (m.bench_corr !== undefined && !isNaN(m.bench_corr)) ? m.bench_corr.toFixed(2) : "—", s: "与所选基准日收益", cls: "" },
@@ -8936,7 +8958,12 @@ function renderKpis(r) {
       { t: "调仓次数", v: String(m.n_trades), s: "含 " + (m.n_trades - r.trades.filter(function (t) { return t.to.length === 0; }).length) + " 次持仓", cls: "" },
       { t: "卖出条件触发", v: (m.sell_cond_times || 0) + " 次", s: "排名区间内因卖出条件卖出", cls: (m.sell_cond_times || 0) > 0 ? "up" : "" },
       { t: "低分剔除", v: (r.drop_floor_cnt || 0) + " 次", s: "综合得分≤阈值被剔除标的·累计", cls: (r.drop_floor_cnt || 0) > 0 ? "" : "" },
-      { t: "累计成本", v: (m.cum_cost / 10000).toFixed(1) + "万", s: "100万本金口径", cls: "" }
+      { t: "累计成本", v: (m.cum_cost / 10000).toFixed(1) + "万", s: "100万本金口径", cls: "" },
+      { t: "未成交/跳过", v: _sk ? String(_sk.total) : "—",
+        s: _sk ? ((_sk.sampleWarning ? "⚠ " + _sk.sampleWarning : _sk.short) +
+                 ((window.__WUFU_PIT && window.__WUFU_PIT.droppedDates.length)
+                   ? " · 时点闸门剔除 " + window.__WUFU_PIT.droppedDates.length + " 根未收盘K线" : ""))
+               : "统计不可用", cls: "" }
     ];
     var html = "";
     cards.forEach(function (c) {
@@ -8945,6 +8972,22 @@ function renderKpis(r) {
     var _kb = $("kpis"); _kb.innerHTML = html;
     _kb.style.minHeight = "";
     try { window.__kpiBaseH = _kb.offsetHeight || window.__kpiBaseH || 0; } catch (e) { }
+    // P4⑥：按原因分列的明细（独立节点，不被 resetResults 清空）
+    try {
+      var _sd = $("skipDetail");
+      if (!_sd && _kb.parentNode) {
+        _sd = document.createElement("div"); _sd.id = "skipDetail";
+        _sd.style.cssText = "max-width:1280px;margin:6px 0 0;font-size:11px;color:#888;line-height:1.6";
+        _kb.parentNode.insertBefore(_sd, _kb.nextSibling);
+      }
+      if (_sd && _sk) {
+        var _rows = _sk.byReason.filter(function (x) { return x.count > 0; })
+          .map(function (x) { return x.label + " " + x.count + " 次"; }).join(" · ") || "无跳过";
+        _sd.innerHTML = "<b>未成交/跳过明细（按原因）</b>：" + _rows +
+          "　<span style='color:#aaa'>" + _sk.note + "</span>" +
+          (_sk.sampleWarning ? "<br><span style='color:#c07a00'>" + _sk.sampleWarning + "</span>" : "");
+      }
+    } catch (eSd) { }
   }
 
   function ts(d) { return new Date(d + "T00:00:00+08:00").getTime(); }
@@ -12483,8 +12526,11 @@ function showStrategyDetail(name) {
     var worst = segs[wi].res;
     var downRun = false;
     for (var d2 = 1; d2 < cagrs.length - 1; d2++) { if (cagrs[d2] < cagrs[d2 - 1] && cagrs[d2 + 1] < cagrs[d2]) { downRun = true; break; } }
+    // P4④：样本外资格闸门。未达标只给 observe/rejected，不把分段收益包装成可用结论。
+    var _q = window.WufuGate ? WufuGate.qualifyWFO(segs) : null;
+    var _qHtml = _q ? WufuGate.qualificationHtml(_q) : "";
     var sm = $("wfoSummary");
-    if (sm) sm.innerHTML = "<b>汇总：</b>平均年化 " + wfoPct(avg) + " · 最差段 段" + (wi + 1) + "（" + worst.start + " ~ " + worst.end + "，" + wfoPct(worst.cagr) + "）· " +
+    if (sm) sm.innerHTML = _qHtml + "<b>汇总：</b>平均年化 " + wfoPct(avg) + " · 最差段 段" + (wi + 1) + "（" + worst.start + " ~ " + worst.end + "，" + wfoPct(worst.cagr) + "）· " +
       (downRun ? WufuTheme.sub('<span style="color:§WFT0010§">存疑：存在连续两段收益转差，稳健性不足，建议检查参数或改权重新评估</span>') : WufuTheme.sub('<span style="color:§WFT0012§">稳健：无连续两段收益转差</span>'));
     var ch = $("wfoChart");
     if (ch && typeof echarts !== "undefined") {

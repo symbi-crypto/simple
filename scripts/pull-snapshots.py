@@ -147,6 +147,20 @@ def calendar_check(name, date_str):
         years = sorted((h.get('Years') or {}).keys())
         if not years or str(dt.year) not in years:
             return False, '日历未覆盖 %d 年（已验证 %s）' % (dt.year, ','.join(years) or '无')
+        # P4①：证据链必须齐，且 dataAsOf 必须落在显式 Coverage 内。
+        # 字段缺失一律拒收，避免「表里有数据」被当成「来源已核验」。
+        cov = h.get('Coverage') or {}
+        ev = h.get('Evidence') or []
+        missing = [k for k in ('start', 'end', 'markets', 'timezone') if not cov.get(k)]
+        if not ev or any(not e.get('source') or not e.get('verifiedAt') for e in ev):
+            missing.append('Evidence.source/verifiedAt')
+        if not isinstance(h.get('HalfDaySessions'), dict): missing.append('HalfDaySessions')
+        if not isinstance(h.get('Limitations'), list): missing.append('Limitations')
+        if missing:
+            return False, '日历证据链不完整：缺 %s' % ','.join(missing)
+        cstart, cend = str(cov['start'])[:10], str(cov['end'])[:10]
+        if not (cstart <= str(date_str)[:10] <= cend):
+            return False, 'dataAsOf 超出日历 Coverage %s~%s' % (cstart, cend)
         for hol in (h.get('Years') or {}).get(str(dt.year), []):
             a = datetime.date.fromisoformat(hol['StartDate'])
             b = datetime.date.fromisoformat(hol['EndDate'])
