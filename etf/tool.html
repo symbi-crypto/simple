@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
-<script src="../common/research-gate.js?v=100"></script>
-<script src="../common/instrument-rules.js?v=100"></script>
+<script src="../common/research-gate.js?v=9901"></script>
+<script src="../common/instrument-rules.js?v=9901"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -31,7 +31,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=100"></script>
+<script src="../common/range.js?v=9901"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -660,6 +660,22 @@ document.addEventListener("DOMContentLoaded",function(){
 /* 交互态强调色不被统一规则吃掉 */
 .srow:hover{border-color:var(--acc) !important;}
 
+
+/* ── v0.9901 平板（iPad 横/竖屏）参数面板 ──────────────────────────
+   ≥1024px 的旧规则把 aside 设成 sticky + max-height:100vh + overflow:auto，
+   面板内容约 1600px 却只露 790px；iOS Safari 下手指滑动常被判成页面滚动，
+   内部拉不下去，「运行回测」看不到，滚上来的 KPI/曲线又与钉住的参数面板打架。
+   平板一律取消 sticky 与限高，恢复自然高度整页滚动，结果区按文档流排在其后。 */
+@media (min-width:1024px) and (max-width:1279px),
+       (min-width:761px) and (hover:none) and (pointer:coarse){
+  .wrap{flex-direction:column !important;align-items:stretch !important;gap:12px !important;padding:12px !important}
+  aside{position:static !important;top:auto !important;max-height:none !important;
+        height:auto !important;overflow:visible !important;width:100% !important;
+        flex-shrink:1 !important;-webkit-overflow-scrolling:auto !important}
+  main{width:100% !important;min-width:0 !important}
+  .cards{grid-template-columns:1fr !important;display:flex !important;flex-direction:column !important}
+  .cards > .card.wide{grid-column:span 1 !important}
+}
 </style>
 
 </head>
@@ -7790,7 +7806,7 @@ function scheduleRun() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=1009 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99019 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];
@@ -9153,7 +9169,7 @@ function renderKpis(r) {
       xAxis: { type: "category", data: years, splitArea: { show: true }, axisLabel: { fontSize: 10, interval: 0, rotate: 30, margin: 8 } },
       yAxis: { type: "category", data: monthIdx, splitArea: { show: true }, axisLabel: { fontSize: 10 } },
       visualMap: { min: -absMax, max: absMax, calculable: true, orient: "horizontal", left: "center", bottom: 0,
-        textStyle: { fontSize: 10 }, inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos')] } },
+        textStyle: { fontSize: 10 }, inRange: { color: [WufuTheme.css('--chart-heat-n6'), WufuTheme.css('--chart-heat-n5'), WufuTheme.css('--chart-heat-n4'), WufuTheme.css('--chart-heat-n3'), WufuTheme.css('--chart-heat-n2'), WufuTheme.css('--chart-heat-n1'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-p1'), WufuTheme.css('--chart-heat-p2'), WufuTheme.css('--chart-heat-p3'), WufuTheme.css('--chart-heat-p4'), WufuTheme.css('--chart-heat-p5'), WufuTheme.css('--chart-heat-p6')] } },
       series: [{ type: "heatmap", data: cells, label: { show: false }, emphasis: { itemStyle: { borderColor: WufuTheme.sub("§WFT0001§"), borderWidth: 1 } } }]
     });
   }
@@ -11957,7 +11973,7 @@ function showStrategyDetail(name) {
       grid: { left: _left, right: 30, top: _top, bottom: _bottom },
       xAxis: { type: "category", data: _axN, axisLabel: { color: WufuTheme.sub("§WFT0005§"), rotate: _seqMode ? 0 : 40, hideOverlap: true, align: "left", margin: 6, fontSize: _seqMode ? 11 : 11 } },
       yAxis: { type: "category", data: _axN, axisLabel: { color: WufuTheme.sub("§WFT0005§"), width: _left - 4, overflow: "truncate", align: "left" } },
-      visualMap: { min: -1, max: 1, calculable: true, orient: "horizontal", right: 6, top: 0, itemWidth: 9, itemHeight: 60, textStyle: { color: WufuTheme.sub("§WFT0003§") }, inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos')] } },
+      visualMap: { min: -1, max: 1, calculable: true, orient: "horizontal", right: 6, top: 0, itemWidth: 9, itemHeight: 60, textStyle: { color: WufuTheme.sub("§WFT0003§") }, inRange: { color: [WufuTheme.css('--chart-heat-n6'), WufuTheme.css('--chart-heat-n5'), WufuTheme.css('--chart-heat-n4'), WufuTheme.css('--chart-heat-n3'), WufuTheme.css('--chart-heat-n2'), WufuTheme.css('--chart-heat-n1'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-p1'), WufuTheme.css('--chart-heat-p2'), WufuTheme.css('--chart-heat-p3'), WufuTheme.css('--chart-heat-p4'), WufuTheme.css('--chart-heat-p5'), WufuTheme.css('--chart-heat-p6')] } },
       series: [{ type: "heatmap", data: cells, label: { show: _fs > 0, color: WufuTheme.sub("§WFT0004§"), fontSize: _fs }, itemStyle: { borderColor: WufuTheme.sub("§WFT0007§"), borderWidth: 1 } }]
     });
     // 序号模式下渲染「序号 = 策略名」图例（放在 canvas 外，不占绘图区）
@@ -14050,7 +14066,7 @@ function showStrategyDetail(name) {
       yAxis: { type: "category", data: names, inverse: true, splitArea: { show: false }, axisLine: { lineStyle: { color: WufuTheme.sub("§WFT0001§") } }, axisTick: { show: false }, axisLabel: { color: WufuTheme.sub("§WFT0003§"), fontSize: 10, interval: 0 } },
       visualMap: {
         min: vlo, max: vhi, calculable: false, show: false,
-        inRange: { color: [WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-neg'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-pos'), WufuTheme.css('--chart-heat-pos')] }
+        inRange: { color: [WufuTheme.css('--chart-heat-n6'), WufuTheme.css('--chart-heat-n5'), WufuTheme.css('--chart-heat-n4'), WufuTheme.css('--chart-heat-n3'), WufuTheme.css('--chart-heat-n2'), WufuTheme.css('--chart-heat-n1'), WufuTheme.css('--chart-heat-mid'), WufuTheme.css('--chart-heat-p1'), WufuTheme.css('--chart-heat-p2'), WufuTheme.css('--chart-heat-p3'), WufuTheme.css('--chart-heat-p4'), WufuTheme.css('--chart-heat-p5'), WufuTheme.css('--chart-heat-p6')] }
       },
       series: [{
         type: "heatmap", data: data,

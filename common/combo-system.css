@@ -589,3 +589,18 @@ h3.l2t{margin-bottom:8px !important}
 /* 交互态强调色不被统一规则吃掉 */
 .srow:hover{border-color:var(--acc) !important;}
 
+/* ── v0.9901 平板（iPad 横/竖屏）参数面板 ──────────────────────────
+   ≥1024px 的旧规则把 aside 设成 sticky + max-height:100vh + overflow:auto，
+   面板内容约 1600px 却只露 790px；iOS Safari 下手指滑动常被判成页面滚动，
+   内部拉不下去，「运行回测」看不到，滚上来的 KPI/曲线又与钉住的参数面板打架。
+   平板一律取消 sticky 与限高，恢复自然高度整页滚动，结果区按文档流排在其后。 */
+@media (min-width:1024px) and (max-width:1279px),
+       (min-width:761px) and (hover:none) and (pointer:coarse){
+  .wrap{flex-direction:column !important;align-items:stretch !important;gap:12px !important;padding:12px !important}
+  aside{position:static !important;top:auto !important;max-height:none !important;
+        height:auto !important;overflow:visible !important;width:100% !important;
+        flex-shrink:1 !important;-webkit-overflow-scrolling:auto !important}
+  main{width:100% !important;min-width:0 !important}
+  .cards{grid-template-columns:1fr !important;display:flex !important;flex-direction:column !important}
+  .cards > .card.wide{grid-column:span 1 !important}
+}

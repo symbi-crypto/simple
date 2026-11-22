@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 85,
-   "passed": 85,
+   "total": 89,
+   "passed": 89,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 24,
-   "passed": 24,
+   "total": 25,
+   "passed": 25,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 3566 字节"
+   "detail": "契约 3835 字节"
   },
   {
    "id": "V2",
@@ -604,7 +604,7 @@
    "rule": "界面契约 §5 热力图首屏取语义变量、不靠事后重绘",
    "severity": "blocking",
    "status": "pass",
-   "detail": "旧 token 残留 0 页 / 语义变量引用 45 处"
+   "detail": "旧 token 残留 0 页 / 语义变量引用 143 处"
   },
   {
    "id": "V20",
@@ -633,6 +633,34 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "漂移 0 项"
+  },
+  {
+   "id": "V24",
+   "rule": "界面契约 §7 热力图 ≥9 档、零两侧独立且深浅唯一",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深 13 色 / 浅 13 色"
+  },
+  {
+   "id": "V25",
+   "rule": "界面契约 §7 首屏 visualMap 全部 13 档、无旧三档残留",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "数组 11 处，异常 []"
+  },
+  {
+   "id": "V26",
+   "rule": "界面契约 §7 重绘不降档、theme.js 字典逐值一致",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "HEAT_STOPS + 字典一致"
+  },
+  {
+   "id": "V27",
+   "rule": "界面契约 §7 平板取消 sticky 限高、单列自然滚动",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "5 个文件含平板规则"
   },
   {
    "id": "B11",
@@ -927,6 +955,45 @@
     },
     {
      "name": "外观主色未连带改动",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R25",
+   "case": "「三档同色 / 重绘降档 / iPad 面板 sticky 拉不动」→ 必须全挡",
+   "rule": "界面契约 §7",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "13 档深浅唯一",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "零两侧不同色",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "首屏数组全 13 档",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "重绘不降档",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "平板规则覆盖 5 文件",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "版本号未跨 1.00",
      "actual": true,
      "expect": true
     }

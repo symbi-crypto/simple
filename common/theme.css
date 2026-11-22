@@ -189,6 +189,8 @@
 
   /* v0.99 涨跌物理色：与外观主题正交，语义槽在下方交换 */
   --c-rise:#F87171;--c-fall:#34D399;
+  /* v0.9901 热力图 13 档：零两侧各有独立色阶，±3% 不再同色 */
+  --chart-heat-n6:#F87173;--chart-heat-n5:#D95859;--chart-heat-n4:#B94546;--chart-heat-n3:#8E3536;--chart-heat-n2:#632A2B;--chart-heat-n1:#40222B;--chart-heat-mid:#22354A;--chart-heat-p1:#1E4039;--chart-heat-p2:#27604D;--chart-heat-p3:#318566;--chart-heat-p4:#3EAE83;--chart-heat-p5:#4CCB97;--chart-heat-p6:#4ADE81;
 }
 
 /* 兼容层：旧页面里已有的 --bg/--acc/--up 等变量名继续可用，
@@ -380,6 +382,8 @@
 
   /* v0.99 涨跌物理色（浅色）*/
   --c-rise:#D65359;--c-fall:#147D5F;
+  /* v0.9901 热力图 13 档（浅色）*/
+  --chart-heat-n6:#C0392D;--chart-heat-n5:#D6535B;--chart-heat-n4:#DF8085;--chart-heat-n3:#E9A3A7;--chart-heat-n2:#F1C3C6;--chart-heat-n1:#F8E1E3;--chart-heat-mid:#F6F8F7;--chart-heat-p1:#DFEFE8;--chart-heat-p2:#C2E4D5;--chart-heat-p3:#96D2B9;--chart-heat-p4:#63BC99;--chart-heat-p5:#2E9C77;--chart-heat-p6:#147D60;
 }
 /* 页面原有 select{color-scheme:dark!important} 会让浅色下的原生下拉仍是深色列表；
    带 [data-theme] 的选择器特异性更高，覆盖回来。深色下此规则不生效。 */
@@ -470,3 +474,7 @@
 :root.green-up[data-theme="light"]{--c-up:#147D5F;--c-down:#D65359}
 .wufu-display-group{display:inline-flex;align-items:center;gap:6px}
 .wufu-display-group .wh-slot:empty{display:none}
+
+/* ── v0.9901 兼容别名：旧三档仍指向 13 档的两端与零档 ────────────── */
+:root{--chart-heat-neg:var(--chart-heat-n6);--chart-heat-pos:var(--chart-heat-p6)}
+:root[data-theme="light"]{--chart-heat-neg:var(--chart-heat-n6);--chart-heat-pos:var(--chart-heat-p6)}

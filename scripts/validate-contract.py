@@ -762,6 +762,58 @@ def static_checks(root, valid_fn):
             and lmap.get('--c-accent','').lower()=='#147d5e', True),
     ])
 
+    # ── v0.9901 热力图层次 / 平板布局 ────────────────────────────────
+    _stops = ['n6','n5','n4','n3','n2','n1','mid','p1','p2','p3','p4','p5','p6']
+    _dvals = [dmap.get('--chart-heat-'+k,'').lower() for k in _stops]
+    _lvals = [lmap.get('--chart-heat-'+k,'').lower() for k in _stops]
+    add('V24', '界面契约 §7 热力图 ≥9 档、零两侧独立且深浅唯一', 'blocking',
+        all(_dvals) and all(_lvals) and len(_dvals)==13
+        and len(set(_dvals))==13 and len(set(_lvals))==13
+        and _dvals[5] != _dvals[6] and _dvals[6] != _dvals[7]
+        and _lvals[5] != _lvals[6] and _lvals[6] != _lvals[7],
+        '深 %d 色 / 浅 %d 色'%(len(set(_dvals)),len(set(_lvals))))
+    _vmfiles = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','combos/index.html']
+    _vm_bad = []
+    _vm_cnt = 0
+    for _f in _vmfiles:
+        _s = text(root,_f)
+        for _m in re.finditer(r'inRange\s*:\s*\{\s*color\s*:\s*\[([^\]]+)\]',_s):
+            _arr = _m.group(1)
+            _n = _arr.count("css('--chart-heat-")
+            _vm_cnt += 1
+            # 13 档里本来就含 --chart-heat-mid（零档），旧别名 neg/pos 才属残留
+            if _n != 13 or '--chart-heat-neg' in _arr or '--chart-heat-pos' in _arr:
+                _vm_bad.append((_f,_n))
+    add('V25', '界面契约 §7 首屏 visualMap 全部 13 档、无旧三档残留', 'blocking',
+        _vm_cnt >= 10 and not _vm_bad,
+        '数组 %d 处，异常 %s'%(_vm_cnt,str(_vm_bad[:3])))
+    add('V26', '界面契约 §7 重绘不降档、theme.js 字典逐值一致', 'blocking',
+        'var HEAT_STOPS = [' in tjs and 'vm.inRange.color = heat.slice()' in tjs
+        and '[hn, hm, hm, hp]' not in tjs
+        and all(str(_jf2.get('--chart-heat-'+k,'')).lower()==dmap.get('--chart-heat-'+k,'').lower()
+                and str(_jl2.get('--chart-heat-'+k,'')).lower()==lmap.get('--chart-heat-'+k,'').lower()
+                for k in _stops),
+        'HEAT_STOPS + 字典一致')
+    _tab_files = ['cb/index.html','etf/index.html','cb/tool.html','etf/tool.html','common/combo-system.css']
+    _tab_ok = all('position:static !important' in text(root,_f)
+                  and 'max-height:none !important' in text(root,_f)
+                  and '(hover:none) and (pointer:coarse)' in text(root,_f)
+                  and 'flex-direction:column !important' in text(root,_f)
+                  for _f in _tab_files)
+    add('V27', '界面契约 §7 平板取消 sticky 限高、单列自然滚动', 'blocking',
+        _tab_ok and '## §7 热力图层次与平板布局' in ui_rule
+        and '粘滞定位加限高的内部滚动' in ui_rule,
+        '%d 个文件含平板规则'%sum(1 for _f in _tab_files if 'position:static !important' in text(root,_f)))
+    fixture('R25', '「三档同色 / 重绘降档 / iPad 面板 sticky 拉不动」→ 必须全挡',
+        '界面契约 §7', [
+        ('13 档深浅唯一', len(set(_dvals))==13 and len(set(_lvals))==13, True),
+        ('零两侧不同色', _lvals[5]!=_lvals[6] and _lvals[6]!=_lvals[7], True),
+        ('首屏数组全 13 档', _vm_cnt>=10 and not _vm_bad, True),
+        ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
+        ('平板规则覆盖 5 文件', _tab_ok, True),
+        ('版本号未跨 1.00', 'v0.9901' in text(root,'README.md'), True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
