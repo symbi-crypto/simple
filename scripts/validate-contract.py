@@ -636,7 +636,7 @@ def static_checks(root, valid_fn):
     add('U10', '② 板规则自带需验证标记与边界，且被两页真消费', 'blocking',
         'common/instrument-rules.js' in text(root, 'sw.js')
         and all('instrument-rules.js' in s for s in (cb, et))
-        and 'WufuRules.cbLimit' in cb and 'WufuRules.etfLimit' in et
+        and 'WufuRules.cbLimit(dateStr' in cb and 'WufuRules.etfLimit(code2).limR' in et
         and nr.get('board', {}).get('priceLimitRequiresVerification') is True
         and nr.get('board', {}).get('unverifiedEvidence') >= 1
         and len(nr.get('board', {}).get('limitations', [])) >= 4
