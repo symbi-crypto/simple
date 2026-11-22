@@ -845,6 +845,12 @@ def static_checks(root, valid_fn):
         and '## §8 动态样式与图表色阶' in ui_rule
         and '字面色值' in ui_rule,
         '注入段 %d 字符'%len(_rseg))
+    add('V32', '界面契约 §8 heatColors 逐档校验并回退内置常量', 'blocking',
+        'out.push(isColor(v) ? v.trim() : hard[i]);' in tjs
+        and 'function isColor(c)' in tjs
+        and 'var hard = HEAT_HARD[curEff === "light" ? "light" : "dark"];' in tjs,
+        '校验+回退表达式齐备')
+
     fixture('R26', '「读空变黑白 / 注入字面色值不跟随 / 硬编码暗色方案」→ 必须全挡',
         '界面契约 §8', [
         ('唯一取色入口', 'function heatColors()' in tjs, True),

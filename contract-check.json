@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 93,
-   "passed": 93,
+   "total": 94,
+   "passed": 94,
    "failed": 0
   },
   "advisory": {
@@ -689,6 +689,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "注入段 2582 字符"
+  },
+  {
+   "id": "V32",
+   "rule": "界面契约 §8 heatColors 逐档校验并回退内置常量",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "校验+回退表达式齐备"
   },
   {
    "id": "B11",
