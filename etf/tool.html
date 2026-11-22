@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
-<script src="../common/research-gate.js?v=99"></script>
-<script src="../common/instrument-rules.js?v=99"></script>
+<script src="../common/research-gate.js?v=100"></script>
+<script src="../common/instrument-rules.js?v=100"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -31,7 +31,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=99"></script>
+<script src="../common/range.js?v=100"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -7790,7 +7790,7 @@ function scheduleRun() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=999 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=1009 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];

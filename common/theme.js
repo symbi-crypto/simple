@@ -22,8 +22,8 @@
     "#2b6cb0": "--ui-legacy-line",
     "rgba(127,127,127,.07)": "--ui-legacy-surface"
   };
-  var LIGHT = {"--c-accent":"#147D5E","--c-accent-2":"#258663","--c-accent-soft":"#EDF6F0","--c-bg":"#F6F8F7","--c-bg-deep":"#E9EEEB","--c-surface":"#FFFFFF","--c-surface-2":"#FAFCFB","--c-line":"#E9EEEC","--c-edge":"#C3DDD0","--c-text":"#202725","--c-text-2":"#3D4A45","--c-muted":"#738079","--c-gray":"#73807A","--c-up":"#D65359","--c-up-rgb":"214,83,89","--c-down":"#147D5F","--c-down-rgb":"20,125,94","--c-warn":"#B45309","--c-warn-2":"#F1CEA7","--c-warn-ink":"#8A5A10","--c-bad-ink":"#C0392B","--c-info":"#0E7490","--c-purple":"#7C5CBF","--c-white":"#FFFFFE","--c-white-full":"#FFFFFC","--c-brand-a":"#FFFFFB","--c-brand-b":"#F0F6F2","--c-on-brand":"#111816","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#BFE3D2","--c-h14b8a6":"#B45309","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#237D7A","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1A769F","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#27928F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#F3C7C9","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#2A9C99","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#2BA19D","--c-hc084fc":"#26A177","--c-hccfbf1":"#5B4B9E","--c-hd8e6f2":"#379592","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#3E8E8C","--c-he6edf6":"#3A928F","--c-he6eef8":"#319B98","--c-he6f4ff":"#2BA19E","--c-he879f9":"#259F83","--c-he8a33d":"#9D681A","--c-hf472b6":"#259D97","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#F3C7C9","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"#FFFFFF","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--ui-sunken":"#E9EEEE","--ui-line-strong":"#C3DDD1","--ui-ink-2":"#3D4A46","--ui-ink-3":"#73807C","--ui-accent-hover":"#0E6A4F","--ui-accent-soft":"#EDF6F1","--ui-accent-line":"#C3DDD3","--ui-accent-ink":"#0B5D46","--ui-ok":"#147D61","--ui-ok-soft":"#EDF6F3","--ui-ok-line":"#C3DDD6","--ui-warn":"#B4530A","--ui-warn-soft":"#FFF7E7","--ui-warn-line":"#F1CEA8","--ui-warn-ink":"#8A5A11","--ui-bad":"#D6535A","--ui-bad-soft":"#FFF0EF","--ui-bad-line":"#F1CCCC","--ui-legacy-warn":"#B4530C","--ui-legacy-ok":"#147D64","--ui-legacy-bad":"#C0392C","--ui-legacy-muted":"#73807F","--ui-legacy-muted-2":"#73807B","--ui-legacy-muted-3":"#73807E","--ui-legacy-line":"#147D68","--ui-legacy-surface":"rgba(32,39,37,.045)","--chart-tip-bg":"#FFFFFF","--chart-tip-ink":"#202725","--chart-tip-line":"#C3DDD0","--chart-axis-ink":"#738079","--chart-grid":"#E9EEEC","--chart-heat-neg":"#F3C7C9","--chart-heat-mid":"#F6F8F7","--chart-heat-pos":"#BFE3D2","--chart-s1":"#147D5E","--chart-s2":"#B45309","--chart-s3":"#5B4B9E","--chart-s4":"#D65359","--chart-s5":"#1A769F","--chart-s6":"#5A6B64"};
-  var FALLBACK = {"--c-accent":"#4FC3F7","--c-accent-2":"#22D3EE","--c-accent-soft":"#7DD3FC","--c-bad-ink":"#FCA5A5","--c-bg":"#1B2634","--c-bg-deep":"#0F1822","--c-down":"#34D399","--c-down-rgb":"52,211,153","--c-edge":"#3E4E63","--c-gray":"#7C8DA1","--c-h06b6d4":"#06B6D4","--c-h0b1220":"#0B1220","--c-h0b131d":"#0B131D","--c-h0b1420":"#0B1420","--c-h0e1622":"#0E1622","--c-h0e7490":"#0E7490","--c-h100c2a":"#100C2A","--c-h101c29":"#101C29","--c-h10b981":"#10B981","--c-h111827":"#111827","--c-h123329":"#123329","--c-h131c28":"#131C28","--c-h14532d":"#14532D","--c-h14b8a6":"#FBBF24","--c-h15202e":"#15202E","--c-h16202e":"#16202E","--c-h162131":"#162131","--c-h1b2735":"#1B2735","--c-h1c2a3a":"#1C2A3A","--c-h1d4e7a":"#1D4E7A","--c-h1e2a38":"#1E2A38","--c-h233347":"#233347","--c-h2a3546":"#2A3546","--c-h2a3b50":"#2A3B50","--c-h2c3b4e":"#2C3B4E","--c-h2dd4bf":"#38BDF8","--c-h2e3d50":"#2E3D50","--c-h334155":"#334155","--c-h33465c":"#33465C","--c-h344860":"#344860","--c-h38bdf8":"#38BDF8","--c-h3a2a12":"#3A2A12","--c-h3b1d1d":"#3B1D1D","--c-h3b82f6":"#3B82F6","--c-h3e7a8c":"#3E7A8C","--c-h3f1d1d":"#3F1D1D","--c-h4ade80":"#4ADE80","--c-h5a6b80":"#5A6B80","--c-h6e7f93":"#6E7F93","--c-h6ee7b7":"#6EE7B7","--c-h7f1d1d":"#7F1D1D","--c-h7f3a3a":"#7F3A3A","--c-h818cf8":"#818CF8","--c-h8a97a8":"#8A97A8","--c-h8fa3b8":"#8FA3B8","--c-h8fa3ba":"#8FA3BA","--c-h9fb3c8":"#9FB3C8","--c-h9fd8f6":"#9FD8F6","--c-ha33a36":"#A33A36","--c-ha3e635":"#A3E635","--c-ha5f3fc":"#A5F3FC","--c-hb9c8d9":"#B9C8D9","--c-hbfdbfe":"#BFDBFE","--c-hc084fc":"#C084FC","--c-hccfbf1":"#A78BFA","--c-hd8e6f2":"#D8E6F2","--c-hdce6f0":"#DCE6F0","--c-he2e8f0":"#E2E8F0","--c-he6edf5":"#E6EDF5","--c-he6edf6":"#E6EDF6","--c-he6eef8":"#E6EEF8","--c-he6f4ff":"#E6F4FF","--c-he879f9":"#E879F9","--c-he8a33d":"#E8A33D","--c-hf472b6":"#F472B6","--c-hf97316":"#F97316","--c-hfb7185":"#FB7185","--c-hfecaca":"#FECACA","--c-hfef2f2":"#FEF2F2","--c-info":"#60A5FA","--c-line":"#243244","--c-muted":"#9FB0C3","--c-purple":"#A78BFA","--c-r001":"rgba(79,195,247,.22)","--c-r002":"rgba(79,195,247,.3)","--c-r003":"rgba(14,116,144,.16)","--c-r004":"rgba(0,0,0,.5)","--c-r005":"rgba(251,191,36,.12)","--c-r006":"rgba(79,195,247,.06)","--c-r007":"rgba(16,24,36,.95)","--c-r008":"rgba(2,6,23,.72)","--c-r009":"rgba(79,195,247,.08)","--c-r010":"rgba(248,113,113,.14)","--c-r011":"rgba(255,255,255,.02)","--c-r012":"rgba(0,0,0,.3)","--c-r013":"rgba(248,113,113,.12)","--c-r014":"rgba(255,255,255,.08)","--c-r015":"rgba(255,255,255,.18)","--c-r016":"rgba(79,195,247,.12)","--c-r017":"rgba(0,0,0,.6)","--c-r018":"rgba(14,116,144,.10)","--c-r019":"rgba(16,24,36,.9)","--c-r020":"rgba(239,68,68,0.10)","--c-r021":"rgba(248,113,113,.10)","--c-r022":"rgba(248,113,113,.4)","--c-r023":"rgba(255,255,255,.12)","--c-r024":"rgba(4,10,18,.72)","--c-r025":"rgba(62,78,99,0.4)","--c-r026":"rgba(6,12,20,.72)","--c-r027":"rgba(79,195,247,.10)","--c-r028":"rgba(14,116,144,.45)","--c-r029":"rgba(248,113,113,.08)","--c-r030":"rgba(251,191,36,.08)","--c-r031":"rgba(255,255,255,.05)","--c-r032":"rgba(255,255,255,.22)","--c-r033":"rgba(255,255,255,.55)","--c-r034":"rgba(255,255,255,.88)","--c-r035":"rgba(52,211,153,.08)","--c-r036":"rgba(56,189,248,.45)","--c-r037":"rgba(56,189,248,.5)","--c-r038":"rgba(62,78,99,.15)","--c-r039":"rgba(79,195,247,.16)","--c-r040":"rgba(0,0,0,.62)","--c-r041":"rgba(251,191,36,.06)","--c-r042":"rgba(79,195,247,.04)","--c-r043":"rgba(79,195,247,.05)","--c-r044":"rgba(79,195,247,.18)","--c-r045":"rgba(79,195,247,.28)","--c-r046":"rgba(79,195,247,.35)","--c-r047":"rgba(79,195,247,.45)","--c-r048":"rgba(79,195,247,.55)","--c-surface":"#202E3F","--c-surface-2":"#2A3A4E","--c-text":"#F1F5F9","--c-text-2":"#D8E2EF","--c-up":"#F87171","--c-up-rgb":"248,113,113","--c-warn":"#FBBF24","--c-warn-2":"#F59E0B","--c-warn-ink":"#FCD34D","--c-white":"#fff","--c-white-full":"#FFFFFF","--c-brand-a":"#1B2635","--c-brand-b":"#0E7490","--c-on-brand":"#fff ","--ui-sunken":"#2A3A4F","--ui-line-strong":"#3E4E64","--ui-ink-2":"#D8E2F0","--ui-ink-3":"#9FB0C4","--ui-accent-hover":"#22D3EE","--ui-accent-soft":"#233347","--ui-accent-line":"#1D4E7A","--ui-accent-ink":"#BFDBFE","--ui-ok":"#34D39A","--ui-ok-soft":"#12332C","--ui-ok-line":"#14532E","--ui-warn":"#FBBF25","--ui-warn-soft":"#3A2A13","--ui-warn-line":"#E8A33E","--ui-warn-ink":"#FCD34E","--ui-bad":"#F87172","--ui-bad-soft":"#3B1D1E","--ui-bad-line":"#7F1D1E","--ui-legacy-warn":"#c07a00","--ui-legacy-ok":"#1a9d5a","--ui-legacy-bad":"#c0392b","--ui-legacy-muted":"#888","--ui-legacy-muted-2":"#999","--ui-legacy-muted-3":"#aaa","--ui-legacy-line":"#2b6cb0","--ui-legacy-surface":"rgba(127,127,127,.07)","--chart-tip-bg":"#233247","--chart-tip-ink":"#E8EEF6","--chart-tip-line":"#3E4E63","--chart-axis-ink":"#9FB0C4","--chart-grid":"#243244","--chart-heat-neg":"#7F1D1D","--chart-heat-mid":"#22354A","--chart-heat-pos":"#14532D","--chart-s1":"#4FC3F7","--chart-s2":"#FBBF24","--chart-s3":"#A78BFA","--chart-s4":"#F87171","--chart-s5":"#34D399","--chart-s6":"#94A3B8"};
+  var LIGHT = {"--c-accent":"#147D5E","--c-accent-2":"#258663","--c-accent-soft":"#EDF6F0","--c-bg":"#F6F8F7","--c-bg-deep":"#E9EEEB","--c-surface":"#FFFFFF","--c-surface-2":"#FAFCFB","--c-line":"#E9EEEC","--c-edge":"#C3DDD0","--c-text":"#202725","--c-text-2":"#3D4A45","--c-muted":"#738079","--c-gray":"#73807A","--c-up":"#D65359","--c-up-rgb":"214,83,89","--c-down":"#147D5F","--c-down-rgb":"20,125,94","--c-warn":"#B45309","--c-warn-2":"#F1CEA7","--c-warn-ink":"#8A5A10","--c-bad-ink":"#C0392B","--c-info":"#0E7490","--c-purple":"#7C5CBF","--c-white":"#FFFFFE","--c-white-full":"#FFFFFC","--c-brand-a":"#FFFFFB","--c-brand-b":"#F0F6F2","--c-on-brand":"#111816","--c-h06b6d4":"#188193","--c-h0b1220":"#ECEDF0","--c-h0b131d":"#EDEEF1","--c-h0b1420":"#ECEEF0","--c-h0e1622":"#EBEDF0","--c-h0e7490":"#16718A","--c-h100c2a":"#EBEBEF","--c-h101c29":"#EAECEF","--c-h10b981":"#179068","--c-h111827":"#1F2937","--c-h123329":"#E8EDEC","--c-h131c28":"#EAECEE","--c-h14532d":"#BFE3D2","--c-h14b8a6":"#B45309","--c-h15202e":"#E9EBEE","--c-h16202e":"#E9EBED","--c-h162131":"#E8EAED","--c-h1b2735":"#E7E9EC","--c-h1c2a3a":"#E6E9EB","--c-h1d4e7a":"#237D7A","--c-h1e2a38":"#E6E9EC","--c-h233347":"#E3E6E9","--c-h2a3546":"#E2E5E9","--c-h2a3b50":"#D4DAE1","--c-h2c3b4e":"#D4DAE2","--c-h2dd4bf":"#1A769F","--c-h2e3d50":"#D3D9E1","--c-h334155":"#334156","--c-h33465c":"#CFD6DE","--c-h344860":"#CED5DD","--c-h38bdf8":"#1A769F","--c-h3a2a12":"#EDEBE8","--c-h3b1d1d":"#EBE6E6","--c-h3b82f6":"#27928F","--c-h3e7a8c":"#C2D0D5","--c-h3f1d1d":"#EBE5E5","--c-h4ade80":"#1B9D4A","--c-h5a6b80":"#BFC7D2","--c-h6e7f93":"#B8C0CA","--c-h6ee7b7":"#1BA46E","--c-h7f1d1d":"#F3C7C9","--c-h7f3a3a":"#D7C6C6","--c-h818cf8":"#2A9C99","--c-h8a97a8":"#282E36","--c-h8fa3b8":"#28333F","--c-h8fa3ba":"#273340","--c-h9fb3c8":"#2A3949","--c-h9fd8f6":"#1C7BAE","--c-ha33a36":"#812D2A","--c-ha3e635":"#6B9C19","--c-ha5f3fc":"#1DA0AF","--c-hb9c8d9":"#2F4054","--c-hbfdbfe":"#2BA19D","--c-hc084fc":"#26A177","--c-hccfbf1":"#5B4B9E","--c-hd8e6f2":"#379592","--c-hdce6f0":"#374D62","--c-he2e8f0":"#384B64","--c-he6edf5":"#3E8E8C","--c-he6edf6":"#3A928F","--c-he6eef8":"#319B98","--c-he6f4ff":"#2BA19E","--c-he879f9":"#259F83","--c-he8a33d":"#9D681A","--c-hf472b6":"#259D97","--c-hf97316":"#9A4E19","--c-hfb7185":"#A81B30","--c-hfecaca":"#AF1D1D","--c-hfef2f2":"#F3C7C9","--c-r001":"rgba(31,129,173,0.2207)","--c-r002":"rgba(31,129,173,0.3014)","--c-r003":"rgba(18,86,105,0.1621)","--c-r004":"rgba(15,23,42,0.3928)","--c-r005":"rgba(173,134,31,0.1235)","--c-r006":"rgba(31,129,173,0.0642)","--c-r007":"#FFFFFF","--c-r008":"rgba(15,23,42,0.5627)","--c-r009":"rgba(31,129,173,0.0814)","--c-r010":"rgba(173,31,31,0.1421)","--c-r011":"rgba(15,23,42,0.0258)","--c-r012":"rgba(15,23,42,0.2375)","--c-r013":"rgba(173,31,31,0.1242)","--c-r014":"rgba(15,23,42,0.092)","--c-r015":"rgba(15,23,42,0.2077)","--c-r016":"rgba(31,129,173,0.1214)","--c-r017":"rgba(15,23,42,0.4701)","--c-r018":"rgba(18,86,105,0.1028)","--c-r019":"rgba(15,23,42,0.7055)","--c-r020":"rgba(173,31,31,0.1042)","--c-r021":"rgba(173,31,31,0.1)","--c-r022":"rgba(173,31,31,0.4007)","--c-r023":"rgba(15,23,42,0.1394)","--c-r024":"rgba(15,23,42,0.5641)","--c-r025":"rgba(48,61,77,0.4028)","--c-r026":"rgba(15,23,42,0.5655)","--c-r027":"rgba(31,129,173,0.1042)","--c-r028":"rgba(18,86,105,0.45)","--c-r029":"rgba(173,31,31,0.0807)","--c-r030":"rgba(173,134,31,0.0814)","--c-r031":"rgba(15,23,42,0.0596)","--c-r032":"rgba(15,23,42,0.2558)","--c-r033":"rgba(15,23,42,0.3035)","--c-r034":"rgba(15,23,42,0.3042)","--c-r035":"rgba(36,168,120,0.08)","--c-r036":"rgba(31,130,173,0.4507)","--c-r037":"rgba(31,130,173,0.5014)","--c-r038":"rgba(48,61,77,0.1521)","--c-r039":"rgba(31,129,173,0.1628)","--c-r040":"rgba(15,23,42,0.4875)","--c-r041":"rgba(173,134,31,0.0642)","--c-r042":"rgba(31,129,173,0.04)","--c-r043":"rgba(31,129,173,0.0507)","--c-r044":"rgba(31,129,173,0.1814)","--c-r045":"rgba(31,129,173,0.2821)","--c-r046":"rgba(31,129,173,0.3528)","--c-r047":"rgba(31,129,173,0.4535)","--c-r048":"rgba(31,129,173,0.5542)","--ui-sunken":"#E9EEEE","--ui-line-strong":"#C3DDD1","--ui-ink-2":"#3D4A46","--ui-ink-3":"#73807C","--ui-accent-hover":"#0E6A4F","--ui-accent-soft":"#EDF6F1","--ui-accent-line":"#C3DDD3","--ui-accent-ink":"#0B5D46","--ui-ok":"#147D61","--ui-ok-soft":"#EDF6F3","--ui-ok-line":"#C3DDD6","--ui-warn":"#B4530A","--ui-warn-soft":"#FFF7E7","--ui-warn-line":"#F1CEA8","--ui-warn-ink":"#8A5A11","--ui-bad":"#D6535A","--ui-bad-soft":"#FFF0EF","--ui-bad-line":"#F1CCCC","--ui-legacy-warn":"#B4530C","--ui-legacy-ok":"#147D64","--ui-legacy-bad":"#C0392C","--ui-legacy-muted":"#73807F","--ui-legacy-muted-2":"#73807B","--ui-legacy-muted-3":"#73807E","--ui-legacy-line":"#147D68","--ui-legacy-surface":"rgba(32,39,37,.045)","--chart-tip-bg":"#FFFFFF","--chart-tip-ink":"#202725","--chart-tip-line":"#C3DDD0","--chart-axis-ink":"#738079","--chart-grid":"#E9EEEC","--chart-heat-neg":"#F3C7C9","--chart-heat-mid":"#F6F8F7","--chart-heat-pos":"#BFE3D2","--chart-s1":"#147D5E","--chart-s2":"#B45309","--chart-s3":"#5B4B9E","--chart-s4":"#D65359","--chart-s5":"#1A769F","--chart-s6":"#5A6B64","--c-rise":"#D65359","--c-fall":"#147D5F"};
+  var FALLBACK = {"--c-accent":"#4FC3F7","--c-accent-2":"#22D3EE","--c-accent-soft":"#7DD3FC","--c-bad-ink":"#FCA5A5","--c-bg":"#1B2634","--c-bg-deep":"#0F1822","--c-down":"#34D399","--c-down-rgb":"52,211,153","--c-edge":"#3E4E63","--c-gray":"#7C8DA1","--c-h06b6d4":"#06B6D4","--c-h0b1220":"#0B1220","--c-h0b131d":"#0B131D","--c-h0b1420":"#0B1420","--c-h0e1622":"#0E1622","--c-h0e7490":"#0E7490","--c-h100c2a":"#100C2A","--c-h101c29":"#101C29","--c-h10b981":"#10B981","--c-h111827":"#111827","--c-h123329":"#123329","--c-h131c28":"#131C28","--c-h14532d":"#14532D","--c-h14b8a6":"#FBBF24","--c-h15202e":"#15202E","--c-h16202e":"#16202E","--c-h162131":"#162131","--c-h1b2735":"#1B2735","--c-h1c2a3a":"#1C2A3A","--c-h1d4e7a":"#1D4E7A","--c-h1e2a38":"#1E2A38","--c-h233347":"#233347","--c-h2a3546":"#2A3546","--c-h2a3b50":"#2A3B50","--c-h2c3b4e":"#2C3B4E","--c-h2dd4bf":"#38BDF8","--c-h2e3d50":"#2E3D50","--c-h334155":"#334155","--c-h33465c":"#33465C","--c-h344860":"#344860","--c-h38bdf8":"#38BDF8","--c-h3a2a12":"#3A2A12","--c-h3b1d1d":"#3B1D1D","--c-h3b82f6":"#3B82F6","--c-h3e7a8c":"#3E7A8C","--c-h3f1d1d":"#3F1D1D","--c-h4ade80":"#4ADE80","--c-h5a6b80":"#5A6B80","--c-h6e7f93":"#6E7F93","--c-h6ee7b7":"#6EE7B7","--c-h7f1d1d":"#7F1D1D","--c-h7f3a3a":"#7F3A3A","--c-h818cf8":"#818CF8","--c-h8a97a8":"#8A97A8","--c-h8fa3b8":"#8FA3B8","--c-h8fa3ba":"#8FA3BA","--c-h9fb3c8":"#9FB3C8","--c-h9fd8f6":"#9FD8F6","--c-ha33a36":"#A33A36","--c-ha3e635":"#A3E635","--c-ha5f3fc":"#A5F3FC","--c-hb9c8d9":"#B9C8D9","--c-hbfdbfe":"#BFDBFE","--c-hc084fc":"#C084FC","--c-hccfbf1":"#A78BFA","--c-hd8e6f2":"#D8E6F2","--c-hdce6f0":"#DCE6F0","--c-he2e8f0":"#E2E8F0","--c-he6edf5":"#E6EDF5","--c-he6edf6":"#E6EDF6","--c-he6eef8":"#E6EEF8","--c-he6f4ff":"#E6F4FF","--c-he879f9":"#E879F9","--c-he8a33d":"#E8A33D","--c-hf472b6":"#F472B6","--c-hf97316":"#F97316","--c-hfb7185":"#FB7185","--c-hfecaca":"#FECACA","--c-hfef2f2":"#FEF2F2","--c-info":"#60A5FA","--c-line":"#243244","--c-muted":"#9FB0C3","--c-purple":"#A78BFA","--c-r001":"rgba(79,195,247,.22)","--c-r002":"rgba(79,195,247,.3)","--c-r003":"rgba(14,116,144,.16)","--c-r004":"rgba(0,0,0,.5)","--c-r005":"rgba(251,191,36,.12)","--c-r006":"rgba(79,195,247,.06)","--c-r007":"rgba(16,24,36,.95)","--c-r008":"rgba(2,6,23,.72)","--c-r009":"rgba(79,195,247,.08)","--c-r010":"rgba(248,113,113,.14)","--c-r011":"rgba(255,255,255,.02)","--c-r012":"rgba(0,0,0,.3)","--c-r013":"rgba(248,113,113,.12)","--c-r014":"rgba(255,255,255,.08)","--c-r015":"rgba(255,255,255,.18)","--c-r016":"rgba(79,195,247,.12)","--c-r017":"rgba(0,0,0,.6)","--c-r018":"rgba(14,116,144,.10)","--c-r019":"rgba(16,24,36,.9)","--c-r020":"rgba(239,68,68,0.10)","--c-r021":"rgba(248,113,113,.10)","--c-r022":"rgba(248,113,113,.4)","--c-r023":"rgba(255,255,255,.12)","--c-r024":"rgba(4,10,18,.72)","--c-r025":"rgba(62,78,99,0.4)","--c-r026":"rgba(6,12,20,.72)","--c-r027":"rgba(79,195,247,.10)","--c-r028":"rgba(14,116,144,.45)","--c-r029":"rgba(248,113,113,.08)","--c-r030":"rgba(251,191,36,.08)","--c-r031":"rgba(255,255,255,.05)","--c-r032":"rgba(255,255,255,.22)","--c-r033":"rgba(255,255,255,.55)","--c-r034":"rgba(255,255,255,.88)","--c-r035":"rgba(52,211,153,.08)","--c-r036":"rgba(56,189,248,.45)","--c-r037":"rgba(56,189,248,.5)","--c-r038":"rgba(62,78,99,.15)","--c-r039":"rgba(79,195,247,.16)","--c-r040":"rgba(0,0,0,.62)","--c-r041":"rgba(251,191,36,.06)","--c-r042":"rgba(79,195,247,.04)","--c-r043":"rgba(79,195,247,.05)","--c-r044":"rgba(79,195,247,.18)","--c-r045":"rgba(79,195,247,.28)","--c-r046":"rgba(79,195,247,.35)","--c-r047":"rgba(79,195,247,.45)","--c-r048":"rgba(79,195,247,.55)","--c-surface":"#202E3F","--c-surface-2":"#2A3A4E","--c-text":"#F1F5F9","--c-text-2":"#D8E2EF","--c-up":"#F87171","--c-up-rgb":"248,113,113","--c-warn":"#FBBF24","--c-warn-2":"#F59E0B","--c-warn-ink":"#FCD34D","--c-white":"#fff","--c-white-full":"#FFFFFF","--c-brand-a":"#1B2635","--c-brand-b":"#0E7490","--c-on-brand":"#fff ","--ui-sunken":"#2A3A4F","--ui-line-strong":"#3E4E64","--ui-ink-2":"#D8E2F0","--ui-ink-3":"#9FB0C4","--ui-accent-hover":"#22D3EE","--ui-accent-soft":"#233347","--ui-accent-line":"#1D4E7A","--ui-accent-ink":"#BFDBFE","--ui-ok":"#34D39A","--ui-ok-soft":"#12332C","--ui-ok-line":"#14532E","--ui-warn":"#FBBF25","--ui-warn-soft":"#3A2A13","--ui-warn-line":"#E8A33E","--ui-warn-ink":"#FCD34E","--ui-bad":"#F87172","--ui-bad-soft":"#3B1D1E","--ui-bad-line":"#7F1D1E","--ui-legacy-warn":"#c07a00","--ui-legacy-ok":"#1a9d5a","--ui-legacy-bad":"#c0392b","--ui-legacy-muted":"#888","--ui-legacy-muted-2":"#999","--ui-legacy-muted-3":"#aaa","--ui-legacy-line":"#2b6cb0","--ui-legacy-surface":"rgba(127,127,127,.07)","--chart-tip-bg":"#233247","--chart-tip-ink":"#E8EEF6","--chart-tip-line":"#3E4E63","--chart-axis-ink":"#9FB0C4","--chart-grid":"#243244","--chart-heat-neg":"#7F1D1D","--chart-heat-mid":"#22354A","--chart-heat-pos":"#14532D","--chart-s1":"#4FC3F7","--chart-s2":"#FBBF24","--chart-s3":"#A78BFA","--chart-s4":"#F87171","--chart-s5":"#34D399","--chart-s6":"#94A3B8","--c-rise":"#F87171","--c-fall":"#34D399"};
   var TOKENS = {
     "0001": "--c-edge",
     "0002": "--c-gray",
@@ -166,7 +166,7 @@
     "0139": "--c-r047",
     "0140": "--c-r048"
   };
-  function css(name) {
+  function rawCss(name) {
     var v = "";
     try {
       if (g.getComputedStyle && g.document && g.document.documentElement) {
@@ -181,6 +181,18 @@
     }
     return v;
   }
+  /* v0.99：涨跌颜色是独立于外观的偏好。所有消费点只认语义槽
+     --c-up / --c-down，切换时在这里一处交换物理色，不逐处改值。 */
+  function css(name) {
+    if (name === "--c-up" || name === "--c-down") {
+      var swap = isGreenUp();
+      var phys = name === "--c-up"
+        ? (swap ? "--c-fall" : "--c-rise")
+        : (swap ? "--c-rise" : "--c-fall");
+      return rawCss(phys);
+    }
+    return rawCss(name);
+  }
   function sub(s) {
     if (s == null) return s;
     if (typeof s !== "string") s = String(s);
@@ -188,6 +200,39 @@
       var name = TOKENS[n];
       return name ? css(name) : _;
     });
+  }
+
+  /* ───────────────── v0.99 涨跌颜色偏好（与外观正交）─────────────────
+     参考项目把 Theme 与 Colors 拆成两个独立偏好、共用一个 apply 入口。
+     这里同样独立持久化：切换只交换语义槽，不改外观主题、布局或主色。 */
+  var CKEY = "wufu_colors_v1";
+  function colors() {
+    var c = "red-up";
+    try { c = g.localStorage.getItem(CKEY) || "red-up"; } catch (e) { }
+    return c === "green-up" ? "green-up" : "red-up";
+  }
+  function isGreenUp() { return colors() === "green-up"; }
+  function applyColors() {
+    var de = g.document && g.document.documentElement;
+    var on = isGreenUp();
+    var prev = de ? de.classList.contains("green-up") : false;
+    if (de) de.classList.toggle("green-up", on);
+    return prev !== on;
+  }
+  function setColors(v) {
+    v = v === "green-up" ? "green-up" : "red-up";
+    try { g.localStorage.setItem(CKEY, v); } catch (e) { }
+    applyColors();
+    /* refresh 会按「旧值→变量→当前值」重算 DOM 属性与 ECharts option；
+       replaceStr 对涨跌色统一按语义槽解析，故 green-up 下自动换成对调色。 */
+    try { refresh(curEff); } catch (e2) { }
+    try { g.document.dispatchEvent(new g.CustomEvent("wufucolorschange",
+        { detail: { colors: v } })); } catch (e3) { }
+    return v;
+  }
+  function onColorsChange(fn) {
+    if (typeof fn === "function" && g.document)
+      g.document.addEventListener("wufucolorschange", fn);
   }
 
   /* ───────────────── v0.93 主题状态机 ───────────────── */
@@ -258,6 +303,10 @@
     return s2.replace(COLOR_RE, function (tok) {
       var name = fromMap[normColor(tok)];
       if (name == null) return tok;
+      /* 物理色与语义槽同值，反查可能命中任意一个；统一按语义槽解析，
+         保证 green-up 下切主题/切偏好都一致地交换，不出现半套色。 */
+      if (name === "--c-rise" || name === "--c-up") return css("--c-up") || tok;
+      if (name === "--c-fall" || name === "--c-down") return css("--c-down") || tok;
       var nv = css(name);
       return nv || tok;
     });
@@ -426,7 +475,15 @@
   /* 同源 iframe / 其他标签页：写入方自己已 apply，这里只跟着同步 */
   if (g.addEventListener) {
     g.addEventListener("storage", function (e) {
-      if (!e || e.key !== KEY) return;
+      if (!e) return;
+      if (e.key === CKEY) {
+        applyColors();
+        try { refresh(curEff); } catch (ec) { }
+        try { g.document.dispatchEvent(new g.CustomEvent("wufucolorschange",
+            { detail: { colors: colors() } })); } catch (ed) { }
+        return;
+      }
+      if (e.key !== KEY) return;
       var before = curEff, after = apply();
       if (before !== after) refresh(before);
     }, false);
@@ -450,19 +507,8 @@
     var host = doc.querySelector(".wh-top") || doc.querySelector("header");
     if (!host) return;
 
-    var sel = doc.createElement("select");
-    sel.id = "wufuThemeSel"; sel.className = "wufu-theme-toggle";
-    sel.setAttribute("aria-label", "界面主题");
-    sel.innerHTML = '<option value="dark">深色</option>' +
-                    '<option value="light">浅色</option>' +
-                    '<option value="system">跟随系统</option>';
-    sel.value = mode();
-    sel.addEventListener("change", function () { set(sel.value); });
-    onChange(function () { sel.value = mode(); });
-
-    /* 样式锁死：页面里普遍有 select{...!important}，且它的选择器可能是
-       「header select」这类比单个 class 更高的特异性。内联 important 优先级最高，
-       保证 8 个页面算出来的宽高、字号、内边距、圆角逐位一致。 */
+    /* v0.99：外观与涨跌颜色是两个正交偏好 → 两个同款控件，同组同位同外观。
+       共用一份 LOCK，禁止出现「主页一个样、系统页另一个样」。 */
     var LOCK = {
       "width":"82px", "height":"28px", "min-height":"28px", "max-height":"28px",
       "font-size":"10px", "line-height":"1.4", "padding":"4px 6px",
@@ -471,22 +517,39 @@
       "background-color":"var(--c-surface)", "color":"var(--c-text)",
       "font-weight":"600", "appearance":"none", "-webkit-appearance":"none"
     };
-    Object.keys(LOCK).forEach(function (p) {
-      sel.style.setProperty(p, LOCK[p], "important");
-    });
+    function mkSel(id, label, html, get, onpick) {
+      var el = doc.createElement("select");
+      el.id = id; el.className = "wufu-theme-toggle";
+      el.setAttribute("aria-label", label);
+      el.innerHTML = html; el.value = get();
+      el.addEventListener("change", function () { onpick(el.value); });
+      Object.keys(LOCK).forEach(function (p) {
+        el.style.setProperty(p, LOCK[p], "important");
+      });
+      el.style.setProperty("margin", "0", "important");
+      el.style.setProperty("flex", "0 0 auto", "important");
+      el.style.setProperty("align-self", "center", "important");
+      return el;
+    }
+    var themeSel = mkSel("wufuThemeSel", "界面主题",
+      '<option value="dark">深色</option><option value="light">浅色</option>' +
+      '<option value="system">跟随系统</option>',
+      mode, function (v) { set(v); });
+    var colorSel = mkSel("wufuColorSel", "涨跌颜色",
+      '<option value="red-up">红涨绿跌</option>' +
+      '<option value="green-up">绿涨红跌</option>',
+      colors, function (v) { setColors(v); });
+    onChange(function () { themeSel.value = mode(); });
+    onColorsChange(function () { colorSel.value = colors(); });
 
-    /* 顶栏位置按结构分两类（用户 v0.97 要求，同类页面逐位一致）：
-         首页   无「返回首页」行 → 控件与标题同一行、靠右、垂直居中对齐；
-         系统页 有「返回首页」行 → 日期回到标题同一行右侧（不再为控件让位），
-                 控件放到返回首页那一行右侧，与返回按钮垂直居中、右边缘与日期对齐。
-       不再用绝对定位硬钉容器顶边：绝对定位会让控件比标题高一截（首页截图的问题），
-       也会把日期徽标挤到中间。改为参与所在行的布局流，靠自动外边距推到右侧。 */
+    /* 顶栏位置按结构分两类（v0.97 规则不变，只是承载者从单个控件换成控件组）：
+       首页   无「返回首页」行 → 组与标题同一行、靠右、垂直居中对齐；
+       系统页 有「返回首页」行 → 日期回到标题同一行右侧（不再为控件让位），
+               组放到返回首页那一行右侧，与返回按钮垂直居中、右边缘与日期对齐。 */
     var whRoot = host.closest ? host.closest(".wh") : null;
     var second = (whRoot ? whRoot.querySelector(".wh-row") : null) ||
                  host.querySelector(".homestrip");
     var target = second || host;
-    /* cb/tool.html 的 .homestrip 是块级；补成 flex 才能让 auto 外边距生效。
-       两类系统页因此得到完全一致的第二行布局。 */
     try {
       if (g.getComputedStyle(target).display.indexOf("flex") < 0) {
         target.style.setProperty("display", "flex", "important");
@@ -495,25 +558,27 @@
         target.style.setProperty("gap", "8px", "important");
       }
     } catch (e5) { }
-    sel.style.setProperty("margin-left", "auto", "important");
-    sel.style.setProperty("margin-right", "0", "important");
-    sel.style.setProperty("margin-top", "0", "important");
-    sel.style.setProperty("margin-bottom", "0", "important");
-    sel.style.setProperty("flex", "0 0 auto", "important");
-    sel.style.setProperty("align-self", "center", "important");
-    /* 日期徽标不再让位：原先的 margin-right:96px 正是它跑到中间的原因。 */
     var badge = host.querySelector(".wh-badge, .databadge") ||
                 (whRoot ? whRoot.querySelector(".wh-badge, .databadge") : null);
     if (badge) badge.style.removeProperty("margin-right");
-    /* header.js 的 .wh-slot 平时是空 span，但 .wh-top 的 gap:12px 仍占一格，
-       会把日期徽标推离右边缘 12px。挪到第二行后第一行只剩标题+日期，
-       两者右边缘与第二行控件逐位对齐；「检测到新版本」提示也回到操作行。 */
+
+    /* 控件组：自动外边距推到所在行最右。组本身内联锁死，不依赖页面 CSS 加载顺序。 */
+    var grp = doc.createElement("div");
+    grp.id = "wufuDisplayGroup"; grp.className = "wufu-display-group";
+    var G = { "display":"inline-flex", "align-items":"center", "gap":"6px",
+              "margin-left":"auto", "margin-right":"0", "margin-top":"0",
+              "margin-bottom":"0", "flex":"0 0 auto", "align-self":"center" };
+    Object.keys(G).forEach(function (p) { grp.style.setProperty(p, G[p], "important"); });
+
+    /* .wh-slot 平时是空 span，放进组里由 :empty 规则隐藏，不再在标题行占一格 gap；
+       「检测到新版本」时它有子节点，会自动显示，仍属同一操作行。 */
     var slot = whRoot ? whRoot.querySelector(".wh-slot") : null;
     if (slot) {
-      if (second && slot.parentNode !== second) second.appendChild(slot);
+      grp.appendChild(slot);
       slot.style.setProperty("margin-left", "0", "important");
     }
-    target.appendChild(sel);
+    grp.appendChild(themeSel); grp.appendChild(colorSel);
+    target.appendChild(grp);
 
     /* 首屏：业务 JS 里登记的遗留色写死的是深色字面量，浅色下换成当前主题值。
        深色下 css(var) 返回原值，逐字不变。 */
@@ -524,10 +589,12 @@
       g.document.addEventListener("DOMContentLoaded", function () { injectToggle(); watchCharts(); });
     else { injectToggle(); watchCharts(); }
   }
-  /* head 里同步执行：首屏 paint 前设好，不闪深色 */
+  /* head 里同步执行：首屏 paint 前设好，不闪深色 / 不闪错涨跌色 */
+  applyColors();
   apply();
 
   g.WufuTheme = { css: css, sub: sub, tokens: TOKENS, fallback: FALLBACK,
     light: LIGHT, mode: mode, effective: effective, apply: apply,
-    set: set, refresh: refresh, onChange: onChange, syncCharts: syncCharts, watchCharts: watchCharts };
+    set: set, refresh: refresh, onChange: onChange, syncCharts: syncCharts, watchCharts: watchCharts,
+    colors: colors, setColors: setColors, applyColors: applyColors, onColorsChange: onColorsChange };
 })(typeof window !== "undefined" ? window : this);

@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 81,
-   "passed": 81,
+   "total": 85,
+   "passed": 85,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 23,
-   "passed": 23,
+   "total": 24,
+   "passed": 24,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 3150 字节"
+   "detail": "契约 3566 字节"
   },
   {
    "id": "V2",
@@ -503,7 +503,7 @@
   },
   {
    "id": "V5",
-   "rule": "界面契约 §3 切换键唯一外观 / 按行归位",
+   "rule": "界面契约 §3/§6 显示偏好控件组唯一外观 / 按行归位",
    "severity": "blocking",
    "status": "pass",
    "detail": "唯一 class + 参与布局流 + 自动外边距 + 无绝对定位"
@@ -605,6 +605,34 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "旧 token 残留 0 页 / 语义变量引用 45 处"
+  },
+  {
+   "id": "V20",
+   "rule": "界面契约 §6 物理色与 green-up 语义槽规则齐备",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深 rise/fall=#f87171/#34d399 浅=#d65359/#147d5f"
+  },
+  {
+   "id": "V21",
+   "rule": "界面契约 §6 独立偏好 / 一处交换 / 跨页同步",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "状态机 / 语义分发 / storage / 导出"
+  },
+  {
+   "id": "V22",
+   "rule": "界面契约 §6 两控件同组同位同外观、消费点走语义槽",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "双控件 + TOKENS + 契约"
+  },
+  {
+   "id": "V23",
+   "rule": "界面契约 §2/§6 颜色单一真源：物理色字典与 CSS 逐值一致",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "漂移 0 项"
   },
   {
    "id": "B11",
@@ -855,6 +883,50 @@
     },
     {
      "name": "深浅三档已定义",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R24",
+   "case": "「涨跌色写死 / 与外观合并 / 只改半个页面」→ 必须独立且一处交换",
+   "rule": "界面契约 §6",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "默认红涨绿跌",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "语义槽一处交换",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "独立持久化 key",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "跨页同步入口",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "两个控件同 class",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "物理色字典无漂移",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "外观主色未连带改动",
      "actual": true,
      "expect": true
     }

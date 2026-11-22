@@ -517,9 +517,9 @@ def static_checks(root, valid_fn):
         len(ui_names)>=25 and set(ui_names)==set(dark_names),
         '深浅各 %d 个'%len(ui_names))
     tjs = text(root, 'common/theme.js')
-    add('V5', '界面契约 §3 切换键唯一外观 / 按行归位', 'blocking',
+    add('V5', '界面契约 §3/§6 显示偏好控件组唯一外观 / 按行归位', 'blocking',
         'wufu-theme-toggle' in tjs and 'wh-theme' not in tjs
-        and '"margin-left", "auto"' in tjs and '"flex", "0 0 auto"' in tjs
+        and ('"margin-left":"auto"' in tjs or '"margin-left", "auto"' in tjs) and '"flex", "0 0 auto"' in tjs
         and '"position", "absolute"' not in tjs
         and 'margin-right", "96px"' not in tjs
         and '.wh-row' in tjs and '.homestrip' in tjs
@@ -620,7 +620,7 @@ def static_checks(root, valid_fn):
     fixture('R21', '「绝对定位硬钉顶边 + 日期让位」→ 必须按结构分两类归位',
         '界面契约 §3', [
         ('不再绝对定位', '"position", "absolute"' not in tjs, True),
-        ('自动外边距右推', '"margin-left", "auto"' in tjs, True),
+        ('自动外边距右推', ('"margin-left":"auto"' in tjs or '"margin-left", "auto"' in tjs), True),
         ('日期不让位', 'margin-right", "96px"' not in tjs, True),
         ('识别两类系统行', '.wh-row' in tjs and '.homestrip' in tjs, True),
         ('契约写明分两类', '位置**必须**按顶栏结构分两类' in ui_rule, True),
@@ -713,6 +713,55 @@ def static_checks(root, valid_fn):
             ['--chart-heat-neg','--chart-heat-mid','--chart-heat-pos']), True),
     ])
 
+    # ── v0.99 涨跌颜色偏好 ───────────────────────────────────────────
+    _dr = dmap.get('--c-rise','').lower(); _df = dmap.get('--c-fall','').lower()
+    _lr = lmap.get('--c-rise','').lower(); _lf = lmap.get('--c-fall','').lower()
+    add('V20', '界面契约 §6 物理色与 green-up 语义槽规则齐备', 'blocking',
+        _dr == dmap.get('--c-up','').lower() and _df == dmap.get('--c-down','').lower()
+        and _lr == lmap.get('--c-up','').lower() and _lf == lmap.get('--c-down','').lower()
+        and _dr != _df and _lr != _lf
+        and ':root.green-up{' in tcss
+        and ':root.green-up[data-theme="light"]{' in tcss
+        and '.wufu-display-group .wh-slot:empty{display:none}' in tcss,
+        '深 rise/fall=%s/%s 浅=%s/%s'%(_dr,_df,_lr,_lf))
+    add('V21', '界面契约 §6 独立偏好 / 一处交换 / 跨页同步', 'blocking',
+        all(k in tjs for k in ['var CKEY = "wufu_colors_v1"','function colors()',
+            'function isGreenUp()','function applyColors()','function setColors(v)',
+            'function onColorsChange(fn)','function rawCss(name)',
+            'name === "--c-up" || name === "--c-down"',
+            'if (e.key === CKEY)','applyColors();\n  apply();',
+            'return css("--c-up") || tok','return css("--c-down") || tok'])
+        and 'setColors: setColors' in tjs,
+        '状态机 / 语义分发 / storage / 导出')
+    add('V22', '界面契约 §6 两控件同组同位同外观、消费点走语义槽', 'blocking',
+        all(k in tjs for k in ['wufuColorSel','wufuDisplayGroup','wufu-theme-toggle',
+            '红涨绿跌','绿涨红跌','grp.appendChild(themeSel); grp.appendChild(colorSel)'])
+        and '"0010": "--c-up"' in tjs and '"0012": "--c-down"' in tjs
+        and '## §6 显示偏好正交' in ui_rule
+        and '分别持久化' in ui_rule and '一处生效' in ui_rule,
+        '双控件 + TOKENS + 契约')
+    _ml2 = re.search(r'var LIGHT = (\{.*?\});\s*\n\s*var FALLBACK', tjs, re.S)
+    _mf2 = re.search(r'var FALLBACK = (\{.*?\});\s*\n', tjs, re.S)
+    _jl2 = json.loads(_ml2.group(1)) if _ml2 else {}
+    _jf2 = json.loads(_mf2.group(1)) if _mf2 else {}
+    _pk = ['--c-rise','--c-fall','--c-up','--c-down']
+    _drift2 = [k for k in _pk if
+               str(_jf2.get(k,'')).lower() != str(dmap.get(k,'')).lower() or
+               str(_jl2.get(k,'')).lower() != str(lmap.get(k,'')).lower()]
+    add('V23', '界面契约 §2/§6 颜色单一真源：物理色字典与 CSS 逐值一致', 'blocking',
+        not _drift2, '漂移 %d 项'%len(_drift2) + (' : '+','.join(_drift2[:4]) if _drift2 else ''))
+    fixture('R24', '「涨跌色写死 / 与外观合并 / 只改半个页面」→ 必须独立且一处交换',
+        '界面契约 §6', [
+        ('默认红涨绿跌', '"red-up"' in tjs and 'return c === "green-up" ? "green-up" : "red-up"' in tjs, True),
+        ('语义槽一处交换', 'name === "--c-up" || name === "--c-down"' in tjs, True),
+        ('独立持久化 key', 'var CKEY = "wufu_colors_v1"' in tjs, True),
+        ('跨页同步入口', 'if (e.key === CKEY)' in tjs, True),
+        ('两个控件同 class', 'wufu-theme-toggle' in tjs and tjs.count('mkSel("') >= 2, True),
+        ('物理色字典无漂移', not _drift2, True),
+        ('外观主色未连带改动', dmap.get('--c-accent','').lower()=='#4fc3f7'
+            and lmap.get('--c-accent','').lower()=='#147d5e', True),
+    ])
+
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
         '界面契约 §2/§3', [
         ('主色是文章墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
@@ -730,7 +779,7 @@ def static_checks(root, valid_fn):
         ('浅色选中非实心', 'var(--ui-accent-soft)' in tcss and 'var(--ui-accent-ink)' in tcss, True),
         ('参考配色取自截图墨绿', lv.get('--c-accent','').lower()=='#147d5e', True),
         ('遗留色已登记', all(x in tjs for x in LEGACY_LITS), True),
-        ('参与布局流且自动右推', '"margin-left", "auto"' in tjs and '"position", "absolute"' not in tjs, True),
+        ('参与布局流且自动右推', ('"margin-left":"auto"' in tjs or '"margin-left", "auto"' in tjs) and '"position", "absolute"' not in tjs, True),
     ])
 
     rule, ledger, readme = (text(root, x) for x in (RULE_FILE, LEDGER_FILE, README_FILE))
