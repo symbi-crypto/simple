@@ -254,6 +254,18 @@ def node_gate(root):
     return json.loads(r.stdout)
 
 
+NODE_RULES = "\nconst R = require(process.argv[1]);\nconst out = {};\nconst p = { commission_rate: 0.0002, slippage_rate: 0.0015, min_commission: 5, tiered_slippage: false };\nout.cbFirst = R.cbLimit('2026-11-20', true, 100);\nout.cbNormal = R.cbLimit('2026-11-20', false, 130);\nout.cbOld = R.cbLimit('2022-07-01', false, 130);\nout.cbBad = R.cbLimit('2026-11-20', false, 0);\nout.etf20 = R.etfLimit('588000.SH');\nout.etf10 = R.etfLimit('510300.SH');\nout.etf159 = R.etfLimit('159915.SZ');\nout.board = R.boardRuleSummary();\nout.instrCB = R.instrumentOf('110031.SH');\nout.instrETF = R.instrumentOf('510300.SH');\nout.instrStock = R.instrumentOf('600000.SH');\nout.feeDefault = R.resolveFee(p, 'A', 'ETF');\nout.feeCB = R.resolveFee(p, 'A', 'CB');\nout.feeOverride = R.resolveFee(p, 'A', 'STOCK', { stampDuty: 0.001 });\nout.feeBreak = R.feeBreakdown(p, 'A', 'ETF');\nout.boundaryHtml = R.rulesBoundaryHtml();\nconsole.log(JSON.stringify(out));\n"
+
+
+def node_rules(root):
+    """②⑧：用 Node 实跑交付的 common/instrument-rules.js。"""
+    r = subprocess.run(['node', '-e', NODE_RULES, os.path.join(root, 'common/instrument-rules.js')],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return {'error': r.stderr[:300]}
+    return json.loads(r.stdout)
+
+
 def judge_docs(rule, ledger, readme):
     """§11 规则 / 台账 / 版本日志三分离"""
     pure = not any(w in rule for w in PURITY_FORBIDDEN)
@@ -618,8 +630,37 @@ def static_checks(root, valid_fn):
         '两页真计数+KPI+独立总数节点#skipTotal+按原因明细；Node 合计=%s 条/5 类，样本不足提示=%s'
         % (sk.get('total'), bool(sk.get('sampleWarning'))))
 
+    # ── ②⑧ 硬断言（Node 实跑产品 JS + 静态真调用检查）──────────────────
+    nr = node_rules(root)
+    cb, et = text(root, 'cb/tool.html'), text(root, 'etf/tool.html')
+    add('U10', '② 板规则自带需验证标记与边界，且被两页真消费', 'blocking',
+        'common/instrument-rules.js' in text(root, 'sw.js')
+        and all('instrument-rules.js' in s for s in (cb, et))
+        and 'WufuRules.cbLimit' in cb and 'WufuRules.etfLimit' in et
+        and nr.get('board', {}).get('priceLimitRequiresVerification') is True
+        and nr.get('board', {}).get('unverifiedEvidence') >= 1
+        and len(nr.get('board', {}).get('limitations', [])) >= 4
+        and nr.get('cbFirst', {}).get('meta', {}).get('verificationStatus') == 'default-unverified'
+        and nr.get('etf20', {}).get('priceLimitRequiresVerification') is True
+        and 'data-verify="required"' in nr.get('boundaryHtml', ''),
+        '两页真调用；Node requiresVerification=%s 未核验证据=%s 条；默认口径数值未变'
+        % (nr.get('board', {}).get('priceLimitRequiresVerification'),
+           nr.get('board', {}).get('unverifiedEvidence')))
+    fd, fo = nr.get('feeDefault', {}), nr.get('feeOverride', {})
+    add('U11', '⑧ 费用按品种/市场拆项可配，且零值分项不改变成本', 'blocking',
+        all('WufuRules.resolveFee' in s and '_fee.extraPct' in s
+            and 'id="feeDetail"' in s for s in (cb, et))
+        and fd.get('extraPct') == 0 and len(fd.get('itemized', [])) == 7
+        and fd.get('commissionRate') == 0.0002 and fd.get('slippageRate') == 0.0015
+        and fd.get('minCommission') == 5
+        and fo.get('extraPct') == 0.001
+        and '印花税' in nr.get('feeBreak', {}).get('zeroText', '')
+        and 'data-extra=' in et,
+        '两页真消费；Node 默认 extraPct=%s（零值）/ 显式覆盖=%s；7 项分项'
+        % (fd.get('extraPct'), fo.get('extraPct')))
+
     return {'rule': rule, 'ledger': ledger, 'readme': readme, 'valid': valid_fn,
-            'node_gate': ng}
+            'node_gate': ng, 'node_rules': nr}
 
 
 # ── 九条历史改判回归夹具 ────────────────────────────────────────────────
@@ -710,6 +751,7 @@ def run_fixtures(ctx, root, valid_fn):
         ('普通交易日 → trading-day', judge_calendar('2026-11-20'), 'trading-day'),
     ])
     ng = ctx.get('node_gate') or node_gate(root)
+    nr = ctx.get('node_rules') or node_rules(root)
     pit, live = ng.get('pitHist', {}), ng.get('pitLive', {})
     fixture('R15', '「规则写了就算落实」→ ①③④⑥ 必须跑产品 JS 才算数',
             'P4 / market-rules.mjs:7-25,124-129 · research-validation.mjs:185-197 · AGENT_ARENA.md:100-102', [
@@ -730,6 +772,42 @@ def run_fixtures(ctx, root, valid_fn):
         ('拒单按原因合计', ng.get('skip', {}).get('total'), 7),
         ('拒单分成 5 类', len(ng.get('skip', {}).get('byReason', [])), 5),
         ('样本不足出 sampleWarning', bool(ng.get('skip', {}).get('sampleWarning')), True),
+    ])
+    fixture('R16', '「涨跌停硬编码就是规则」→ 默认口径必须自带未验证标记',
+            '② market-rules.mjs:43-46', [
+        ('CB 首日 up 不变', nr.get('cbFirst', {}).get('up'), 157.3),
+        ('CB 首日 dn 不变', nr.get('cbFirst', {}).get('dn'), 56.7),
+        ('CB 非首日 up=prev×1.2', nr.get('cbNormal', {}).get('up'), 156),
+        ('CB 非首日 dn=prev×0.8', nr.get('cbNormal', {}).get('dn'), 104),
+        ('新规前返回 null', nr.get('cbOld'), None),
+        ('prevClose 非法返回 null', nr.get('cbBad'), None),
+        ('ETF 20% 前缀 limR', nr.get('etf20', {}).get('limR'), 1.195),
+        ('ETF 默认 limR', nr.get('etf10', {}).get('limR'), 1.095),
+        ('ETF 名单内 159915', nr.get('etf159', {}).get('limR'), 1.195),
+        ('A 股一律需验证', nr.get('board', {}).get('priceLimitRequiresVerification'), True),
+        ('例外枚举 6 类', len(nr.get('board', {}).get('verificationRequiredFor', [])), 6),
+        ('边界声明 ≥4 条', len(nr.get('board', {}).get('limitations', [])) >= 4, True),
+        ('证据未附核验日期', nr.get('board', {}).get('unverifiedEvidence'), 3),
+        ('判定状态 default-unverified', nr.get('cbFirst', {}).get('meta', {}).get('verificationStatus'), 'default-unverified'),
+        ('边界写进 HTML', 'data-verify="required"' in nr.get('boundaryHtml', ''), True),
+    ])
+    fixture('R17', '「加税费分项」→ 默认必须零值，覆盖才生效，绝不偷偷改收益',
+            '⑧ DESIGN.md:63,75', [
+        ('默认 extraPct=0', nr.get('feeDefault', {}).get('extraPct'), 0),
+        ('佣金原样回传', nr.get('feeDefault', {}).get('commissionRate'), 0.0002),
+        ('滑点原样回传', nr.get('feeDefault', {}).get('slippageRate'), 0.0015),
+        ('最低佣金原样回传', nr.get('feeDefault', {}).get('minCommission'), 5),
+        ('分项共 7 项', len(nr.get('feeDefault', {}).get('itemized', [])), 7),
+        ('印花税默认 0', nr.get('feeDefault', {}).get('extras', {}).get('stampDuty'), 0),
+        ('过户费默认 0', nr.get('feeDefault', {}).get('extras', {}).get('transferFee'), 0),
+        ('规费默认 0', nr.get('feeDefault', {}).get('extras', {}).get('regulatoryFee'), 0),
+        ('经手费默认 0', nr.get('feeDefault', {}).get('extras', {}).get('exchangeFee'), 0),
+        ('显式覆盖生效', nr.get('feeOverride', {}).get('extraPct'), 0.001),
+        ('CB 品种识别', nr.get('instrCB'), 'CB'),
+        ('ETF 品种识别', nr.get('instrETF'), 'ETF'),
+        ('股票品种识别', nr.get('instrStock'), 'STOCK'),
+        ('CB 分项同样零值', nr.get('feeCB', {}).get('extraPct'), 0),
+        ('零值占位可见', '印花税 0' in nr.get('feeBreak', {}).get('zeroText', ''), True),
     ])
     fixture('R9', '「P0 规则与现状混写」→ 规则 / 台账 / 版本日志三分离', '§11', [
         ('实际三份文件判定通过', judge_docs(rule, ledger, readme), 'accept'),

@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 60,
-   "passed": 60,
+   "total": 62,
+   "passed": 62,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 15,
-   "passed": 15,
+   "total": 17,
+   "passed": 17,
    "failed": 0
   },
   "snapshots": 16
@@ -570,6 +570,20 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "两页真计数+KPI+独立总数节点#skipTotal+按原因明细；Node 合计=7 条/5 类，样本不足提示=True"
+  },
+  {
+   "id": "U10",
+   "rule": "② 板规则自带需验证标记与边界，且被两页真消费",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "两页真调用；Node requiresVerification=True 未核验证据=3 条；默认口径数值未变"
+  },
+  {
+   "id": "U11",
+   "rule": "⑧ 费用按品种/市场拆项可配，且零值分项不改变成本",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "两页真消费；Node 默认 extraPct=0（零值）/ 显式覆盖=0.001；7 项分项"
   }
  ],
  "fixtures": [
@@ -1057,6 +1071,174 @@
     },
     {
      "name": "样本不足出 sampleWarning",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R16",
+   "case": "「涨跌停硬编码就是规则」→ 默认口径必须自带未验证标记",
+   "rule": "② market-rules.mjs:43-46",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "CB 首日 up 不变",
+     "actual": 157.3,
+     "expect": 157.3
+    },
+    {
+     "name": "CB 首日 dn 不变",
+     "actual": 56.7,
+     "expect": 56.7
+    },
+    {
+     "name": "CB 非首日 up=prev×1.2",
+     "actual": 156,
+     "expect": 156
+    },
+    {
+     "name": "CB 非首日 dn=prev×0.8",
+     "actual": 104,
+     "expect": 104
+    },
+    {
+     "name": "新规前返回 null",
+     "actual": null,
+     "expect": null
+    },
+    {
+     "name": "prevClose 非法返回 null",
+     "actual": null,
+     "expect": null
+    },
+    {
+     "name": "ETF 20% 前缀 limR",
+     "actual": 1.195,
+     "expect": 1.195
+    },
+    {
+     "name": "ETF 默认 limR",
+     "actual": 1.095,
+     "expect": 1.095
+    },
+    {
+     "name": "ETF 名单内 159915",
+     "actual": 1.195,
+     "expect": 1.195
+    },
+    {
+     "name": "A 股一律需验证",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "例外枚举 6 类",
+     "actual": 6,
+     "expect": 6
+    },
+    {
+     "name": "边界声明 ≥4 条",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "证据未附核验日期",
+     "actual": 3,
+     "expect": 3
+    },
+    {
+     "name": "判定状态 default-unverified",
+     "actual": "default-unverified",
+     "expect": "default-unverified"
+    },
+    {
+     "name": "边界写进 HTML",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R17",
+   "case": "「加税费分项」→ 默认必须零值，覆盖才生效，绝不偷偷改收益",
+   "rule": "⑧ DESIGN.md:63,75",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "默认 extraPct=0",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "佣金原样回传",
+     "actual": 0.0002,
+     "expect": 0.0002
+    },
+    {
+     "name": "滑点原样回传",
+     "actual": 0.0015,
+     "expect": 0.0015
+    },
+    {
+     "name": "最低佣金原样回传",
+     "actual": 5,
+     "expect": 5
+    },
+    {
+     "name": "分项共 7 项",
+     "actual": 7,
+     "expect": 7
+    },
+    {
+     "name": "印花税默认 0",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "过户费默认 0",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "规费默认 0",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "经手费默认 0",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "显式覆盖生效",
+     "actual": 0.001,
+     "expect": 0.001
+    },
+    {
+     "name": "CB 品种识别",
+     "actual": "CB",
+     "expect": "CB"
+    },
+    {
+     "name": "ETF 品种识别",
+     "actual": "ETF",
+     "expect": "ETF"
+    },
+    {
+     "name": "股票品种识别",
+     "actual": "STOCK",
+     "expect": "STOCK"
+    },
+    {
+     "name": "CB 分项同样零值",
+     "actual": 0,
+     "expect": 0
+    },
+    {
+     "name": "零值占位可见",
      "actual": true,
      "expect": true
     }

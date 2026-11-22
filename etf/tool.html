@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
-<script src="../common/research-gate.js?v=92"></script>
+<script src="../common/research-gate.js?v=93"></script>
+<script src="../common/instrument-rules.js?v=93"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -30,7 +31,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=92"></script>
+<script src="../common/range.js?v=93"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -3612,8 +3613,11 @@ window.WufuExpr = (function () {
             var rc0 = rawCloses && rawCloses[code2] ? rawCloses[code2][i - 1] : null;
             var rcT = rawCloses && rawCloses[code2] ? rawCloses[code2][i] : null;
             if (!(ro0 > 0) || !(rc0 > 0) || !(rcT > 0)) continue;
-            var LIM20 = {"588": 1, "589": 1, "159915.SZ": 1, "159949.SZ": 1, "159516.SZ": 1};
-            var limR = (LIM20[code2.slice(0, 3)] || LIM20[code2]) ? 1.195 : 1.095;
+            // ② 20% 名单与「需验证」标记收在 WufuRules.etfLimit；limR 数值与旧表一致
+            var limR = (window.WufuRules && WufuRules.etfLimit)
+              ? WufuRules.etfLimit(code2).limR
+              : (function () { var LIM20 = {"588": 1, "589": 1, "159915.SZ": 1, "159949.SZ": 1, "159516.SZ": 1};
+                  return (LIM20[code2.slice(0, 3)] || LIM20[code2]) ? 1.195 : 1.095; })();
             if (ro0 >= rc0 * limR - 1e-9 && rcT >= ro0 * 0.999) blocked[code2] = "buy";            // 一字涨停：买不进
             else if (ro0 <= rc0 * (2 - limR) + 1e-9 && rcT <= ro0 * 1.001) blocked[code2] = "sell";  // 一字跌停：卖不出
           }
@@ -4103,9 +4107,16 @@ window.WufuExpr = (function () {
         function legCost(dw6, c6) {
           // 货币ETF/短融等现金等价兜底腿：现金管理操作，免佣金/滑点（否则每次换仓到货币再换回的佣金会吞掉货币收益，使持有货币反而不如空仓）
           if (CASH_LIKE[c6]) return 0;
-          var comm = Math.abs(dw6) * params.commission_rate;
+          // ⑧ 费用按市场 × 品种拆项：费率取自结构化 resolveFee。
+          // commissionRate / slippageRate 原样回传，extraPct 默认严格 0（现行口径不含印花税等），
+          // 因此本行改造不改变任何一期的 costPct / 净值 / 收益（A/B 断言钉住）。
+          var _fee = window.WufuRules
+            ? WufuRules.resolveFee(params, "A", WufuRules.instrumentOf(c6), params.fee_override)
+            : { commissionRate: params.commission_rate, slippageRate: params.slippage_rate, extraPct: 0 };
+          var comm = Math.abs(dw6) * _fee.commissionRate;
           if (minCommPct > 0 && comm < minCommPct) comm = minCommPct;
-          return comm + Math.abs(dw6) * (tiered ? slippageFor(c6, i) : params.slippage_rate);
+          return comm + Math.abs(dw6) * (tiered ? slippageFor(c6, i) : _fee.slippageRate)
+               + Math.abs(dw6) * _fee.extraPct;
         }
         var costPct2 = 0, k6;
         for (k6 = 0; k6 < nAssets; k6++) {
@@ -8997,6 +9008,25 @@ function renderKpis(r) {
           (_sk.sampleWarning ? "<div style='color:#c07a00'>" + _sk.sampleWarning + "</div>" : "");
       }
     } catch (eSd) { }
+    // ②⑧ 可见出口：规则边界 + 费用分项。独立节点插在 kpis 之后，
+    // 不会被页面原有的「区间统计」覆盖（与 #skipTotal 同一处理）。
+    try {
+      var _rfd = $("ruleFeeDetail");
+      if (!_rfd && _kb.parentNode) {
+        _rfd = document.createElement("div"); _rfd.id = "ruleFeeDetailHost";
+        _kb.parentNode.insertBefore(_rfd, _kb.nextSibling);
+      }
+      var _fd = window.WufuRules ? WufuRules.feeBreakdown(getParams(), "A", "ETF") : null;
+      var _rh = window.WufuRules ? WufuRules.rulesBoundaryHtml() : "";
+      var _fh = _fd
+        ? '<div id="feeDetail" data-extra="' + _fd.extraPct + '" style="margin:6px 0 0;padding:7px 9px;' +
+          'font-size:11px;line-height:1.65;border-left:3px solid #2b6cb0;background:rgba(127,127,127,.07);border-radius:4px">' +
+          '<b>⑧ 费用分项（' + _fd.market + ' · ' + _fd.label + '）</b>：' + _fd.activeText +
+          '<div style="margin-top:2px">零值占位：' + _fd.zeroText + '　<span style="color:#c07a00">需带日期核验，当前未建模</span></div>' +
+          '<div style="color:#999;margin-top:2px">' + _fd.limitations[0] + '</div></div>'
+        : "";
+      if (_rfd) _rfd.innerHTML = _rh + _fh;
+    } catch (eRf) { }
   }
 
   function ts(d) { return new Date(d + "T00:00:00+08:00").getTime(); }
