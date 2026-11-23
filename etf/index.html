@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
+<script src="../common/cond-ops.js"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ETF量化回测系统</title>
@@ -3264,7 +3265,7 @@ window.WufuExpr = (function () {
 
         // 筛选条件：统一因子列表中 usage=filter 的全部满足才进入候选池（{kind, window, op: gte/lte, threshold}）
         var allFactors = (params.factors && params.factors.length) ? params.factors
-                       : (params.filters || []).map(function (ft) { return { kind: ft.kind, window: ft.window, op: ft.op, threshold: ft.threshold, usage: "filter" }; });
+                       : (params.filters || []).map(function (ft) { return { kind: ft.kind, window: ft.window, op: ft.op, threshold: ft.threshold, threshold2: ft.threshold2, usage: "filter" }; });
         var filters = allFactors.filter(function (f) { return (f.usage || "rank") === "filter" && f.enabled !== false; });
         if (filters.length) {
           // [新增] 截面因子 avg_corr 需要"当前候选池"作为参照系；筛选发生在打分之前，
@@ -3281,7 +3282,7 @@ window.WufuExpr = (function () {
               var opF = ft.op || "gte", thrF = +(ft.threshold || 0);
               var valF = factorValue(kindF, codeF, i, ft, params.annualize_factor);
               if (isNaN(valF)) { okF = false; break; }
-              if ((opF === "lte" && valF > thrF) || (opF === "gte" && valF < thrF)) { okF = false; break; }
+              if (!WufuCondOps.hit(opF, valF, thrF, ft.threshold2)) { okF = false; break; }
             }
             if (okF) cand2.push(codeF);
           }
@@ -3392,7 +3393,7 @@ window.WufuExpr = (function () {
             var kind = f.kind || "roc", op = f.op || "gte", thr = +(f.threshold || 0);
             var v = factorValue(kind, code, i, f, params.annualize_factor);
             if (v === null || v === undefined || isNaN(v)) return false;
-            return op === "lte" ? v <= thr : v >= thr;
+            return WufuCondOps.hit(op, v, thr, f.threshold2);
           }
           function exprHit(f, code, i) {
             var src = f.expr || '';
@@ -3407,7 +3408,7 @@ window.WufuExpr = (function () {
             if (t === "rank") {
               var rk = rankMap[code] !== undefined ? rankMap[code] : 1e9;
               var op = f.op || "lte", v = +(f.value || 1);
-              return op === "lte" ? rk <= v : rk >= v;
+              return WufuCondOps.hit(op, rk, v, f.threshold2);
             }
             if (t === "cooldown") {
               var ls = lastSell[code], v2 = +(f.value || 0);
@@ -5019,11 +5020,11 @@ function renderFltList() {
     }
     param.appendChild(wg);
     var opSel = document.createElement("select");
-    opSel.className = "sel-op"; opSel.style.cssText = WufuTheme.sub("flex:0 0 54px;font-size:11.5px;padding:2px 1px;border:1px solid §WFT0001§;border-radius:4px;color:§WFT0005§;background:§WFT0008§");
-    opSel.innerHTML = '<option value="gte">\u2265</option><option value="lte">\u2264</option>';
+    opSel.className = "sel-op"; opSel.style.cssText = WufuTheme.sub("flex:0 0 70px;font-size:11.5px;padding:2px 1px;border:1px solid §WFT0001§;border-radius:4px;color:§WFT0005§;background:§WFT0008§");
+    opSel.innerHTML = WufuCondOps.optionHtml();
     opSel.value = f.op || "gte";
     opSel.addEventListener("change", function () { f.op = this.value; scheduleRun(); });
-    param.appendChild(opSel);
+    param.appendChild(opSel); WufuCondOps.mountRange(opSel, param, f, function (v) { return Math.max(0, Math.min(1000, +v || 0)) / 100; }, function (v) { return Math.round((+v || 0) * 100); });
     var thIn = document.createElement("input");
     thIn.type = "number"; thIn.min = 0; thIn.max = 1000; thIn.step = 1;
     thIn.value = Math.round((f.threshold !== undefined ? f.threshold : 0) * 100);
@@ -5906,7 +5907,7 @@ function buildChips() {
     if (f.window2) nm += ":" + f.window2;
     var tv = (f.threshold !== undefined && f.threshold !== null) ? f.threshold : 0;
     var tvs = Math.abs(tv) >= 1 || tv === 0 ? String(+Number(tv).toFixed(4)) : String(+Number(tv).toFixed(4));
-    return nm + " " + (f.op === "lte" ? "≤" : "≥") + " " + tvs;
+    return nm + " " + WufuCondOps.text(f.op, tv, f.threshold2);
   }
   function condText(c, panel) {
     if (c.type === "factor") return "因子判断 · " + factorMiniHtml(c);
@@ -5914,8 +5915,7 @@ function buildChips() {
     if (c.type === "rank") {
       // 卖出面板：名次条件改为「跌出第 N 名才卖」（放宽持有上界，不再提前卖）
       if (panel === "sell") return "跌出第 " + (c.value || 1) + " 名才卖";
-      var gte = (c.op === "gte");
-      return (gte ? "排名名次 ≥ N" : "排名名次 ≤ N") + " = " + c.value;
+      return "排名名次 " + WufuCondOps.text(c.op || "gte", c.value, c.threshold2);
     }
     return (BA_LABEL[c.type] || c.type) + " = " + c.value;
   }
@@ -5960,7 +5960,7 @@ function buildChips() {
       var kSel = mkSel(kindOpts, c.kind || "roc", "auto", "因子");
       kSel.style.flex = "1 1 90px";
       var wIn = mkNum(c.window !== undefined ? c.window : (KIND_INFO[c.kind] || KIND_INFO.roc).def, "56px", 1, "窗口");
-      var opSel = mkSel([{ v: "gte", t: "≥" }, { v: "lte", t: "≤" }], c.op || "gte", "46px", "比较符");
+      var opSel = mkSel(WufuCondOps.options(), c.op || "gte", "72px", "比较符");
       var thIn = mkNum(c.threshold !== undefined ? c.threshold : 0, "72px", "0.01", "阈值（与因子同单位，非百分比）");
       var hint = document.createElement("span");
       hint.style.cssText = WufuTheme.sub("flex:1 1 100%;font-size:11px;color:§WFT0002§");
@@ -5973,7 +5973,7 @@ function buildChips() {
       wIn.addEventListener("input", function () { c.window = Math.max(1, +this.value || 1); });
       opSel.addEventListener("change", function () { c.op = this.value; });
       thIn.addEventListener("input", function () { c.threshold = +this.value; });
-      box.appendChild(kSel); box.appendChild(wIn); box.appendChild(opSel); box.appendChild(thIn);
+      box.appendChild(kSel); box.appendChild(wIn); box.appendChild(opSel); box.appendChild(thIn); WufuCondOps.mountRange(opSel, box, c);
       box.appendChild(hint);
       box.appendChild(mkBtn("完成", function () { closeCondEditor(); commit(); }, "52px"));
     } else if (c.type === "rank") {
@@ -5986,8 +5986,8 @@ function buildChips() {
         box.appendChild(vIn);
         box.appendChild(document.createTextNode(" 名才卖"));
       } else {
-        box.appendChild(mkSel([{ v: "gte", t: "≥" }, { v: "lte", t: "≤" }], c.op || "lte", "46px", "比较符"));
-        box.children[0].addEventListener("change", function () { c.op = this.value; });
+        box.appendChild(mkSel(WufuCondOps.options(), c.op || "lte", "72px", "比较符"));
+        box.children[0].addEventListener("change", function () { c.op = this.value; }); WufuCondOps.mountRange(box.children[0], box, c);
         box.appendChild(document.createTextNode("名次"));
         box.appendChild(vIn);
       }
@@ -6078,13 +6078,13 @@ function buildChips() {
     wIn.style.cssText = WufuTheme.sub("flex:0 0 52px;font-size:12px;padding:2px;border:1px solid §WFT0001§;border-radius:4px");
     wIn.title = "因子窗口";
     var opSel = document.createElement("select");
-    opSel.className = "sel-op"; opSel.style.cssText = WufuTheme.sub("flex:0 0 54px;font-size:12px;padding:2px;border:1px solid §WFT0001§;border-radius:4px");
-    opSel.innerHTML = '<option value="gte">\u2265</option><option value="lte">\u2264</option>';
+    opSel.className = "sel-op"; opSel.style.cssText = WufuTheme.sub("flex:0 0 70px;font-size:12px;padding:2px;border:1px solid §WFT0001§;border-radius:4px");
+    opSel.innerHTML = WufuCondOps.optionHtml();
     var thIn = document.createElement("input");
     thIn.type = "number"; thIn.step = 1; thIn.value = 0;
     thIn.style.cssText = WufuTheme.sub("flex:0 0 56px;font-size:12px;padding:2px;border:1px solid §WFT0001§;border-radius:4px");
     thIn.title = "阈值（%）";
-    wrap.appendChild(kSel); wrap.appendChild(wIn); wrap.appendChild(opSel); wrap.appendChild(thIn);
+    wrap.appendChild(kSel); wrap.appendChild(wIn); wrap.appendChild(opSel); wrap.appendChild(thIn); WufuCondOps.mountRange(opSel, wrap, null);
     var row = selKind.closest(".psec") || selKind.parentElement.parentElement;
     row.appendChild(wrap);
     return { kindSel: kSel, wIn: wIn, opSel: opSel, thIn: thIn, wrap: wrap };
@@ -6114,9 +6114,11 @@ function buildChips() {
         // 读取现有因子配置行（无则先创建）；不重建，保留用户已填的 kind/窗口/符号/阈值
         var w = document.getElementById(selKind.id + "_fac");
         if (!w) { condFactorRow(selKind, valIn); w = document.getElementById(selKind.id + "_fac"); }
-        var kSel = w.children[0], wIn = w.children[1], opSel = w.children[2], thIn = w.children[3];
-        arr.push({ type: "factor", kind: kSel.value, window: +wIn.value || 20,
-                   op: opSel.value, threshold: Math.max(-1000, Math.min(1000, +thIn.value || 0)) / 100 });
+        var kSel = w.children[0], wIn = w.children[1], opSel = w.children[2], thIn = w.children[3], thIn2 = w.children[4];
+        var _cf = { type: "factor", kind: kSel.value, window: +wIn.value || 20,
+                   op: opSel.value, threshold: Math.max(-1000, Math.min(1000, +thIn.value || 0)) / 100 };
+        if (WufuCondOps.isBetween(opSel.value) && thIn2) { var _hi2 = parseFloat(thIn2.value); if (!isNaN(_hi2)) _cf.threshold2 = Math.max(-1000, Math.min(1000, _hi2)) / 100; }
+        arr.push(_cf);
       } else if (t === "expr") {
         openFormulaModal({ title: "自定义公式条件（含比较符）", initial: "", showName: false, onSave: function (src) {
           arr.push({ type: "expr", expr: src });
@@ -6179,7 +6181,7 @@ function buildChips() {
           });
         }
         if (f.kind === "expr") { o.name = f.name; o.expr = f.expr; }
-        if ((f.usage || "rank") === "filter") { o.op = f.op || "gte"; o.threshold = f.threshold !== undefined ? f.threshold : 0; }
+        if ((f.usage || "rank") === "filter") { o.op = f.op || "gte"; o.threshold = f.threshold !== undefined ? f.threshold : 0; if (WufuCondOps.isBetween(o.op)) o.threshold2 = f.threshold2; }
         return o;
       }),
       top_n: 0,
@@ -6194,23 +6196,23 @@ function buildChips() {
       dedup_min: Math.max(2, Math.min(60, +($("dedupMin") ? $("dedupMin").value : 8) || 8)),
       buy_add: buyAdds.map(function (c) {
         var o;
-        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold };
+        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold, threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined };
         else if (c.type === "expr") o = { type: "expr", expr: c.expr };
-        else o = { type: c.type, op: c.op || "lte", value: c.value };
+        else o = { type: c.type, op: c.op || "lte", value: c.value, threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined };
         o.enabled = c.enabled !== false;
         return o;
       }),
       sell_conds: sellConds.map(function (c) {
         var o;
-        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold };
+        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold, threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined };
         else if (c.type === "expr") o = { type: "expr", expr: c.expr };
-        else o = { type: c.type, op: c.op || "lte", value: c.value };
+        else o = { type: c.type, op: c.op || "lte", value: c.value, threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined };
         o.enabled = c.enabled !== false;
         return o;
       }),
       hold_conds: holdConds.map(function (c) {
         var o;
-        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold };
+        if (c.type === "factor") o = { type: "factor", kind: c.kind, window: c.window, op: c.op, threshold: c.threshold, threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined };
         else if (c.type === "expr") o = { type: "expr", expr: c.expr };
         else o = { type: c.type, value: c.value };
         o.enabled = c.enabled !== false;
@@ -6516,13 +6518,13 @@ function buildChips() {
                weight: f.weight !== undefined ? f.weight : 1,
                direction: f.direction !== undefined ? f.direction : (f.kind === "vol" || f.kind === "premium" ? -1 : 1),
                usage: f.usage || "rank", name: f.name, formula_parts: f.formula_parts,
-               expr: f.expr, op: f.op, threshold: f.threshold,
+               expr: f.expr, op: f.op, threshold: f.threshold, threshold2: f.threshold2,
                enabled: f.enabled !== false };
     });
     _fillArr(factors, _newFactors);
     (p.filters || []).forEach(function (ft) {
       factors.push({ kind: ft.kind, window: ft.window, window2: ft.window2, window3: ft.window3,
-                     op: ft.op, threshold: ft.threshold, usage: "filter", weight: 0,
+                     op: ft.op, threshold: ft.threshold, threshold2: ft.threshold2, usage: "filter", weight: 0,
                      enabled: ft.enabled !== false });
     });
     if (activeView === "rotation") {
@@ -7246,7 +7248,7 @@ function buildChips() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99059 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99069 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];

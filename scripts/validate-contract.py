@@ -839,9 +839,9 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9905' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9905' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9905' in _sw, '0.9905' in _rd))
+        'wufu-all-v0.9906' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9906' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9906' in _sw, '0.9906' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -935,6 +935,80 @@ def static_checks(root, valid_fn):
         ('契约明文禁止机械色', '机械色变量' in ui_rule and '页底色' in ui_rule, True),
         ('三份真源逐值一致', _mk_sync, True),
     ])
+    # ── v0.9906 比较符六种：真值表实跑 + 单一真源 + 老存档兼容 ──────────
+    _cop = text(root,'common/cond-ops.js')
+    _cjs = os.path.join(root,'common','cond-ops.js')
+    _truth = {}
+    try:
+        _probe = ("const C=require(%s);"
+                  "const T=[2,2.5,3];"
+                  "const ops=C.OPS;"
+                  "let o={};"
+                  "for(const p of ops)o[p]=T.map(v=>C.hit(p,v,2.5,3));"
+                  "o.eqStrict=C.hit('eq',2.5,2.5,undefined);"
+                  "o.eqFloat=C.hit('eq',0.1+0.2,0.3,undefined);"
+                  "o.bwEdge=C.hit('between',3,2,3);"
+                  "o.bwLow=C.hit('between',2,2,3);"
+                  "o.bwOut=C.hit('between',3.001,2,3);"
+                  "o.bwNoHi=C.hit('between',99,2,undefined);"
+                  "o.defaultGte=C.hit('bogus',3,2.5,undefined);"
+                  "console.log(JSON.stringify(o));") % json.dumps(_cjs)
+        _pr = subprocess.run(['node','-e',_probe],capture_output=True,text=True,timeout=30)
+        if _pr.returncode == 0: _truth = json.loads(_pr.stdout.strip())
+    except Exception:
+        _truth = {}
+    add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
+        bool(_truth) and _truth.get('gte') == [False, True, True]
+        and _truth.get('lte') == [True, True, False]
+        and _truth.get('gt') == [False, False, True]
+        and _truth.get('lt') == [True, False, False]
+        and _truth.get('eq') == [False, True, False]
+        and _truth.get('between') == [False, True, True]
+        and _truth.get('eqStrict') is True and _truth.get('eqFloat') is False
+        and _truth.get('bwEdge') is True and _truth.get('bwLow') is True
+        and _truth.get('bwOut') is False and _truth.get('bwNoHi') is True
+        and _truth.get('defaultGte') is True
+        and 'OPS.indexOf(op) >= 0 ? op : "gte"' in _cop,
+        '真值表=%s' % ('齐备' if _truth else '缺失'))
+    _cfs = ['etf/tool.html','cb/tool.html','etf/index.html','cb/index.html']
+    _ref_ok = all('<script src="../common/cond-ops.js"></script>' in text(root,f)
+                  and 'var WufuCondOps' not in text(root,f) for f in _cfs)
+    _judge = all(text(root,f).count('WufuCondOps.hit(') == 3
+                 and text(root,f).count('WufuCondOps.optionHtml()') >= 2
+                 and text(root,f).count('WufuCondOps.mountRange(') >= 4
+                 and 'if (t === "rank") return rk >= v;' in text(root,f)
+                 and 'return op === "lte" ? v <= thr : v >= thr;' not in text(root,f)
+                 for f in _cfs)
+    add('V37', '界面契约 §4.4 比较符单一真源、4 页引用且判定一致、卖出名次口径不变', 'blocking',
+        _ref_ok and _judge and 'common/cond-ops.js' in text(root,'sw.js')
+        and '"common/cond-ops.js"' in text(root,'sw.js'),
+        '引用齐=%s 判定齐=%s' % (_ref_ok, _judge))
+    # 老存档兼容：threshold2 只在 between 时落盘；undefined 属性会被 stringify 省略
+    _ser_ok = all(text(root,f).count(
+        'threshold2: WufuCondOps.isBetween(c.op) ? c.threshold2 : undefined') == 5
+        and 'if (WufuCondOps.isBetween(o.op)) o.threshold2 = f.threshold2;' in text(root,f)
+        for f in _cfs)
+    try:
+        _strp = subprocess.run(['node','-e',
+            "console.log(JSON.stringify({a:1,threshold2:undefined}))"],
+            capture_output=True,text=True,timeout=20)
+        _omit = _strp.stdout.strip() == '{"a":1}'
+    except Exception:
+        _omit = False
+    add('V38', '界面契约 §4.4 老存档序列化不含上界字段、脏检查口径不变', 'blocking',
+        _ser_ok and _omit and '结构化条件的比较符' in text(root,'数据方法与契约.md'),
+        '5 处序列化齐=%s / undefined 省略=%s' % (_ser_ok, _omit))
+    fixture('R30', '「默认口径被改 / 等于加容差 / 区间不含端点 / 老存档被塞上界」→ 必须全挡',
+        '界面契约 §4.4', [
+        ('gte 旧语义未变', _truth.get('gte') == [False, True, True], True),
+        ('lte 旧语义未变', _truth.get('lte') == [True, True, False], True),
+        ('等于严格相等不限类型', _truth.get('eqStrict') is True and _truth.get('eqFloat') is False, True),
+        ('区间含双端点', _truth.get('bwEdge') is True and _truth.get('bwLow') is True, True),
+        ('未知 op 回落 gte', _truth.get('defaultGte') is True, True),
+        ('4 页单一真源', _ref_ok and _judge, True),
+        ('老条件不落盘上界', _ser_ok and _omit, True),
+        ('卖出名次口径不变', all('if (t === "rank") return rk >= v;' in text(root,f) for f in _cfs), True),
+    ])
     add('V30', '界面契约 §8 首屏 11 处色阶全走唯一入口', 'blocking',
         _hm_n==11 and not _hm_bad,
         'heatColors() %d 处，裸读残留 %s'%(_hm_n,str(_hm_bad[:3])))
@@ -972,7 +1046,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9905' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9906' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

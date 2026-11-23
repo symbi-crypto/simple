@@ -1,11 +1,11 @@
 {
  "contract": "数据方法与契约.md",
- "contractSha1": "4344178567a1",
+ "contractSha1": "188e63011ed4",
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 97,
-   "passed": 97,
+   "total": 100,
+   "passed": 100,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 29,
-   "passed": 29,
+   "total": 30,
+   "passed": 30,
    "failed": 0
   },
   "snapshots": 16
@@ -698,6 +698,27 @@
    "detail": "深bg=rgba(16,24,36,.9) 浅bg=#ffffff 4页齐=True 三份一致=True"
   },
   {
+   "id": "V36",
+   "rule": "界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "真值表=齐备"
+  },
+  {
+   "id": "V37",
+   "rule": "界面契约 §4.4 比较符单一真源、4 页引用且判定一致、卖出名次口径不变",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "引用齐=True 判定齐=True"
+  },
+  {
+   "id": "V38",
+   "rule": "界面契约 §4.4 老存档序列化不含上界字段、脏检查口径不变",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "5 处序列化齐=True / undefined 省略=True"
+  },
+  {
    "id": "V30",
    "rule": "界面契约 §8 首屏 11 处色阶全走唯一入口",
    "severity": "blocking",
@@ -1143,6 +1164,55 @@
     },
     {
      "name": "三份真源逐值一致",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R30",
+   "case": "「默认口径被改 / 等于加容差 / 区间不含端点 / 老存档被塞上界」→ 必须全挡",
+   "rule": "界面契约 §4.4",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "gte 旧语义未变",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "lte 旧语义未变",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "等于严格相等不限类型",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "区间含双端点",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "未知 op 回落 gte",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "4 页单一真源",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "老条件不落盘上界",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "卖出名次口径不变",
      "actual": true,
      "expect": true
     }
