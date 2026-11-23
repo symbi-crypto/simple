@@ -7246,7 +7246,7 @@ function buildChips() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99049 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99059 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];
@@ -7975,7 +7975,7 @@ function buildChips() {
       var afterD = dates.map(function (t, i) { return i < ci ? [t, null] : [t, +r.nav[i].toFixed(5)]; });
       var mkLine = {
         silent: true, symbol: "none", animation: false,
-        label: { formatter: "创建日 " + cdStr, position: "insideEndTop", fontSize: 11, color: WufuTheme.sub("§WFT0011§"), backgroundColor: WufuTheme.sub("§WFT0089§"), padding: [2, 4], borderRadius: 3 },
+        label: { formatter: "创建日 " + cdStr, position: "insideEndTop", fontSize: 11, color: WufuTheme.sub("§WFT0142§"), backgroundColor: WufuTheme.sub("§WFT0141§"), borderColor: WufuTheme.sub("§WFT0143§"), borderWidth: 1, padding: [2, 4], borderRadius: 3 },
         lineStyle: { color: WufuTheme.sub("§WFT0011§"), width: 1.6, type: "dashed" },
         data: [{ xAxis: cd }]
       };

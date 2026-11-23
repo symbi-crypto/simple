@@ -182,6 +182,8 @@
   --ui-legacy-bad:#c0392b;
   /* ── v0.98 图表主题：浮层 / 热力图 / 序列色（深色）── */
   --chart-tip-bg:#233247;--chart-tip-ink:#E8EEF6;--chart-tip-line:#3E4E63;
+  /* v0.9905 创建日 markLine 标注：深底沿用原观感 */
+  --chart-mark-bg:rgba(16,24,36,.9);--chart-mark-ink:#FBBF24;--chart-mark-line:#3E4E63;
   --chart-axis-ink:#9FB0C4;--chart-grid:#243244;
   --chart-heat-neg:#7F1D1D;--chart-heat-mid:#4A5A66;--chart-heat-pos:#14532D;
   --chart-s1:#4FC3F7;--chart-s2:#FBBF24;--chart-s3:#A78BFA;
@@ -375,6 +377,8 @@
   --ui-legacy-surface:rgba(32,39,37,.045);
   /* ── v0.98 图表主题：白底浮层 / 浅底热力图 / 多色相序列（浅色）── */
   --chart-tip-bg:#FFFFFF;--chart-tip-ink:#202725;--chart-tip-line:#C3DDD0;
+  /* v0.9905 创建日 markLine 标注：白底墨字绿细边，与浮层同族 */
+  --chart-mark-bg:#FFFFFF;--chart-mark-ink:#B45309;--chart-mark-line:#C3DDD0;
   --chart-axis-ink:#738079;--chart-grid:#E9EEEC;
   --chart-heat-neg:#F3C7C9;--chart-heat-mid:#E9ECEB;--chart-heat-pos:#BFE3D2;
   --chart-s1:#147D5E;--chart-s2:#B45309;--chart-s3:#5B4B9E;

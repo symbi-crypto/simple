@@ -839,9 +839,9 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9904' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9904' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9904' in _sw, '0.9904' in _rd))
+        'wufu-all-v0.9905' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9905' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9905' in _sw, '0.9905' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -894,6 +894,33 @@ def static_checks(root, valid_fn):
         ('三份真源一致', [x.lower() for x in _hd]==_css_d and [x.lower() for x in _hl]==_css_l, True),
         ('契约明文禁止近黑近白', '接近纯黑' in ui_rule, True),
     ])
+    # v0.9905：创建日标线标注必须走语义变量，深/浅各一组，切主题重设
+    _mk_d = [dmap.get('--chart-mark-'+k,'').lower() for k in ['bg','ink','line']]
+    _mk_l = [lmap.get('--chart-mark-'+k,'').lower() for k in ['bg','ink','line']]
+    _mkfiles = ['etf/tool.html','cb/tool.html','etf/index.html','cb/index.html']
+    _mk_ok = all('§WFT0141§' in text(root,f) and '§WFT0142§' in text(root,f)
+                 and '§WFT0143§' in text(root,f) and '§WFT0089§' not in
+                 text(root,f).split('创建日 "')[1][:400] if '创建日 "' in text(root,f) else
+                 ('§WFT0141§' in text(root,f) and '§WFT0142§' in text(root,f)
+                  and '§WFT0143§' in text(root,f))
+                 for f in _mkfiles)
+    add('V35', '界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设', 'blocking',
+        all(_mk_d) and all(_mk_l) and _mk_d[0] != _mk_l[0]
+        and _mk_l[0] == '#ffffff' and _mk_d[0].startswith('rgba')
+        and _mk_ok and 'css("--chart-mark-bg")' in tjs
+        and 'ml.label.backgroundColor = mkBg' in tjs
+        and '标线标签' in ui_rule and '只在单一主题下成立' in ui_rule,
+        '深bg=%s 浅bg=%s 4页齐=%s' % (_mk_d[0], _mk_l[0], _mk_ok))
+    fixture('R29', '「创建日框又变深底 / 只首屏生效 / 复用机械色」→ 必须全挡',
+        '界面契约 §5', [
+        ('深标注沿用深底', _mk_d[0].startswith('rgba'), True),
+        ('浅标注为白底', _mk_l[0] == '#ffffff', True),
+        ('深浅字色各自独立', _mk_d[1] != _mk_l[1] and _mk_d[2] != _mk_l[2], True),
+        ('四页统一新 token', _mk_ok, True),
+        ('syncCharts 实时重设', 'css("--chart-mark-bg")' in tjs
+                              and 'ml.label.backgroundColor = mkBg' in tjs, True),
+        ('契约明文禁止机械色', '机械色变量' in ui_rule and '页底色' in ui_rule, True),
+    ])
     add('V30', '界面契约 §8 首屏 11 处色阶全走唯一入口', 'blocking',
         _hm_n==11 and not _hm_bad,
         'heatColors() %d 处，裸读残留 %s'%(_hm_n,str(_hm_bad[:3])))
@@ -931,7 +958,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9904' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9905' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

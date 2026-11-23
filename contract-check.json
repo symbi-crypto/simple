@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 96,
-   "passed": 96,
+   "total": 97,
+   "passed": 97,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 28,
-   "passed": 28,
+   "total": 29,
+   "passed": 29,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 4457 字节"
+   "detail": "契约 4669 字节"
   },
   {
    "id": "V2",
@@ -689,6 +689,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "深mid=#4a5a66 浅mid=#e9eceb 明度深=87 浅=235"
+  },
+  {
+   "id": "V35",
+   "rule": "界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深bg=rgba(16,24,36,.9) 浅bg=#ffffff 4页齐=True"
   },
   {
    "id": "V30",
@@ -1092,6 +1099,45 @@
     },
     {
      "name": "契约明文禁止近黑近白",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R29",
+   "case": "「创建日框又变深底 / 只首屏生效 / 复用机械色」→ 必须全挡",
+   "rule": "界面契约 §5",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "深标注沿用深底",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅标注为白底",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深浅字色各自独立",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页统一新 token",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "syncCharts 实时重设",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约明文禁止机械色",
      "actual": true,
      "expect": true
     }
