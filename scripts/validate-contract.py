@@ -904,13 +904,26 @@ def static_checks(root, valid_fn):
                  ('§WFT0141§' in text(root,f) and '§WFT0142§' in text(root,f)
                   and '§WFT0143§' in text(root,f))
                  for f in _mkfiles)
-    add('V35', '界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设', 'blocking',
-        all(_mk_d) and all(_mk_l) and _mk_d[0] != _mk_l[0]
+    # 三份真源一致：theme.css ↔ FALLBACK/LIGHT 字典 ↔ TOKENS 指向
+    try:
+        _jf = json.loads(re.search(r'var FALLBACK\s*=\s*(\{.*?\});\s*\n', tjs, re.S).group(1))
+        _jl = json.loads(re.search(r'var LIGHT\s*=\s*(\{.*?\});\s*\n', tjs, re.S).group(1))
+        _jt = json.loads(re.search(r'var TOKENS\s*=\s*(\{.*?\});\s*\n', tjs, re.S).group(1))
+    except Exception:
+        _jf = _jl = _jt = {}
+    def _low(x): return str(x).strip().lower()
+    _mk_sync = all(
+        _low(_jf.get('--chart-mark-'+k,'')) == _low(dmap.get('--chart-mark-'+k,'')) and
+        _low(_jl.get('--chart-mark-'+k,'')) == _low(lmap.get('--chart-mark-'+k,'')) and
+        _jt.get(x) == '--chart-mark-'+k
+        for x,k in [('0141','bg'),('0142','ink'),('0143','line')])
+    add('V35', '界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设、三份一致', 'blocking',
+        all(_mk_d) and all(_mk_l) and _mk_d[0] != _mk_l[0] and _mk_sync
         and _mk_l[0] == '#ffffff' and _mk_d[0].startswith('rgba')
         and _mk_ok and 'css("--chart-mark-bg")' in tjs
         and 'ml.label.backgroundColor = mkBg' in tjs
         and '标线标签' in ui_rule and '只在单一主题下成立' in ui_rule,
-        '深bg=%s 浅bg=%s 4页齐=%s' % (_mk_d[0], _mk_l[0], _mk_ok))
+        '深bg=%s 浅bg=%s 4页齐=%s 三份一致=%s' % (_mk_d[0], _mk_l[0], _mk_ok, _mk_sync))
     fixture('R29', '「创建日框又变深底 / 只首屏生效 / 复用机械色」→ 必须全挡',
         '界面契约 §5', [
         ('深标注沿用深底', _mk_d[0].startswith('rgba'), True),
@@ -920,6 +933,7 @@ def static_checks(root, valid_fn):
         ('syncCharts 实时重设', 'css("--chart-mark-bg")' in tjs
                               and 'ml.label.backgroundColor = mkBg' in tjs, True),
         ('契约明文禁止机械色', '机械色变量' in ui_rule and '页底色' in ui_rule, True),
+        ('三份真源逐值一致', _mk_sync, True),
     ])
     add('V30', '界面契约 §8 首屏 11 处色阶全走唯一入口', 'blocking',
         _hm_n==11 and not _hm_bad,

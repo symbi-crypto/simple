@@ -692,10 +692,10 @@
   },
   {
    "id": "V35",
-   "rule": "界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设",
+   "rule": "界面契约 §5 创建日标注用语义变量、深浅各自独立、切主题重设、三份一致",
    "severity": "blocking",
    "status": "pass",
-   "detail": "深bg=rgba(16,24,36,.9) 浅bg=#ffffff 4页齐=True"
+   "detail": "深bg=rgba(16,24,36,.9) 浅bg=#ffffff 4页齐=True 三份一致=True"
   },
   {
    "id": "V30",
@@ -1138,6 +1138,11 @@
     },
     {
      "name": "契约明文禁止机械色",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "三份真源逐值一致",
      "actual": true,
      "expect": true
     }
