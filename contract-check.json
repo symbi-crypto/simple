@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 95,
-   "passed": 95,
+   "total": 96,
+   "passed": 96,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 27,
-   "passed": 27,
+   "total": 28,
+   "passed": 28,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 4232 字节"
+   "detail": "契约 4457 字节"
   },
   {
    "id": "V2",
@@ -682,6 +682,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "硬兜底深13浅13 / CSS 逐值一致=True"
+  },
+  {
+   "id": "V34",
+   "rule": "界面契约 §7 中间档非近黑近白、C 方案三档、两端极值不变",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "深mid=#4a5a66 浅mid=#e9eceb 明度深=87 浅=235"
   },
   {
    "id": "V30",
@@ -1036,6 +1043,55 @@
     },
     {
      "name": "契约明文禁止改列数",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R28",
+   "case": "「中间档又变回近黑/近白，或顺手改掉两端」→ 必须全挡",
+   "rule": "界面契约 §7",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "深中间档 C 值",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅中间档 C 值",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深 n1/p1 C 值",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅 n1/p1 C 值",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "中间档明度适中",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "两端极值未动",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "三份真源一致",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约明文禁止近黑近白",
      "actual": true,
      "expect": true
     }

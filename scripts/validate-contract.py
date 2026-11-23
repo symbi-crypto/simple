@@ -635,12 +635,17 @@ def static_checks(root, valid_fn):
     light_css = tcss.split(':root[data-theme="light"]{',1)[1].split('\n}',1)[0]
     dmap = dict((k,v.strip()) for k,v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', dark_css))
     lmap = dict((k,v.strip()) for k,v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', light_css))
+    def _lum(h):
+        try:
+            return 0.2126*int(h[1:3],16)+0.7152*int(h[3:5],16)+0.0722*int(h[5:7],16)
+        except Exception: return -1
     add('V14', '界面契约 §5 浮层随主题、热力图深浅不装反', 'blocking',
         all(k in dmap and k in lmap for k in chart_vars)
         and dmap.get('--chart-tip-bg','').lower() != lmap.get('--chart-tip-bg','').lower()
         and lmap.get('--chart-tip-bg','').lower() == '#ffffff'
-        and dmap.get('--chart-heat-mid','').lower() == '#22354a'
-        and lmap.get('--chart-heat-mid','').lower() == '#f6f8f7'
+        and _lum(dmap.get('--chart-heat-mid','#000000')) < 160
+        and _lum(lmap.get('--chart-heat-mid','#ffffff')) > 180
+        and dmap.get('--chart-heat-mid','').lower() != lmap.get('--chart-heat-mid','').lower()
         and '## §5 图表主题' in ui_rule
         and '遮挡曲线与坐标标签' in ui_rule,
         '深tip=%s 浅tip=%s'%(dmap.get('--chart-tip-bg'),lmap.get('--chart-tip-bg')))
@@ -690,8 +695,8 @@ def static_checks(root, valid_fn):
     fixture('R22', '「浮层固定深灰 / 热力图深浅装反 / 序列全绿 / 不重绘」→ 必须全挡',
         '界面契约 §5', [
         ('浅色浮层为白底', lmap.get('--chart-tip-bg','').lower()=='#ffffff', True),
-        ('深色热力图为深底', dmap.get('--chart-heat-mid','').lower()=='#22354a', True),
-        ('浅色热力图为浅底', lmap.get('--chart-heat-mid','').lower()=='#f6f8f7', True),
+        ('深色热力图为深底', _lum(dmap.get('--chart-heat-mid','#000000'))<160, True),
+        ('浅色热力图为浅底', _lum(lmap.get('--chart-heat-mid','#ffffff'))>180, True),
         ('深色序列绿<=1', sum(greenish(x) for x in seq_d)<=1, True),
         ('浅色 --c-purple 非绿', lmap.get('--c-purple','').lower()=='#7c5cbf', True),
         ('切主题显式重设', 'function syncCharts' in tjs, True),
@@ -834,9 +839,9 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9903' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9903' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9903' in _sw, '0.9903' in _rd))
+        'wufu-all-v0.9904' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9904' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9904' in _sw, '0.9904' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -857,6 +862,38 @@ def static_checks(root, valid_fn):
                if "WufuTheme.css('--chart-heat-n6')" in text(root,f)
                or "WufuTheme.css('--chart-heat-neg')" in text(root,f)]
     _hm_n = sum(text(root,f).count('WufuTheme.heatColors()') for f in _hmfiles)
+    # _lum 已在 V14 前统一定义
+    # C 方案：只抬零附近三档，两端极值保持；中间档明度既非近黑也非近白
+    _mid_ok = (
+        [x.lower() for x in _dvals[5:8]]==['#5c3a40','#4a5a66','#3a6353'] and
+        [x.lower() for x in _lvals[5:8]]==['#f2dedf','#e9eceb','#d9ebe2'] and
+        all(55 <= _lum(x) <= 160 for x in _dvals[5:8]) and
+        all(180 <= _lum(x) <= 242 for x in _lvals[5:8]) and
+        abs(_lum(_dvals[6])-_lum(dmap.get('--c-bg','#1b2634')))>=8 and
+        abs(_lum(_lvals[6])-_lum(lmap.get('--c-bg','#f6f8f7')))>=8 and
+        _dvals[0].lower()=='#f87173' and _dvals[12].lower()=='#4ade81' and
+        _lvals[0].lower()=='#c0392d' and _lvals[12].lower()=='#147d60' and
+        len(_dvals)==13 and len(_lvals)==13 and
+        _dvals[6].lower() != _lvals[6].lower() and
+        '接近纯黑' in ui_rule and '各自独立定义' in ui_rule
+    )
+    add('V34', '界面契约 §7 中间档非近黑近白、C 方案三档、两端极值不变', 'blocking',
+        _mid_ok,
+        '深mid=%s 浅mid=%s 明度深=%.0f 浅=%.0f'%(_dvals[6],_lvals[6],
+            _lum(_dvals[6]),_lum(_lvals[6])))
+    fixture('R28', '「中间档又变回近黑/近白，或顺手改掉两端」→ 必须全挡',
+        '界面契约 §7', [
+        ('深中间档 C 值', _dvals[6].lower()=='#4a5a66', True),
+        ('浅中间档 C 值', _lvals[6].lower()=='#e9eceb', True),
+        ('深 n1/p1 C 值', [_dvals[5].lower(),_dvals[7].lower()]==['#5c3a40','#3a6353'], True),
+        ('浅 n1/p1 C 值', [_lvals[5].lower(),_lvals[7].lower()]==['#f2dedf','#d9ebe2'], True),
+        ('中间档明度适中', all(55<=_lum(x)<=160 for x in _dvals[5:8]) and
+                            all(180<=_lum(x)<=242 for x in _lvals[5:8]), True),
+        ('两端极值未动', _dvals[0].lower()=='#f87173' and _dvals[12].lower()=='#4ade81'
+                      and _lvals[0].lower()=='#c0392d' and _lvals[12].lower()=='#147d60', True),
+        ('三份真源一致', [x.lower() for x in _hd]==_css_d and [x.lower() for x in _hl]==_css_l, True),
+        ('契约明文禁止近黑近白', '接近纯黑' in ui_rule, True),
+    ])
     add('V30', '界面契约 §8 首屏 11 处色阶全走唯一入口', 'blocking',
         _hm_n==11 and not _hm_bad,
         'heatColors() %d 处，裸读残留 %s'%(_hm_n,str(_hm_bad[:3])))
@@ -894,7 +931,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9903' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9904' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
