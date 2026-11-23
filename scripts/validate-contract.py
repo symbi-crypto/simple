@@ -839,9 +839,9 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9906' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9906' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9906' in _sw, '0.9906' in _rd))
+        'wufu-all-v0.9907' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9907' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9907' in _sw, '0.9907' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -957,6 +957,34 @@ def static_checks(root, valid_fn):
         if _pr.returncode == 0: _truth = json.loads(_pr.stdout.strip())
     except Exception:
         _truth = {}
+    # ── v0.9907 结果区说明块：唯一宿主 + 默认折叠 ──────────────────────
+    _rf = {f: text(root, f) for f in ['etf/tool.html','cb/tool.html']}
+    _fold_ok = all(
+        'var _rfd = $("ruleFeeDetailHost");' in t
+        and 'document.createElement("details")' in t
+        and '<summary style="display:flex' in t
+        and '规则与费用说明' in t
+        and '_rfd.open = _wasOpen;' in t
+        and 'var _rfd = $("ruleFeeDetail");' not in t
+        and 'id="feeDetail"' in t and 'id="skipTotal"' in t
+        for t in _rf.values())
+    # 折叠规则必须写进界面契约，且不含实现细节
+    _ui9 = '## §9' in ui_rule and '唯一宿主' in ui_rule and '默认折叠' in ui_rule
+    add('V39', '界面契约 §9 结果区说明唯一宿主、默认折叠、保留展开状态', 'blocking',
+        _fold_ok and _ui9 and '重复卡片' in ui_rule,
+        '两页宿主齐=%s / 契约 §9=%s' % (_fold_ok, _ui9))
+    fixture('R31', '「宿主误用生成卡片 id / 不折叠 / 展开状态被重置 / 删契约」→ 必须全挡',
+        '界面契约 §9', [
+        ('宿主用稳定 id', all('var _rfd = $("ruleFeeDetailHost");' in t for t in _rf.values()), True),
+        ('宿主是 details', all('document.createElement("details")' in t for t in _rf.values()), True),
+        ('单行摘要存在', all('规则与费用说明' in t for t in _rf.values()), True),
+        ('展开状态保留', all('_rfd.open = _wasOpen;' in t for t in _rf.values()), True),
+        ('旧写法已清除', all('var _rfd = $("ruleFeeDetail");' not in t for t in _rf.values()), True),
+        ('费用分项仍可检', all('id="feeDetail"' in t for t in _rf.values()), True),
+        ('跳过统计仍可检', all('id="skipTotal"' in t for t in _rf.values()), True),
+        ('契约 §9 齐备', _ui9, True),
+        ('版本未跨 1.00', '0.9907' in text(root,'README.md') and 'wufu-all-v0.9907' in text(root,'sw.js'), True),
+    ])
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
         bool(_truth) and _truth.get('gte') == [False, True, True]
         and _truth.get('lte') == [True, True, False]
@@ -1046,7 +1074,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9906' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9907' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

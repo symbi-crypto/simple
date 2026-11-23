@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 100,
-   "passed": 100,
+   "total": 101,
+   "passed": 101,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 30,
-   "passed": 30,
+   "total": 31,
+   "passed": 31,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 4669 字节"
+   "detail": "契约 4999 字节"
   },
   {
    "id": "V2",
@@ -696,6 +696,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "深bg=rgba(16,24,36,.9) 浅bg=#ffffff 4页齐=True 三份一致=True"
+  },
+  {
+   "id": "V39",
+   "rule": "界面契约 §9 结果区说明唯一宿主、默认折叠、保留展开状态",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "两页宿主齐=True / 契约 §9=True"
   },
   {
    "id": "V36",
@@ -1164,6 +1171,60 @@
     },
     {
      "name": "三份真源逐值一致",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R31",
+   "case": "「宿主误用生成卡片 id / 不折叠 / 展开状态被重置 / 删契约」→ 必须全挡",
+   "rule": "界面契约 §9",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "宿主用稳定 id",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "宿主是 details",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "单行摘要存在",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "展开状态保留",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "旧写法已清除",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "费用分项仍可检",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "跳过统计仍可检",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约 §9 齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "版本未跨 1.00",
      "actual": true,
      "expect": true
     }
