@@ -1,11 +1,11 @@
 {
  "contract": "数据方法与契约.md",
- "contractSha1": "188e63011ed4",
+ "contractSha1": "83161bb42be3",
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 101,
-   "passed": 101,
+   "total": 102,
+   "passed": 102,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 31,
-   "passed": 31,
+   "total": 32,
+   "passed": 32,
    "failed": 0
   },
   "snapshots": 16
@@ -705,6 +705,13 @@
    "detail": "两页宿主齐=True / 契约 §9=True"
   },
   {
+   "id": "V40",
+   "rule": "§10 持仓规模由买入区间唯一决定、卖出容忍带不得超编",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "四页配额齐=True / 契约 §10=True / Node 真跑={'kept10_drop11': 10, 'kept10_drop100': 10, 'kept9_drop11': 10, 'kept0_drop11': 10, 'kept2_n3m5': 3}"
+  },
+  {
    "id": "V36",
    "rule": "界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点",
    "severity": "blocking",
@@ -1220,6 +1227,60 @@
     },
     {
      "name": "契约 §9 齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "版本未跨 1.00",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R32",
+   "case": "「容忍带抬高持仓上限」→ 持仓必须恒等于区间长度、与卖出阈值无关",
+   "rule": "§10",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "四页买入配额",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "契约 §10 齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "保留 10 只 + 跌出 11 名 → 仍 10 只",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "保留 10 只 + 跌出 100 名 → 仍 10 只",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "容忍带宽度不影响持仓数",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "卖 1 只补 1 只 → 仍 10 只",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "空仓首建 → 10 只",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "区间 [3,5] 补空缺 → 恒 3 只",
      "actual": true,
      "expect": true
     },

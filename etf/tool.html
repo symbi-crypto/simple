@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
 <script src="../common/cond-ops.js"></script>
-<script src="../common/research-gate.js?v=9907"></script>
-<script src="../common/instrument-rules.js?v=9907"></script>
+<script src="../common/research-gate.js?v=9908"></script>
+<script src="../common/instrument-rules.js?v=9908"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -32,7 +32,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=9907"></script>
+<script src="../common/range.js?v=9908"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -947,7 +947,7 @@ document.addEventListener("DOMContentLoaded",function(){
       </div>
       <div class="psec" id="psecSell">
         <h3>卖出条件 <span class="v" id="sellCount">0 个</span></h3>
-        <div style="font-size:12px;color:var(--c-muted);margin:2px 0 6px">「跌出第 N 名才卖」把持有上界放宽到 N（只放宽，不提前卖）；其余条件命中即卖。<b>轮动模式至少选择 1 个卖出条件</b></div>
+        <div style="font-size:12px;color:var(--c-muted);margin:2px 0 6px">「跌出第 N 名才卖」只是不卖容忍带：未跌出该名次的已持有标的继续持有，持仓只数仍按「持有第 N–M 名」不变；其余条件命中即卖。<b>轮动模式至少选择 1 个卖出条件</b></div>
         <div id="sellList"></div>
         <div class="row" style="display:flex;align-items:center;margin-top:4px;gap:6px">
           <select id="sellKind" style="flex:1;min-width:0">
@@ -4035,14 +4035,15 @@ window.WufuExpr = (function () {
             if (!(wOld[sk] > 0)) continue;
             var sc = codes[sk];
             var srk = rankMap[sc] !== undefined ? rankMap[sc] : 1e9;
-            // 卖出条件里的「跌出第 N 名才卖」：把持有上界从 rankM 放宽到 N（只放宽，不提前卖）
+            // 卖出条件里的「跌出第 N 名才卖」：已持仓标的未跌出该名次就不卖（不卖容忍带）。
+            // 注意：容忍带只决定是否了结，不改变目标持仓只数；买入端按空缺补足（v0.9908）。
             var dropN = 0, _dq;
             for (_dq = 0; _dq < sellConds.length; _dq++) {
               var _cq = sellConds[_dq];
               if (_cq.enabled !== false && _cq.type === "rank" && +_cq.value > dropN) dropN = +_cq.value;
             }
-            var sellRankM = Math.max(rankM, dropN);
-            var bandOut = srk < rankN || srk > sellRankM;
+            var keepRankM = Math.max(rankM, dropN);
+            var bandOut = srk < rankN || srk > keepRankM;
             var meta = posMeta[sc] || {};
             var sH = false, idxC2;
             for (idxC2 = 0; idxC2 < sellConds.length; idxC2++) {
@@ -4065,7 +4066,13 @@ window.WufuExpr = (function () {
           }
 
           // 买入候选：排名区间内 + 非仅轮动 + 非本次卖出 + 全部买入附加条件满足
+          // v0.9908：目标持仓只数恒为 [N,M] 区间长度。「跌出第 K 名才卖」只是
+          // 已持仓标的的不卖容忍带，保留下来的持仓照常占名额；买入端只补空缺，
+          // 绝不让容忍带把持仓数顶到区间之外（旧版会稳定出现 11 只 / 13 只）。
           {
+            var quotaNeed = rankM - rankN + 1;
+            var keptN = 0; for (var _kq in wTarget) if (wTarget[_kq]) keptN++;
+            var quota = Math.max(0, quotaNeed - keptN), addedN = 0;
             for (var bj = 0; bj < scored.length; bj++) {
               var bc = scored[bj].code;
               var brk = rankMap[bc];
@@ -4073,7 +4080,7 @@ window.WufuExpr = (function () {
               if (onlyR2.indexOf(bc) >= 0 || soldNow[bc]) continue;
               var bOk = true;
               for (var bj2 = 0; bj2 < buyAdd.length; bj2++) if (buyAdd[bj2].enabled !== false && !buyAddHit(buyAdd[bj2], bc, i)) { bOk = false; break; }
-              if (bOk) { if (wTarget[bc] === undefined) wTarget[bc] = 1; }
+              if (bOk && addedN < quota && wTarget[bc] === undefined) { wTarget[bc] = 1; addedN++; }
             }
           }
 
@@ -6476,7 +6483,7 @@ function buildChips() {
     if (c.type === "factor") return "因子判断 · " + factorMiniHtml(c);
     if (c.type === "expr") return "自定义公式 · " + (c.expr || "");
     if (c.type === "rank") {
-      // 卖出面板：名次条件改为「跌出第 N 名才卖」（放宽持有上界，不再提前卖）
+      // 卖出面板：名次条件为「跌出第 N 名才卖」（不卖容忍带，不改变持仓只数）
       if (panel === "sell") return "跌出第 " + (c.value || 1) + " 名才卖";
       return "排名名次 " + WufuCondOps.text(c.op || "gte", c.value, c.threshold2);
     }
@@ -7823,7 +7830,7 @@ function scheduleRun() {
 
   // ---------- 均线定投：偏离度→扣款倍数 档位表 ----------
   // 语义：偏离度(实际, %) 与每行阈值比较，取「实际偏离 ≤ 阈值」中阈值最小的那行。
-  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99079 恒定存在、不可删。
+  // 下方档 dev<0（低于均线，便宜）；上方档 0<=dev<999；兜底 dev=99089 恒定存在、不可删。
   // 默认 = 只加不减形态：仅低于均线 10% 时多投 1.2 倍，其余恒 1 倍。
   // 想改成对称加减，把上方档倍数调低即可（如 0.80）—— 不再提供模式下拉。
   var DCA_MA_TIERS_DEFAULT = [[-10, 1.20], [10, 1.00], [999, 1.00]];

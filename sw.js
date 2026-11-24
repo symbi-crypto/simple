@@ -12,7 +12,7 @@
    · v0.84：index-daily.json 纳入日更，dash-source.js 已入 LIST；看板快照优先取 GitHub（跨域请求
      由同源判断直接放行、不进 Cache Storage），拉不到才回退包内副本。
    ============================================================ */
-var CACHE = "wufu-all-v0.9907";
+var CACHE = "wufu-all-v0.9908";
 
 var LIST = [
   "index.html", "icon.svg", "manifest.webmanifest", "sw.js", "README.md",
@@ -118,7 +118,7 @@ self.addEventListener("fetch", function (e) {
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
     /* v0.69d：主文档、看板 HTML 与 common 下看板脚本均 network-first（v0.83 加 dash-source.js）。
-       u.pathname 不含 query，所以带 ?v=9907 的请求同样命中本分支并回写无 query 的缓存键。 */
+       u.pathname 不含 query，所以带 ?v=9908 的请求同样命中本分支并回写无 query 的缓存键。 */
     if (/\/(etf|cb)\/tool\.html$/.test(u.pathname) || /\/(etf|cb)\/(dashboard|gold)\.html$/.test(u.pathname) || /\/combos\/index\.html$/.test(u.pathname) || /\/common\/(range|dashboard|gold|industry|dash-source)\.js$/.test(u.pathname)) {
       try {
         var fresh2 = await fetch(req);

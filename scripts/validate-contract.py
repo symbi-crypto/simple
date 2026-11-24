@@ -839,9 +839,9 @@ def static_checks(root, valid_fn):
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
     add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9907' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9907' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9907' in _sw, '0.9907' in _rd))
+        'wufu-all-v0.9908' in _sw and 'wufu-all-v0.100' not in _sw
+        and '0.9908' in _rd and 'v1.00' not in _rd,
+        '缓存=%s / README 命中=%s'%('wufu-all-v0.9908' in _sw, '0.9908' in _rd))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -983,7 +983,74 @@ def static_checks(root, valid_fn):
         ('费用分项仍可检', all('id="feeDetail"' in t for t in _rf.values()), True),
         ('跳过统计仍可检', all('id="skipTotal"' in t for t in _rf.values()), True),
         ('契约 §9 齐备', _ui9, True),
-        ('版本未跨 1.00', '0.9907' in text(root,'README.md') and 'wufu-all-v0.9907' in text(root,'sw.js'), True),
+        ('版本未跨 1.00', '0.9908' in text(root,'README.md') and 'wufu-all-v0.9908' in text(root,'sw.js'), True),
+    ])
+    # ── v0.9908 轮动持仓规模：真跑产品买入块 + 四页一致 + 契约 §10 ──────
+    _rot = {f: text(root, f) for f in ['etf/tool.html','cb/tool.html','etf/index.html','cb/index.html']}
+    _quota_ok = all(
+        'var quotaNeed = rankM - rankN + 1;' in t
+        and 'var quota = Math.max(0, quotaNeed - keptN)' in t
+        and 'addedN < quota && wTarget[bc] === undefined' in t
+        and 'var keepRankM = Math.max(rankM, dropN);' in t
+        and 'sellRankM' not in t
+        and '把持有上界放宽到 N' not in t
+        and '持仓只数仍按' in t
+        for t in _rot.values())
+    _r10 = text(root, '数据方法与契约.md')
+    _rule10 = '## §10' in _r10 and '目标持仓规模' in _r10 and '不卖容忍带' in _r10
+    # 从交付的 etf/tool.html 抽出买入候选块，用 Node 真跑（不是另写一套判定器）
+    _src = _rot['etf/tool.html']
+    _ba = _src.index('var quotaNeed = rankM - rankN + 1;')
+    _bb = _src.index('// 权重：', _ba)
+    _body = _src[_ba:_bb].rstrip()
+    assert _body.endswith('}'),_body[-160:]
+    _body = _body[:-1].rstrip()          # 只去掉买入块外层右花括号；保留内部 for 的闭合
+    assert _body.endswith('}'),_body[-160:]
+    _node_wrap = r"""
+const body = %s;
+function sim(kept, drop, n, m, poolN) {
+  const rankN=n, rankM=m, wTarget={}, scored=[], rankMap={};
+  for (let j=0;j<poolN;j++){const c='C'+j; scored.push({code:c}); rankMap[c]=j+1;}
+  const keptCodes = scored.slice(0,kept).map(x=>x.code);
+  keptCodes.forEach(c=>wTarget[c]=1);
+  const onlyR2=[], soldNow={}, buyAdd=[], buyAddHit=()=>true;
+  const fn = new Function('rankN','rankM','wTarget','scored','rankMap','onlyR2','soldNow','buyAdd','buyAddHit','i',
+                          body + '\nreturn Object.keys(wTarget).length;');
+  return fn(rankN,rankM,wTarget,scored,rankMap,onlyR2,soldNow,buyAdd,buyAddHit,0);
+}
+const out={
+  kept10_drop11: sim(10,11,1,10,30),
+  kept10_drop100:sim(10,100,1,10,30),
+  kept9_drop11:  sim(9,11,1,10,30),
+  kept0_drop11:  sim(0,11,1,10,30),
+  kept2_n3m5:    sim(2,11,3,5,30),
+};
+console.log(JSON.stringify(out));
+""" % json.dumps(_body)
+    _p = os.path.join(root, '.v40_sim.js')
+    open(_p,'w',encoding='utf-8').write(_node_wrap)
+    _r = subprocess.run(['node',_p],capture_output=True,text=True,cwd=root)
+    try:_sim=json.loads(_r.stdout.strip().splitlines()[-1])
+    except Exception:_sim={}
+    try:os.remove(_p)
+    except OSError:pass
+    _sim_ok = (_r.returncode==0 and _sim.get('kept10_drop11')==10
+               and _sim.get('kept10_drop100')==10 and _sim.get('kept9_drop11')==10
+               and _sim.get('kept0_drop11')==10 and _sim.get('kept2_n3m5')==3)
+    add('V40', '§10 持仓规模由买入区间唯一决定、卖出容忍带不得超编', 'blocking',
+        _quota_ok and _rule10 and _sim_ok,
+        '四页配额齐=%s / 契约 §10=%s / Node 真跑=%s' % (_quota_ok,_rule10,_sim))
+    fixture('R32', '「容忍带抬高持仓上限」→ 持仓必须恒等于区间长度、与卖出阈值无关',
+        '§10', [
+        ('四页买入配额', _quota_ok, True),
+        ('契约 §10 齐备', _rule10, True),
+        ('保留 10 只 + 跌出 11 名 → 仍 10 只', _sim.get('kept10_drop11')==10, True),
+        ('保留 10 只 + 跌出 100 名 → 仍 10 只', _sim.get('kept10_drop100')==10, True),
+        ('容忍带宽度不影响持仓数', _sim.get('kept10_drop11')==_sim.get('kept10_drop100'), True),
+        ('卖 1 只补 1 只 → 仍 10 只', _sim.get('kept9_drop11')==10, True),
+        ('空仓首建 → 10 只', _sim.get('kept0_drop11')==10, True),
+        ('区间 [3,5] 补空缺 → 恒 3 只', _sim.get('kept2_n3m5')==3, True),
+        ('版本未跨 1.00', '0.9908' in text(root,'README.md') and 'wufu-all-v0.9908' in text(root,'sw.js'), True),
     ])
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
         bool(_truth) and _truth.get('gte') == [False, True, True]
@@ -1074,7 +1141,7 @@ def static_checks(root, valid_fn):
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9907' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', '0.9908' in text(root,'README.md'), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',
