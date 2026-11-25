@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
 <script src="../common/cond-ops.js"></script>
-<script src="../common/research-gate.js?v=9908"></script>
-<script src="../common/instrument-rules.js?v=9908"></script>
+<script src="../common/research-gate.js?v=9909"></script>
+<script src="../common/instrument-rules.js?v=9909"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -32,7 +32,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=9908"></script>
+<script src="../common/range.js?v=9909"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -5425,7 +5425,7 @@ function renderMfList() {
     wg.style.cssText = "flex:0 0 auto;display:flex;align-items:center;gap:3px;flex-wrap:nowrap";
     if (f.kind === "custom" || f.kind === "expr") {
       var tag = document.createElement("span");
-      tag.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§;background:§WFT0039§;border:1px solid §WFT0031§;border-radius:3px;padding:1px 5px;cursor:help");
+      tag.style.cssText = "font-size:10.5px;color:var(--expr-tag-ink);background:var(--expr-tag-bg);border:1px solid var(--expr-tag-line);border-radius:3px;padding:1px 5px;cursor:help";
       tag.className = "expr-tag";
       tag.textContent = "公式";
       tag.title = f.name + " = " + factorFormulaText(f);
@@ -5557,7 +5557,7 @@ function renderFltList() {
     wg.style.cssText = "flex:0 0 auto;display:flex;align-items:center;gap:3px;flex-wrap:nowrap";
     if (f.kind === "custom" || f.kind === "expr") {
       var tag3 = document.createElement("span");
-      tag3.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§;background:§WFT0039§;border:1px solid §WFT0031§;border-radius:3px;padding:1px 5px;cursor:help");
+      tag3.style.cssText = "font-size:10.5px;color:var(--expr-tag-ink);background:var(--expr-tag-bg);border:1px solid var(--expr-tag-line);border-radius:3px;padding:1px 5px;cursor:help";
       tag3.className = "expr-tag";
       tag3.textContent = "公式";
       tag3.title = f.name + " = " + factorFormulaText(f);
@@ -6670,7 +6670,7 @@ function buildChips() {
     inp.placeholder = "如 close/ma20<0.9 或 premium<0.01";
     inp.style.cssText = WufuTheme.sub("width:100%;font-size:12px;padding:3px 5px;border:1px solid §WFT0001§;border-radius:4px;background:§WFT0007§;color:§WFT0004§");
     var tip = document.createElement("div");
-    tip.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§");
+    tip.style.cssText = "font-size:10.5px;color:var(--c-gray)";
     tip.textContent = window.WufuExpr.ALLOWED;
     wrap.appendChild(inp); wrap.appendChild(tip);
     var row = selKind.closest(".psec") || selKind.parentElement.parentElement;
@@ -11265,7 +11265,7 @@ function showStrategyDetail(name) {
     wg.style.cssText = "flex:0 0 auto;display:flex;align-items:center;gap:3px;flex-wrap:nowrap";
     if (f.kind === "expr") {
       var tag = document.createElement("span");
-      tag.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§;background:§WFT0039§;border:1px solid §WFT0031§;border-radius:3px;padding:1px 5px;cursor:help");
+      tag.style.cssText = "font-size:10.5px;color:var(--expr-tag-ink);background:var(--expr-tag-bg);border:1px solid var(--expr-tag-line);border-radius:3px;padding:1px 5px;cursor:help";
       tag.textContent = "公式";
       tag.title = crFacWinTitle(f);
       wg.appendChild(tag);

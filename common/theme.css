@@ -35,6 +35,7 @@
   --c-h16202e:#16202E;
   --c-h162131:#162131;
   --c-h1b2735:#1B2735;
+  --expr-tag-bg:#1B2735; --expr-tag-ink:#7C8DA1; --expr-tag-line:#2E3D50;
   --c-h1c2a3a:#1C2A3A;
   --c-h1d4e7a:#1D4E7A;
   --c-h1e2a38:#1E2A38;
@@ -250,6 +251,7 @@
   --c-h16202e:#E9EBED;
   --c-h162131:#E8EAED;
   --c-h1b2735:#E7E9EC;
+  --expr-tag-bg:#E7E9EC; --expr-tag-ink:#73807A; --expr-tag-line:#D3D9E1;
   --c-h1c2a3a:#E6E9EB;
   --c-h1d4e7a:#237D7A;
   --c-h1e2a38:#E6E9EC;

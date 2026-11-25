@@ -19,6 +19,21 @@ import os, sys, json, colorsys, hashlib, re, argparse, importlib.util, shutil, d
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
+
+# v0.9909：版本号判定改为通用，不再把某一版写死（避免每版都要改断言）。
+# 规则是「不跨 1.00、用 0.99xx 四位小版本」，具体数字从 sw.js 与 README 读。
+def _version_ok(root):
+    import re
+    sw = text(root, 'sw.js')
+    rd_ = text(root, 'README.md')
+    m = re.search(r'wufu-all-(v0\.\d{4,})', sw)
+    if not m:
+        return False
+    v = m.group(1)
+    n = v[3:]
+    return (v.startswith('v0.99') and 'v1.00' not in sw and 'v1.00' not in rd_
+            and v in rd_ and ('?v=' + n) in text(root, 'etf/tool.html'))
+
 LEDGER_FILE = '数据契约落地台账.md'
 README_FILE = 'README.md'
 CHECK_FILE = 'contract-check.json'
@@ -838,10 +853,9 @@ def static_checks(root, valid_fn):
     # 版本号约定：不得跨到 1.00，须在 0.99 后加两位数
     _sw = text(root,'sw.js')
     _rd = text(root,'README.md')
-    add('V28', '发布版本不得跨 1.00，须为 0.9901', 'blocking',
-        'wufu-all-v0.9908' in _sw and 'wufu-all-v0.100' not in _sw
-        and '0.9908' in _rd and 'v1.00' not in _rd,
-        '缓存=%s / README 命中=%s'%('wufu-all-v0.9908' in _sw, '0.9908' in _rd))
+    add('V28', '发布版本不得跨 1.00，须为 0.99xx 四位小版本', 'blocking',
+        _version_ok(root),
+        '缓存/readme/查询串同版且未跨 1.00=%s' % _version_ok(root))
 
     # ── v0.9902 动态样式 / 色阶兜底 ────────────────────────────────
     _hard = re.search(r'var HEAT_HARD = \{(.*?)\n  \};', tjs, re.S)
@@ -983,7 +997,7 @@ def static_checks(root, valid_fn):
         ('费用分项仍可检', all('id="feeDetail"' in t for t in _rf.values()), True),
         ('跳过统计仍可检', all('id="skipTotal"' in t for t in _rf.values()), True),
         ('契约 §9 齐备', _ui9, True),
-        ('版本未跨 1.00', '0.9908' in text(root,'README.md') and 'wufu-all-v0.9908' in text(root,'sw.js'), True),
+        ('版本未跨 1.00', _version_ok(root), True),
     ])
     # ── v0.9908 轮动持仓规模：真跑产品买入块 + 四页一致 + 契约 §10 ──────
     _rot = {f: text(root, f) for f in ['etf/tool.html','cb/tool.html','etf/index.html','cb/index.html']}
@@ -1050,8 +1064,42 @@ console.log(JSON.stringify(out));
         ('卖 1 只补 1 只 → 仍 10 只', _sim.get('kept9_drop11')==10, True),
         ('空仓首建 → 10 只', _sim.get('kept0_drop11')==10, True),
         ('区间 [3,5] 补空缺 → 恒 3 只', _sim.get('kept2_n3m5')==3, True),
-        ('版本未跨 1.00', '0.9908' in text(root,'README.md') and 'wufu-all-v0.9908' in text(root,'sw.js'), True),
+        ('版本未跨 1.00', _version_ok(root), True),
     ])
+    # ── v0.9909 动态标签：语义变量 + rgb 反查补强 ──────────────────────
+    _pages = ['etf/tool.html','cb/tool.html','etf/index.html','cb/index.html']
+    _tag_ok = all(
+        ('var(--expr-tag-bg)' in text(root, f) and 'var(--expr-tag-ink)' in text(root, f)
+         and 'var(--expr-tag-line)' in text(root, f)
+         and '§WFT0039§' not in text(root, f)
+         and 'WufuTheme.sub("font-size:10.5px' not in text(root, f))
+        for f in _pages)
+    _css = text(root, 'common/theme.css')
+    _css_ok = ('--expr-tag-bg:#1B2735' in _css and '--expr-tag-bg:#E7E9EC' in _css
+               and '--expr-tag-ink:#7C8DA1' in _css and '--expr-tag-ink:#73807A' in _css
+               and '--expr-tag-line:#2E3D50' in _css and '--expr-tag-line:#D3D9E1' in _css)
+    _th = text(root, 'common/theme.js')
+    _dict_ok = ('"--expr-tag-bg":"#1B2735"' in _th and '"--expr-tag-bg":"#E7E9EC"' in _th
+                and '"--expr-tag-ink":"#7C8DA1"' in _th and '"--expr-tag-ink":"#73807A"' in _th
+                and '"--expr-tag-line":"#2E3D50"' in _th and '"--expr-tag-line":"#D3D9E1"' in _th)
+    _rgb_ok = ('function toRgbNorm' in _th and 'regVal(DARK_BY_VAL' in _th
+               and 'regVal(LIGHT_BY_VAL' in _th and 'v0.9909 rgb 反查补强' in _th)
+    _rule10 = ('## §10 动态标签与内联色' in ui_rule
+               and '不得' in ui_rule.split('## §10 动态标签与内联色')[-1][:900]
+               and 'rgb' in ui_rule.split('## §10 动态标签与内联色')[-1][:900])
+    add('V41', '界面契约 §10 动态标签用语义变量、反查表补 rgb 等价键', 'blocking',
+        _tag_ok and _css_ok and _dict_ok and _rgb_ok and _rule10,
+        '四页=%s / CSS 双态=%s / 字典双态=%s / rgb 补强=%s / 契约 §10=%s'
+        % (_tag_ok, _css_ok, _dict_ok, _rgb_ok, _rule10))
+    fixture('R33', '「改回字面色 / 删语义变量 / 删 rgb 补强 / 删契约 §10」→ 必须全挡',
+        '界面契约 §10', [
+        ('四页标签均为语义变量', _tag_ok, True),
+        ('改回 sub 字面色 → 挡', not ('WufuTheme.sub("font-size:10.5px' in ''.join(text(root,f) for f in _pages)), True),
+        ('深浅两态语义变量齐备', _css_ok and _dict_ok, True),
+        ('删掉 rgb 等价键登记 → 挡', _rgb_ok, True),
+        ('删掉契约 §10 条款 → 挡', _rule10, True),
+    ])
+
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
         bool(_truth) and _truth.get('gte') == [False, True, True]
         and _truth.get('lte') == [True, True, False]
@@ -1141,7 +1189,7 @@ console.log(JSON.stringify(out));
         ('首屏色阶全走唯一入口', _hm_cnt==11 and not _vm_bad, True),
         ('重绘不降档', '[hn, hm, hm, hp]' not in tjs, True),
         ('平板规则覆盖 5 文件', _tab_ok, True),
-        ('版本号未跨 1.00', '0.9908' in text(root,'README.md'), True),
+        ('版本号未跨 1.00', _version_ok(root), True),
     ])
 
     fixture('R19', '「照抄靛蓝 index.css 当文章配色」→ 必须以截图墨绿为准且标题单色',

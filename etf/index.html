@@ -4863,7 +4863,7 @@ function renderMfList() {
     wg.style.cssText = "flex:0 0 auto;display:flex;align-items:center;gap:3px;flex-wrap:nowrap";
     if (f.kind === "custom" || f.kind === "expr") {
       var tag = document.createElement("span");
-      tag.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§;background:§WFT0039§;border:1px solid §WFT0031§;border-radius:3px;padding:1px 5px;cursor:help");
+      tag.style.cssText = "font-size:10.5px;color:var(--expr-tag-ink);background:var(--expr-tag-bg);border:1px solid var(--expr-tag-line);border-radius:3px;padding:1px 5px;cursor:help";
       tag.className = "expr-tag";
       tag.textContent = "公式";
       tag.title = f.name + " = " + factorFormulaText(f);
@@ -4995,7 +4995,7 @@ function renderFltList() {
     wg.style.cssText = "flex:0 0 auto;display:flex;align-items:center;gap:3px;flex-wrap:nowrap";
     if (f.kind === "custom" || f.kind === "expr") {
       var tag3 = document.createElement("span");
-      tag3.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§;background:§WFT0039§;border:1px solid §WFT0031§;border-radius:3px;padding:1px 5px;cursor:help");
+      tag3.style.cssText = "font-size:10.5px;color:var(--expr-tag-ink);background:var(--expr-tag-bg);border:1px solid var(--expr-tag-line);border-radius:3px;padding:1px 5px;cursor:help";
       tag3.className = "expr-tag";
       tag3.textContent = "公式";
       tag3.title = f.name + " = " + factorFormulaText(f);
@@ -6107,7 +6107,7 @@ function buildChips() {
     inp.placeholder = "如 close/ma20<0.9 或 premium<0.01";
     inp.style.cssText = WufuTheme.sub("width:100%;font-size:12px;padding:3px 5px;border:1px solid §WFT0001§;border-radius:4px;background:§WFT0007§;color:§WFT0004§");
     var tip = document.createElement("div");
-    tip.style.cssText = WufuTheme.sub("font-size:10.5px;color:§WFT0002§");
+    tip.style.cssText = "font-size:10.5px;color:var(--c-gray)";
     tip.textContent = window.WufuExpr.ALLOWED;
     wrap.appendChild(inp); wrap.appendChild(tip);
     var row = selKind.closest(".psec") || selKind.parentElement.parentElement;

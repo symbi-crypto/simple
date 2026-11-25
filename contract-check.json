@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 102,
-   "passed": 102,
+   "total": 103,
+   "passed": 103,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 32,
-   "passed": 32,
+   "total": 33,
+   "passed": 33,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 4999 字节"
+   "detail": "契约 5419 字节"
   },
   {
    "id": "V2",
@@ -671,10 +671,10 @@
   },
   {
    "id": "V28",
-   "rule": "发布版本不得跨 1.00，须为 0.9901",
+   "rule": "发布版本不得跨 1.00，须为 0.99xx 四位小版本",
    "severity": "blocking",
    "status": "pass",
-   "detail": "缓存=True / README 命中=True"
+   "detail": "缓存/readme/查询串同版且未跨 1.00=True"
   },
   {
    "id": "V29",
@@ -710,6 +710,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "四页配额齐=True / 契约 §10=True / Node 真跑={'kept10_drop11': 10, 'kept10_drop100': 10, 'kept9_drop11': 10, 'kept0_drop11': 10, 'kept2_n3m5': 3}"
+  },
+  {
+   "id": "V41",
+   "rule": "界面契约 §10 动态标签用语义变量、反查表补 rgb 等价键",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "四页=True / CSS 双态=True / 字典双态=True / rgb 补强=True / 契约 §10=True"
   },
   {
    "id": "V36",
@@ -1286,6 +1293,40 @@
     },
     {
      "name": "版本未跨 1.00",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R33",
+   "case": "「改回字面色 / 删语义变量 / 删 rgb 补强 / 删契约 §10」→ 必须全挡",
+   "rule": "界面契约 §10",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "四页标签均为语义变量",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "改回 sub 字面色 → 挡",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深浅两态语义变量齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "删掉 rgb 等价键登记 → 挡",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "删掉契约 §10 条款 → 挡",
      "actual": true,
      "expect": true
     }
