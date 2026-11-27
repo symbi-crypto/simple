@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 5868 字节"
+   "detail": "契约 5946 字节"
   },
   {
    "id": "V2",
@@ -720,10 +720,10 @@
   },
   {
    "id": "V42",
-   "rule": "界面契约 §11 标题文字色用语义变量、软色不得用于文字",
+   "rule": "界面契约 §11 标题文字色用语义变量、浅色取主色绿族且可读",
    "severity": "blocking",
    "status": "pass",
-   "detail": "无软色文字=True / 语义变量命中=62 / CSS 双态=True / 字典双态=True / 无 0015 文字=True / 边框保留=12 / 契约 §11=True"
+   "detail": "无软色文字=True / 语义变量=62 / 双态齐备=True / 深色保持=True / 浅色绿族(162°)=True / 浅色可读(5.09:1)=True / 无0015=True / 边框=12 / §11=True"
   },
   {
    "id": "V36",
@@ -1342,7 +1342,7 @@
   },
   {
    "id": "R34",
-   "case": "「标题改回软色 / 删浅色定义 / 删 0015 清理 / 删契约 §11」→ 必须全挡",
+   "case": "「标题改回软色 / 浅色改回蓝 / 删浅色定义 / 删 0015 清理 / 删契约 §11」→ 必须全挡",
    "rule": "界面契约 §11",
    "status": "pass",
    "checks": [
@@ -1357,7 +1357,22 @@
      "expect": true
     },
     {
-     "name": "深浅两态语义变量齐备",
+     "name": "深浅两态定义且字典一致",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "深色保持 #7DD3FC 零变化",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色属主色绿族（不得回蓝）",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "浅色白底/页底对比度均 ≥4.5",
      "actual": true,
      "expect": true
     },

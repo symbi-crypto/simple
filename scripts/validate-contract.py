@@ -1101,33 +1101,61 @@ console.log(JSON.stringify(out));
         ('删掉契约 §10 条款 → 挡', _rule10, True),
     ])
 
-    # ── v0.9910 分节标题浅色可读性 ────────────────────────────────────
+    # ── v0.9911 分节标题：浅色取主色绿族（按语义判定，不写死色值） ────
+    def _lum(h):
+        c = [int(h.lstrip('#')[i:i+2],16)/255 for i in (0,2,4)]
+        f = lambda x: x/12.92 if x <= 0.03928 else ((x+0.055)/1.055)**2.4
+        return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2])
+    def _contrast(a,b):
+        x,y = _lum(a),_lum(b); return (max(x,y)+.05)/(min(x,y)+.05)
+    def _hue(h):
+        c = [int(h.lstrip('#')[i:i+2],16)/255 for i in (0,2,4)]
+        return colorsys.rgb_to_hsv(*c)[0]*360
+
     _softPat = re.compile(r'(?<!-)color:var\(--c-accent-soft\)')
     _htmls = sorted(glob.glob(os.path.join(root,'**','*.html'), recursive=True))
     _css_all = _htmls + sorted(glob.glob(os.path.join(root,'common','*.css')))
-    _noSoftText = all(not _softPat.search(text(root, os.path.relpath(fp,root))) for fp in _css_all)
+    _read = lambda fp: text(root, os.path.relpath(fp,root))
+    _noSoftText = all(not _softPat.search(_read(fp)) for fp in _css_all)
     _secVar = 'var(--sec-title-ink)'
-    _useOk = sum(text(root, os.path.relpath(fp,root)).count(_secVar) for fp in _css_all)
-    _cssv = text(root,'common/theme.css')
-    _cssDef = ('--sec-title-ink:#7DD3FC' in _cssv and '--sec-title-ink:#0E7490' in _cssv)
-    _th = text(root,'common/theme.js')
-    _dictDef = ('"--sec-title-ink":"#7DD3FC"' in _th and '"--sec-title-ink":"#0E7490"' in _th)
-    _noTok = not any(('color:§WFT0015§' in text(root, os.path.relpath(fp,root))
-                      or 'style.color = __curStName ? WufuTheme.sub("§WFT0015§")' in text(root, os.path.relpath(fp,root)))
+    _useOk = sum(_read(fp).count(_secVar) for fp in _css_all)
+    _cssv = text(root,'common/theme.css'); _th = text(root,'common/theme.js')
+    _cv = re.findall(r'--sec-title-ink:\s*(#[0-9a-fA-F]{6})', _cssv)
+    _darkV  = _cv[0] if len(_cv)>0 else ''
+    _lightV = _cv[1] if len(_cv)>1 else ''
+    # theme.js 里 LIGHT 在前、FALLBACK 在后，按段取，避免顺序反了误判
+    _lseg = _th.split('var LIGHT =')[1].split('var FALLBACK =')[0]
+    _dseg = _th.split('var FALLBACK =')[1].split('var LEGACY')[0]
+    _lj = re.search(r'"--sec-title-ink":"(#[0-9a-fA-F]{6})"', _lseg)
+    _dj = re.search(r'"--sec-title-ink":"(#[0-9a-fA-F]{6})"', _dseg)
+    _dictOk = bool(_lj and _dj and _lj.group(1)==_lightV and _dj.group(1)==_darkV)
+    _darkKept = _darkV == '#7DD3FC'                       # 深色零视觉变化
+    _lightGreen = bool(_lightV) and 100 <= _hue(_lightV) <= 185   # 排除蓝族(>=190°)
+    _lightReadable = bool(_lightV) and _contrast(_lightV,'#FFFFFF') >= 4.5 \
+                     and _contrast(_lightV,'#F6F8F7') >= 4.5
+    _noTok = not any(('color:§WFT0015§' in _read(fp)
+                      or 'style.color = __curStName ? WufuTheme.sub("§WFT0015§")' in _read(fp))
                      for fp in _htmls)
-    _borderKept = sum(text(root, os.path.relpath(fp,root)).count('border-color:var(--c-accent-soft)') for fp in _css_all)
+    _borderKept = sum(_read(fp).count('border-color:var(--c-accent-soft)') for fp in _css_all)
     _rule11 = ('## §11 分节标题与强调文字' in ui_rule
-               and '浅色' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1200]
-               and '4.5' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1200])
-    add('V42', '界面契约 §11 标题文字色用语义变量、软色不得用于文字', 'blocking',
-        _noSoftText and _useOk >= 55 and _cssDef and _dictDef and _noTok and _borderKept >= 4 and _rule11,
-        '无软色文字=%s / 语义变量命中=%d / CSS 双态=%s / 字典双态=%s / 无 0015 文字=%s / 边框保留=%d / 契约 §11=%s'
-        %(_noSoftText,_useOk,_cssDef,_dictDef,_noTok,_borderKept,_rule11))
-    fixture('R34', '「标题改回软色 / 删浅色定义 / 删 0015 清理 / 删契约 §11」→ 必须全挡',
+               and '主色族' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1400]
+               and '4.5' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1400])
+    add('V42', '界面契约 §11 标题文字色用语义变量、浅色取主色绿族且可读', 'blocking',
+        _noSoftText and _useOk>=55 and len(_cv)==2 and _dictOk and _darkKept
+        and _lightGreen and _lightReadable and _noTok and _borderKept>=4 and _rule11,
+        '无软色文字=%s / 语义变量=%d / 双态齐备=%s / 深色保持=%s / 浅色绿族(%.0f°)=%s / 浅色可读(%.2f:1)=%s / 无0015=%s / 边框=%d / §11=%s'
+        %(_noSoftText,_useOk,len(_cv)==2 and _dictOk,_darkKept,
+          _hue(_lightV) if _lightV else 0,_lightGreen,
+          _contrast(_lightV,'#FFFFFF') if _lightV else 0,_lightReadable,
+          _noTok,_borderKept,_rule11))
+    fixture('R34', '「标题改回软色 / 浅色改回蓝 / 删浅色定义 / 删 0015 清理 / 删契约 §11」→ 必须全挡',
         '界面契约 §11', [
         ('全包无 accent-soft 文字色', _noSoftText, True),
         ('≥55 处标题用语义变量', _useOk>=55, True),
-        ('深浅两态语义变量齐备', _cssDef and _dictDef, True),
+        ('深浅两态定义且字典一致', len(_cv)==2 and _dictOk, True),
+        ('深色保持 #7DD3FC 零变化', _darkKept, True),
+        ('浅色属主色绿族（不得回蓝）', _lightGreen, True),
+        ('浅色白底/页底对比度均 ≥4.5', _lightReadable, True),
         ('动态注入文字色已清 0015', _noTok, True),
         ('软色边框用法仍保留', _borderKept>=4, True),
         ('删掉契约 §11 条款 → 挡', _rule11, True),
