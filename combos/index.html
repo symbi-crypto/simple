@@ -16,7 +16,7 @@
 .grpPick{float:right;font-weight:400;font-size:11px;color:var(--c-muted);cursor:pointer;user-select:none}
 .grpPick input{vertical-align:middle;margin-right:3px}
 .sttag{font-size:10px;color:var(--c-warn);margin-left:4px}
-.pill{font-size:10px;color:var(--c-accent-soft);border:1px solid var(--c-edge);border-radius:999px;padding:0 5px;margin-left:3px}
+.pill{font-size:10px;color:var(--sec-title-ink);border:1px solid var(--c-edge);border-radius:999px;padding:0 5px;margin-left:3px}
 .pill.warn{color:var(--c-warn)}
 .note{font-size:11px;color:var(--c-muted);line-height:1.8;margin-top:14px;padding:0 2px}
 </style>
@@ -60,7 +60,7 @@
       </div>
       <!-- 原「因子轮动」面板依赖 ETF 引擎，此处替换为等价的净值动量参数；容器结构与样式保持原样 -->
       <div id="comboRotPanel" style="display:none;background:var(--c-surface);border:1px solid var(--c-line);border-radius:8px;padding:10px;margin-bottom:10px">
-        <div style="font-size:12px;color:var(--c-accent-soft);margin-bottom:6px">净值动量轮动 · 按策略净值过去 N 日涨幅排名，持有前 K 名</div>
+        <div style="font-size:12px;color:var(--sec-title-ink);margin-bottom:6px">净值动量轮动 · 按策略净值过去 N 日涨幅排名，持有前 K 名</div>
         <div class="row" style="display:flex;margin:6px 0;gap:8px;align-items:center;font-size:12px;color:var(--c-text)">
           <span>动量窗口</span>
           <input id="momN" type="number" min="2" max="250" value="20" style="flex:0 0 60px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid var(--c-edge);border-radius:4px;background:var(--c-bg);color:var(--c-text)"> 日
@@ -123,7 +123,7 @@
 <script src="../common/hub-core.js"></script>
 <script src="../common/hub-combo.js"></script>
 <script src="../common/echarts.min.js"></script>
-<script src="../common/range.js?v=9909"></script>
+<script src="../common/range.js?v=9910"></script>
 <script>
 (function(){
   "use strict";
@@ -350,7 +350,7 @@
         +'<input type="number" min="0" max="100" step="1" class="comboWt" data-id="'+esc(x.id)+'" value="'+esc(w)+WufuTheme.sub('" style="flex:0 0 52px;text-align:right;font-size:12px;padding:2px 4px;border:1px solid §WFT0001§;border-radius:4px;background:§WFT0007§;color:§WFT0004§">')
         +WufuTheme.sub('<span style="color:§WFT0002§;font-size:11px">%</span></label>');
     });
-    return '<details open data-g="'+g[0]+WufuTheme.sub('" style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:12.5px;color:§WFT0015§;padding:3px 2px;user-select:none">')
+    return '<details open data-g="'+g[0]+'" style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:12.5px;color:var(--sec-title-ink);padding:3px 2px;user-select:none">'
       +'<span class="grpPick"><label><input type="checkbox" class="grpCk" data-g="'+g[0]+'"> 全选本组</label></span>'
       +'▼ '+g[1]+'（'+list.length+'）</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;padding:2px">'+rows+'</div></details>';
   }

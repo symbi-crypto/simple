@@ -16,6 +16,7 @@
   · 规则文件是断言的唯一依据；规则改了要同步改这里的 id 与 § 映射
 """
 import os, sys, json, colorsys, hashlib, re, argparse, importlib.util, shutil, datetime, subprocess
+import glob
 
 # ── 常量 ────────────────────────────────────────────────────────────────
 RULE_FILE = '数据方法与契约.md'
@@ -1098,6 +1099,38 @@ console.log(JSON.stringify(out));
         ('深浅两态语义变量齐备', _css_ok and _dict_ok, True),
         ('删掉 rgb 等价键登记 → 挡', _rgb_ok, True),
         ('删掉契约 §10 条款 → 挡', _rule10, True),
+    ])
+
+    # ── v0.9910 分节标题浅色可读性 ────────────────────────────────────
+    _softPat = re.compile(r'(?<!-)color:var\(--c-accent-soft\)')
+    _htmls = sorted(glob.glob(os.path.join(root,'**','*.html'), recursive=True))
+    _css_all = _htmls + sorted(glob.glob(os.path.join(root,'common','*.css')))
+    _noSoftText = all(not _softPat.search(text(root, os.path.relpath(fp,root))) for fp in _css_all)
+    _secVar = 'var(--sec-title-ink)'
+    _useOk = sum(text(root, os.path.relpath(fp,root)).count(_secVar) for fp in _css_all)
+    _cssv = text(root,'common/theme.css')
+    _cssDef = ('--sec-title-ink:#7DD3FC' in _cssv and '--sec-title-ink:#0E7490' in _cssv)
+    _th = text(root,'common/theme.js')
+    _dictDef = ('"--sec-title-ink":"#7DD3FC"' in _th and '"--sec-title-ink":"#0E7490"' in _th)
+    _noTok = not any(('color:§WFT0015§' in text(root, os.path.relpath(fp,root))
+                      or 'style.color = __curStName ? WufuTheme.sub("§WFT0015§")' in text(root, os.path.relpath(fp,root)))
+                     for fp in _htmls)
+    _borderKept = sum(text(root, os.path.relpath(fp,root)).count('border-color:var(--c-accent-soft)') for fp in _css_all)
+    _rule11 = ('## §11 分节标题与强调文字' in ui_rule
+               and '浅色' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1200]
+               and '4.5' in ui_rule.split('## §11 分节标题与强调文字')[-1][:1200])
+    add('V42', '界面契约 §11 标题文字色用语义变量、软色不得用于文字', 'blocking',
+        _noSoftText and _useOk >= 55 and _cssDef and _dictDef and _noTok and _borderKept >= 4 and _rule11,
+        '无软色文字=%s / 语义变量命中=%d / CSS 双态=%s / 字典双态=%s / 无 0015 文字=%s / 边框保留=%d / 契约 §11=%s'
+        %(_noSoftText,_useOk,_cssDef,_dictDef,_noTok,_borderKept,_rule11))
+    fixture('R34', '「标题改回软色 / 删浅色定义 / 删 0015 清理 / 删契约 §11」→ 必须全挡',
+        '界面契约 §11', [
+        ('全包无 accent-soft 文字色', _noSoftText, True),
+        ('≥55 处标题用语义变量', _useOk>=55, True),
+        ('深浅两态语义变量齐备', _cssDef and _dictDef, True),
+        ('动态注入文字色已清 0015', _noTok, True),
+        ('软色边框用法仍保留', _borderKept>=4, True),
+        ('删掉契约 §11 条款 → 挡', _rule11, True),
     ])
 
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
