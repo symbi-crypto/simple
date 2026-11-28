@@ -1190,8 +1190,9 @@ console.log(JSON.stringify(out));
     _p4 = ['etf/tool.html', 'etf/index.html', 'cb/tool.html', 'cb/index.html']
     _em = text(root, 'common/expr-migrate.js')
     _em_ok = ('migrateExpr' in _em and 'migrateAny' in _em and 'migrateStore' in _em
-              and 'ROC(单位净值' in _em and 'wufu_combos_v1' in _em
-              and 'COMBO_EXCLUDED' in _em and 'STORES' in _em)
+              and 'STORES' in _em and 'MAP' in _em and 'COMBO_KEY' in _em
+              and "var NAV = '\\u5355\\u4f4d\\u51c0\\u503c'" in _em
+              and 'migrateComboExpr' in _em)
     _em_ref = all('common/expr-migrate.js' in text(root, f) for f in _p4)
     _no_dead = all("name: '涨幅'" not in text(root, f)
                    and "case '涨幅'" not in text(root, f) for f in _p4)
@@ -1216,14 +1217,66 @@ console.log(JSON.stringify(out));
     _roc_ui = all("cn: 'ROC'" in text(root, f)
                   and "legacy: true" in text(root, f)
                   and "!f.legacy" in text(root, f) for f in _p4)
-    _combo_safe = ('wufu_combos_v1' in _em
-                   and 'if (key === COMBO_EXCLUDED) return;' in _em)
+    _combo_safe = ('wufu_combos_v1' in _em and 'migrateComboExpr' in _em
+                   and 'key === COMBO_KEY ? migrateComboExpr : migrateExpr' in _em
+                   and 'COMBO_MAP' in _em)
     _rule13 = ('## §13 自定义公式涨幅口径与迁移' in text(root, '数据方法与契约.md')
                and 'N+1 个端点' in text(root, '数据方法与契约.md'))
+    # ── v0.9914 取消省略模式 + 编译期 arity 报错 ───────────────────────
+    _p4 = ['etf/tool.html', 'etf/index.html', 'cb/tool.html', 'cb/index.html']
+    _em = text(root, 'common/expr-migrate.js')
+    _no_win1 = all('var WIN1 =' not in text(root, f) for f in _p4)
+    def _arity_of(src):
+        return ('if (!a.fo && n.args.length !== a.n)' in src
+                and '请写全「序列, 窗口」' in src
+                and "throw new Error('表达式不合法：函数" in src)
+    _arity = all(_arity_of(text(root, f)) for f in _p4)
+    # 活性检查：把条件短路后必须判为失效，防止「字符串在、逻辑被绕过」
+    _arity_live = all(not _arity_of(text(root, f).replace('if (!a.fo &&', 'if (false && !a.fo &&'))
+                      for f in _p4)
+    _no_default = all('argNum(1) || 20' not in text(root, f)
+                      and 'argNum(1) || 10' not in text(root, f)
+                      and 'argNum(1) || 25' not in text(root, f) for f in _p4)
+    _expr_btns = all("expr: 'ROC(后复权收盘价,20)'" in text(root, f)
+                     and "expr: 'VOL(后复权收盘价,20)'" in text(root, f)
+                     and "expr: 'BIAS(后复权收盘价,20)'" in text(root, f)
+                     and "expr: 'MA(后复权收盘价,20)'" in text(root, f)
+                     and 'var ins = f.expr ? f.expr' in text(root, f) for f in _p4)
+    _quick = all('"净值涨幅(净值,20)"' in text(root, f)
+                 and '"收益波动率(净值,20)"' in text(root, f) for f in _p4)
+    _no_single_help = all('如 ROC(20)' not in text(root, f)
+                          and 'SLOPE(乖离率(90),25)' not in text(root, f) for f in _p4)
+    _combo_rule = ('migrateComboExpr' in _em and 'COMBO_MAP' in _em
+                   and 'COMBO_KEY' in _em and 'COMBO_EXCLUDED' not in _em)
+    _mig_single = ("'MA': ['MA'" in _em and "'ROC': ['ROC'" in _em
+                   and 'ps.length === 1' in _em)
+    _rule14 = ('## §14 自定义公式参数显式化' in text(root, '数据方法与契约.md')
+               and '不得' in text(root, '数据方法与契约.md').split('## §14')[-1][:900]
+               and '编译期报错' in text(root, '数据方法与契约.md'))
+    add('V45', '数据契约 §14 取消省略模式 + 编译期参数个数报错 + 老存档补齐', 'blocking',
+        _no_win1 and _arity and _arity_live and _no_default and _expr_btns and _quick
+        and _no_single_help and _combo_rule and _mig_single and _rule14,
+        'WIN1清零=%s / arity=%s / 活性=%s / 默认值清零=%s / 按钮全参数=%s / 组合快捷=%s / 文案=%s / 组合专用规则=%s / 单参数补齐=%s / 契约=%s'
+        % (_no_win1, _arity, _arity_live, _no_default, _expr_btns, _quick, _no_single_help,
+           _combo_rule, _mig_single, _rule14))
+    fixture('R37', '「恢复 WIN1 / 删 arity / 恢复默认值 / 按钮回单参数 / 组合页被改名 / 删契约」→ 必须全挡',
+        '数据契约 §14', [
+        ('四页无 WIN1 单参数补全', _no_win1, True),
+        ('四页编译期 arity 校验', _arity, True),
+        ('条件被短路时判定失效', _arity_live, True),
+        ('四页无 || 默认窗口', _no_default, True),
+        ('四页按钮插入全参数', _expr_btns, True),
+        ('组合页快捷全参数', _quick, True),
+        ('帮助文案无单参数示例', _no_single_help, True),
+        ('组合页专用补齐规则', _combo_rule, True),
+        ('单参数补齐逻辑齐备', _mig_single, True),
+        ('删掉契约 §14 → 挡', _rule14, True),
+    ])
+
     add('V44', '数据契约 §13 涨幅族合并为 ROC + N 日窗口修正 + 已存策略自动迁移', 'blocking',
         _em_ok and _em_ref and _no_dead and _win_fix and _branch_ok and _hook
         and _roc_ui and _combo_safe and _rule13,
-        '真源=%s / 四页引用=%s / 死代码清零=%s / 窗口修正=%s / 分支干净=%s / 迁移hook=%s / ROC界面=%s / 组合页排除=%s / 契约=%s'
+        '真源=%s / 四页引用=%s / 死代码清零=%s / 窗口修正=%s / 分支干净=%s / 迁移hook=%s / ROC界面=%s / 组合页专用规则=%s / 契约=%s'
         % (_em_ok, _em_ref, _no_dead, _win_fix, _branch_ok, _hook, _roc_ui, _combo_safe, _rule13))
     fixture('R36', '「删真源 / 删迁移 hook / 窗口改回 N 点 / 组合页被误迁 / 删契约」→ 必须全挡',
         '数据契约 §13', [
@@ -1234,7 +1287,7 @@ console.log(JSON.stringify(out));
         ('roc/nav_roc 分支无旧 slice', _branch_ok, True),
         ('存档与导入均挂迁移', _hook, True),
         ('界面只暴露 ROC', _roc_ui, True),
-        ('组合存档明确排除', _combo_safe, True),
+        ('组合存档按专用规则保护', _combo_safe, True),
         ('删掉契约 §13 → 挡', _rule13, True),
     ])
 

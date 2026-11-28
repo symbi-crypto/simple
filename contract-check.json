@@ -1,11 +1,11 @@
 {
  "contract": "数据方法与契约.md",
- "contractSha1": "982808098124",
+ "contractSha1": "12dc09ea92b4",
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 106,
-   "passed": 106,
+   "total": 107,
+   "passed": 107,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 36,
-   "passed": 36,
+   "total": 37,
+   "passed": 37,
    "failed": 0
   },
   "snapshots": 16
@@ -733,11 +733,18 @@
    "detail": "单列定义=True / 无两列=True / 无 span2=True / 全卡占满=True / 左右两列布局保留=True / 契约 §12=True"
   },
   {
+   "id": "V45",
+   "rule": "数据契约 §14 取消省略模式 + 编译期参数个数报错 + 老存档补齐",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "WIN1清零=True / arity=True / 活性=True / 默认值清零=True / 按钮全参数=True / 组合快捷=True / 文案=True / 组合专用规则=True / 单参数补齐=True / 契约=True"
+  },
+  {
    "id": "V44",
    "rule": "数据契约 §13 涨幅族合并为 ROC + N 日窗口修正 + 已存策略自动迁移",
    "severity": "blocking",
    "status": "pass",
-   "detail": "真源=True / 四页引用=True / 死代码清零=True / 窗口修正=True / 分支干净=True / 迁移hook=True / ROC界面=True / 组合页排除=True / 契约=True"
+   "detail": "真源=True / 四页引用=True / 死代码清零=True / 窗口修正=True / 分支干净=True / 迁移hook=True / ROC界面=True / 组合页专用规则=True / 契约=True"
   },
   {
    "id": "V36",
@@ -1448,6 +1455,65 @@
    "failed": []
   },
   {
+   "id": "R37",
+   "case": "「恢复 WIN1 / 删 arity / 恢复默认值 / 按钮回单参数 / 组合页被改名 / 删契约」→ 必须全挡",
+   "rule": "数据契约 §14",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "四页无 WIN1 单参数补全",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页编译期 arity 校验",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "条件被短路时判定失效",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页无 || 默认窗口",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页按钮插入全参数",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "组合页快捷全参数",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "帮助文案无单参数示例",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "组合页专用补齐规则",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "单参数补齐逻辑齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "删掉契约 §14 → 挡",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
    "id": "R36",
    "case": "「删真源 / 删迁移 hook / 窗口改回 N 点 / 组合页被误迁 / 删契约」→ 必须全挡",
    "rule": "数据契约 §13",
@@ -1489,7 +1555,7 @@
      "expect": true
     },
     {
-     "name": "组合存档明确排除",
+     "name": "组合存档按专用规则保护",
      "actual": true,
      "expect": true
     },

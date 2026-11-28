@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
 <script src="../common/cond-ops.js"></script>
-<script src="../common/expr-migrate.js?v=9913"></script>
+<script src="../common/expr-migrate.js?v=9914"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ETF量化回测系统</title>
@@ -1636,12 +1636,12 @@ window.WufuExpr = (function () {
     { id: 'volume', cn: '成交量', cat: 'price', win: [20], help: 'N 日平均成交量（手）' },
     { id: 'amount', cn: '成交额', cat: 'price', win: [20], help: 'N 日平均成交额' },
     { id: 'turnover', cn: '换手率', cat: 'price', win: [20], help: 'N 日换手率均值（%）' },
-    { id: 'roc', cn: 'ROC', cat: 'price', win: [20], help: 'N 日涨幅 = 今收 ÷ N 个交易日前收 − 1；写法 ROC(X,N)' },
+    { id: 'roc', cn: 'ROC', cat: 'price', win: [20], expr: 'ROC(后复权收盘价,20)', help: 'N 日涨幅 = 今收 ÷ N 个交易日前收 − 1；写法 ROC(X,N)' },
     { id: 'nav_roc', cn: '净值涨幅', cat: 'price', win: [20], legacy: true, help: '（旧写法）请改用 ROC(单位净值,N)' },
     { id: 'premium', cn: '溢价率均值', cat: 'price', win: [20], help: 'N 日平均折溢价率（小数，负=折价）' },
-    { id: 'vol', cn: '收益波动率', cat: 'tech', win: [20], help: 'N 日收益波动率（默认20日）' },
-    { id: 'bias', cn: '乖离率', cat: 'tech', win: [20], help: '收盘价相对 N 日均线（默认20日，BIAS）' },
-    { id: 'ma', cn: 'N日均线', cat: 'tech', win: [20], help: 'N 日均线值（默认20日）' },
+    { id: 'vol', cn: '收益波动率', cat: 'tech', win: [20], expr: 'VOL(后复权收盘价,20)', help: 'N 日收益波动率（默认20日）' },
+    { id: 'bias', cn: '乖离率', cat: 'tech', win: [20], expr: 'BIAS(后复权收盘价,20)', help: '收盘价相对 N 日均线（默认20日，BIAS）' },
+    { id: 'ma', cn: 'N日均线', cat: 'tech', win: [20], expr: 'MA(后复权收盘价,20)', help: 'N 日均线值（默认20日）' },
     { id: 'macd_dif', cn: 'MACD_DIF', cat: 'tech', win: [12,26,9], help: 'DIF = EMA(收盘,12) − EMA(收盘,26)；参数 快线/慢线/信号。金叉写 MACD_DIF(12,26,9) − MACD_DEA(12,26,9) > 0' },
     { id: 'macd_dea', cn: 'MACD_DEA', cat: 'tech', win: [12,26,9], help: 'DEA = EMA(DIF,9)；收盘价站上长线写 close − MACD_DEA(12,26,9) > 0' },
     { id: 'macd_bar', cn: 'MACD', cat: 'tech', win: [12,26,9], help: '柱 = DIF − DEA（不乘2）；参数 快/慢/信号' },
@@ -1683,10 +1683,10 @@ window.WufuExpr = (function () {
     { name: 'MIN', cn: 'MIN', help: 'N 日最小值', args: 2 },
     { name: 'STD', cn: 'STD', help: 'N 日总体标准差', args: 2 },
     { name: 'ABS', cn: 'ABS', help: '绝对值', args: 1 },
-    { name: 'ROC', cn: 'ROC', help: 'N 日涨幅：ROC(X,N)，省略 X 时作用于后复权收盘价（如 ROC(20)）', args: 2 },
-    { name: 'VOL', cn: '收益波动率', help: 'N 日收益波动率：VOL(X,N)，省略 X 时作用于净值（如 收益波动率(20)）', args: 2 },
+    { name: 'ROC', cn: 'ROC', help: 'N 日涨幅：ROC(X,N)，必须写全两个参数，如 ROC(后复权收盘价,20)', args: 2 },
+    { name: 'VOL', cn: '收益波动率', help: 'N 日收益波动率：VOL(X,N)，必须写全两个参数，如 VOL(后复权收盘价,20)', args: 2 },
     { name: 'NAV_ROC', cn: '净值涨幅', legacy: true, help: '（旧写法）请改用 ROC(单位净值,N)', args: 2 },
-    { name: 'BIAS', cn: '乖离率', help: '乖离率：乖离率(N) 为净值相对 N 日均线（如 乖离率(20)）', args: 2 },
+    { name: 'BIAS', cn: '乖离率', help: '乖离率：BIAS(后复权收盘价,N) 为收盘价相对 N 日均线（如 BIAS(后复权收盘价,20)）', args: 2 },
     { name: 'LOG', cn: 'LOG', help: '自然对数 ln(X)', args: 1 },
     // 技术/行情窗口因子（仅作公式编译白名单，按钮在字段区点击插入；求值委托引擎与内置因子口径一致）
     { name: 'macd_dif', cn: 'MACD_DIF', fieldOnly: true, help: 'DIF(快,慢,信号)；如 MACD_DIF(12,26,9)', args: 3 },
@@ -1720,13 +1720,24 @@ window.WufuExpr = (function () {
     { name: 'AVG_CORR', cn: '平均相关度', fieldOnly: true, help: 'N 日平均相关度（截面因子，与候选池内其余标的的相关系数均值）；如 平均相关度(120)', args: 1 }
   ];
   function validate(ast, fields, funcs) {
-    var fset = {}, cset = {};
+    var fset = {}, aset = {};
     fields.forEach(function (f) { fset[f.id] = 1; });
-    funcs.forEach(function (f) { cset[f.name.toLowerCase()] = 1; });
+    funcs.forEach(function (f) { aset[f.name.toLowerCase()] = { n: f.args, fo: !!f.fieldOnly }; });
     (function walk(n) {
       if (!n || typeof n !== 'object') return;
       if (n.t === 'ref') { if (!fset[n.v]) throw new Error('表达式不合法：未识别字段 "' + n.v + '"'); return; }
-      if (n.t === 'call') { if (!cset[n.name]) throw new Error('表达式不合法：未识别函数 "' + n.name + '"'); n.args.forEach(walk); return; }
+      if (n.t === 'call') {
+        var a = aset[n.name];
+        if (!a) throw new Error('表达式不合法：未识别函数 "' + n.name + '"');
+        // v0.9914：取消省略模式。非窗口白名单函数必须恰好传满声明的参数个数；
+        // 漏写（或多写）一律报错，不再自动补 close / 不再用默认窗口兜底。
+        if (!a.fo && n.args.length !== a.n)
+          throw new Error('表达式不合法：函数 "' + n.name + '" 需要 ' + a.n + ' 个参数，实际 ' + n.args.length
+            + ' 个；请写全「序列, 窗口」，如 ROC(后复权收盘价,20)');
+        if (a.fo && (n.args.length < 1 || n.args.length > a.n))
+          throw new Error('表达式不合法：函数 "' + n.name + '" 需要 1~' + a.n + ' 个参数，实际 ' + n.args.length + ' 个');
+        n.args.forEach(walk); return;
+      }
       for (var k in n) { if (n[k] && typeof n[k] === 'object') walk(n[k]); }
     })(ast);
   }
@@ -2189,28 +2200,27 @@ window.WufuExpr = (function () {
     function exprCallAt(fn, args, code, i, ctx) {
       function argNum(k) { return (k < args.length) ? window.WufuExpr.evalNum(args[k], ctx) : NaN; }
       function win(argAst, N) { var lo = i - N + 1; if (lo < 0) return null; var out = []; for (var j = lo; j <= i; j++) { var v = exprEvalAt(argAst, code, j); if (isNaN(v)) return null; out.push(v); } return out; }
-      // 窗口函数单参数语义：MA(20)/ROC(20)/乖离率(20)/N日均线(20) 等省略 X 时作用于「后复权收盘价」，参数即窗口 N
-      var WIN1 = { ma: 1, ema: 1, sma: 1, wma: 1, dma: 1, sum: 1, product: 1, max: 1, min: 1, std: 1, roc: 1, vol: 1, nav_roc: 1, bias: 1 };
-      if (WIN1[fn] && args.length === 1 && args[0] && args[0].t === 'num') args = [{ t: 'ref', v: 'close' }, args[0]];
+      // v0.9914：已取消省略模式（WIN1 单参数补 close）。参数个数由 WufuExpr.validate 在编译期严格校验，
+      // 漏写参数直接报错；此处不再改写 args，也不再用 || 默认窗口 静默兜底。
       var N, s;
       switch (fn) {
         case 'ref': N = argNum(1); if (i - N < 0) return NaN; return exprEvalAt(args[0], code, i - N);
         case 'delta': N = argNum(1); { var a = exprEvalAt(args[0], code, i); var b = (i - N >= 0) ? exprEvalAt(args[0], code, i - N) : NaN; return a - b; }
-        case 'ma': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var t = 0; for (var q = 0; q < s.length; q++) t += s[q]; return t / s.length; }
-        case 'ema': N = argNum(1) || 20; { var lo = i - N + 1; if (lo < 0) return NaN; var k = 2 / (N + 1), e = exprEvalAt(args[0], code, lo); for (var j = lo + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; e = v * k + e * (1 - k); } return e; }
-        case 'sma': { var Nn = argNum(1) || 10, M = argNum(2) || 1, lo2 = i - Nn + 1; if (lo2 < 0) return NaN; var prev = exprEvalAt(args[0], code, lo2); for (var j = lo2 + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; prev = (v * M + prev * (Nn - M)) / Nn; } return prev; }
-        case 'wma': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var num = 0, den = 0; for (var q = 0; q < s.length; q++) { var w = q + 1; num += s[q] * w; den += w; } return num / den; }
-        case 'dma': { var A = argNum(1) || 10, lo3 = i - A + 1; if (lo3 < 0) return NaN; var pv = exprEvalAt(args[0], code, lo3); for (var j = lo3 + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; pv = v / A + pv * (1 - 1 / A); } return pv; }
-        case 'sum': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var t2 = 0; for (var q = 0; q < s.length; q++) t2 += s[q]; return t2; }
-        case 'product': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var pr = 1; for (var q = 0; q < s.length; q++) pr *= (1 + s[q]); return pr - 1; }
-        case 'max': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; return Math.max.apply(null, s);
-        case 'min': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; return Math.min.apply(null, s);
-        case 'std': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; var vv = 0; for (var q = 0; q < s.length; q++) vv += (s[q] - mu) * (s[q] - mu); return Math.sqrt(vv / s.length); }
+        case 'ma': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var t = 0; for (var q = 0; q < s.length; q++) t += s[q]; return t / s.length; }
+        case 'ema': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; { var lo = i - N + 1; if (lo < 0) return NaN; var k = 2 / (N + 1), e = exprEvalAt(args[0], code, lo); for (var j = lo + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; e = v * k + e * (1 - k); } return e; }
+        case 'sma': { var Nn = argNum(1), M = argNum(2); if (isNaN(Nn) || Nn <= 0 || isNaN(M)) return NaN; var lo2 = i - Nn + 1; if (lo2 < 0) return NaN; var prev = exprEvalAt(args[0], code, lo2); for (var j = lo2 + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; prev = (v * M + prev * (Nn - M)) / Nn; } return prev; }
+        case 'wma': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var num = 0, den = 0; for (var q = 0; q < s.length; q++) { var w = q + 1; num += s[q] * w; den += w; } return num / den; }
+        case 'dma': { var A = argNum(1); if (isNaN(A) || A <= 0) return NaN; var lo3 = i - A + 1; if (lo3 < 0) return NaN; var pv = exprEvalAt(args[0], code, lo3); for (var j = lo3 + 1; j <= i; j++) { var v = exprEvalAt(args[0], code, j); if (isNaN(v)) return NaN; pv = v / A + pv * (1 - 1 / A); } return pv; }
+        case 'sum': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var t2 = 0; for (var q = 0; q < s.length; q++) t2 += s[q]; return t2; }
+        case 'product': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var pr = 1; for (var q = 0; q < s.length; q++) pr *= (1 + s[q]); return pr - 1; }
+        case 'max': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; return Math.max.apply(null, s);
+        case 'min': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; return Math.min.apply(null, s);
+        case 'std': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; var vv = 0; for (var q = 0; q < s.length; q++) vv += (s[q] - mu) * (s[q] - mu); return Math.sqrt(vv / s.length); }
         case 'abs': return Math.abs(argNum(0));
-        case 'roc': N = argNum(1) || 10; if (i - N < 0) return NaN; { var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
-        case 'vol': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var rr = []; for (var q = 1; q < s.length; q++) { if (s[q - 1] === 0) return NaN; rr.push(s[q] / s[q - 1] - 1); } if (rr.length < 2) return NaN; var mu = 0; for (var q = 0; q < rr.length; q++) mu += rr[q]; mu /= rr.length; var vv = 0; for (var q = 0; q < rr.length; q++) vv += (rr[q] - mu) * (rr[q] - mu); return Math.sqrt(vv / rr.length); }
-        case 'nav_roc': N = argNum(1) || 20; if (i - N < 0) return NaN; { var nvA = navs[code]; if (nvA) { var na = nvA[i], nb = nvA[i - N]; return (na == null || nb == null || isNaN(na) || isNaN(nb) || nb <= 0) ? NaN : na / nb - 1; } var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
-        case 'bias': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; return mu === 0 ? NaN : s[s.length - 1] / mu - 1; }
+        case 'roc': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; if (i - N < 0) return NaN; { var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
+        case 'vol': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var rr = []; for (var q = 1; q < s.length; q++) { if (s[q - 1] === 0) return NaN; rr.push(s[q] / s[q - 1] - 1); } if (rr.length < 2) return NaN; var mu = 0; for (var q = 0; q < rr.length; q++) mu += rr[q]; mu /= rr.length; var vv = 0; for (var q = 0; q < rr.length; q++) vv += (rr[q] - mu) * (rr[q] - mu); return Math.sqrt(vv / rr.length); }
+        case 'nav_roc': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; if (i - N < 0) return NaN; { var nvA = navs[code]; if (nvA) { var na = nvA[i], nb = nvA[i - N]; return (na == null || nb == null || isNaN(na) || isNaN(nb) || nb <= 0) ? NaN : na / nb - 1; } var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
+        case 'bias': N = argNum(1); if (isNaN(N) || N <= 0) return NaN; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; return mu === 0 ? NaN : s[s.length - 1] / mu - 1; }
         case 'log': { var x = argNum(0); return x <= 0 ? NaN : Math.log(x); }
         // 技术/行情窗口因子：委托 factorValue 求值，与因子管理内置因子口径完全一致
         case 'volume': case 'amount': case 'turnover': case 'premium': case 'macd': case 'kdj': case 'boll': case 'atr':
@@ -5232,7 +5242,7 @@ function fmFillFields() {
       b.textContent = f.cn; b.title = f.help;
       b.style.cssText = WufuTheme.sub("display:block;width:100%;text-align:left;font-size:11.5px;padding:3px 5px;margin:2px 0;background:§WFT0008§;border:1px solid §WFT0001§;border-radius:4px;color:§WFT0005§;cursor:pointer");
       b.addEventListener("click", function () {
-        var ins = f.win ? (f.cn + "(" + f.win.join(",") + ")") : f.cn;
+        var ins = f.expr ? f.expr : (f.win ? (f.cn + "(" + f.win.join(",") + ")") : f.cn);
         $("fmHelp").textContent = f.cn + "：" + f.help;
         fmInsertAt(ins);
       });
@@ -5244,7 +5254,7 @@ function fmFillFields() {
 function fmFillQuick() {
   var fb = $("fmFields");
   fb.innerHTML = "";
-  [["净值", "净值"], ["净值涨幅", "净值涨幅(20)"], ["收益波动率", "收益波动率(20)"], ["乖离率", "乖离率(20)"]].forEach(function (it) {
+  [["净值", "净值"], ["净值涨幅", "净值涨幅(净值,20)"], ["收益波动率", "收益波动率(净值,20)"], ["乖离率", "乖离率(净值,20)"]].forEach(function (it) {
     var b = document.createElement("button"); b.type = "button";
     b.textContent = it[0]; b.title = "插入：" + it[1];
     b.style.cssText = WufuTheme.sub("display:block;width:100%;text-align:left;font-size:11.5px;padding:3px 5px;margin:2px 0;background:§WFT0008§;border:1px solid §WFT0001§;border-radius:4px;color:§WFT0005§;cursor:pointer");
