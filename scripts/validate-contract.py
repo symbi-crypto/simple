@@ -1161,6 +1161,31 @@ console.log(JSON.stringify(out));
         ('删掉契约 §11 条款 → 挡', _rule11, True),
     ])
 
+    # ── v0.9912 结果区卡片宽度统一 ───────────────────────────────────
+    _rp = ['etf/tool.html','etf/index.html','cb/tool.html','cb/index.html']
+    _equalCss = 'grid-template-columns:minmax(0,1fr)'
+    _allOneCol = all(_equalCss in text(root,f) for f in _rp)
+    _noTwoCol = all('grid-template-columns:repeat(2,minmax(0,1fr))' not in text(root,f) for f in _rp)
+    _noSpan2  = all('.cards > .card.wide{grid-column:span 2}' not in text(root,f) for f in _rp)
+    _allFull  = all('.cards > .card{grid-column:1 / -1}' in text(root,f) for f in _rp)
+    _wrapKept = all('flex-direction:row !important' in text(root,f) for f in _rp)
+    _rule12 = ('## §12 结果区卡片宽度统一' in ui_rule
+               and '等宽' in ui_rule.split('## §12 结果区卡片宽度统一')[-1][:1000]
+               and 'span 2' in ui_rule.split('## §12 结果区卡片宽度统一')[-1][:1000])
+    add('V43', '界面契约 §12 结果区卡片一律单列等宽、不得半宽/通栏混排', 'blocking',
+        _allOneCol and _noTwoCol and _noSpan2 and _allFull and _wrapKept and _rule12,
+        '单列定义=%s / 无两列=%s / 无 span2=%s / 全卡占满=%s / 左右两列布局保留=%s / 契约 §12=%s'
+        %(_allOneCol,_noTwoCol,_noSpan2,_allFull,_wrapKept,_rule12))
+    fixture('R35', '「改回两列 / 恢复 wide 通栏 / 删全卡占满 / 删契约 §12」→ 必须全挡',
+        '界面契约 §12', [
+        ('四页均为单列等宽', _allOneCol, True),
+        ('四页无两列 repeat(2)', _noTwoCol, True),
+        ('四页无 wide span 2', _noSpan2, True),
+        ('四页所有卡占满整行', _allFull, True),
+        ('左右两列布局未被误改', _wrapKept, True),
+        ('删掉契约 §12 条款 → 挡', _rule12, True),
+    ])
+
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
         bool(_truth) and _truth.get('gte') == [False, True, True]
         and _truth.get('lte') == [True, True, False]

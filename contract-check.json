@@ -4,8 +4,8 @@
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 104,
-   "passed": 104,
+   "total": 105,
+   "passed": 105,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 34,
-   "passed": 34,
+   "total": 35,
+   "passed": 35,
    "failed": 0
   },
   "snapshots": 16
@@ -478,7 +478,7 @@
    "rule": "界面契约 §1 规则文件存在且纯净",
    "severity": "blocking",
    "status": "pass",
-   "detail": "契约 5946 字节"
+   "detail": "契约 6303 字节"
   },
   {
    "id": "V2",
@@ -724,6 +724,13 @@
    "severity": "blocking",
    "status": "pass",
    "detail": "无软色文字=True / 语义变量=62 / 双态齐备=True / 深色保持=True / 浅色绿族(162°)=True / 浅色可读(5.09:1)=True / 无0015=True / 边框=12 / §11=True"
+  },
+  {
+   "id": "V43",
+   "rule": "界面契约 §12 结果区卡片一律单列等宽、不得半宽/通栏混排",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "单列定义=True / 无两列=True / 无 span2=True / 全卡占满=True / 左右两列布局保留=True / 契约 §12=True"
   },
   {
    "id": "V36",
@@ -1388,6 +1395,45 @@
     },
     {
      "name": "删掉契约 §11 条款 → 挡",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R35",
+   "case": "「改回两列 / 恢复 wide 通栏 / 删全卡占满 / 删契约 §12」→ 必须全挡",
+   "rule": "界面契约 §12",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "四页均为单列等宽",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页无两列 repeat(2)",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页无 wide span 2",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页所有卡占满整行",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "左右两列布局未被误改",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "删掉契约 §12 条款 → 挡",
      "actual": true,
      "expect": true
     }

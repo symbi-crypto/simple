@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
 <script src="../common/cond-ops.js"></script>
-<script src="../common/research-gate.js?v=9911"></script>
-<script src="../common/instrument-rules.js?v=9911"></script>
+<script src="../common/research-gate.js?v=9912"></script>
+<script src="../common/instrument-rules.js?v=9912"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -32,7 +32,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=9911"></script>
+<script src="../common/range.js?v=9912"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -255,20 +255,19 @@ footer b{color:var(--c-muted)}
   aside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
 }
 /* ---------- 桌面端结果页排版优化 ---------- */
-/* 宽屏下结果区改为两列：图表与统计并排，避免超长单列滚动 */
+/* v0.9912：同一视口下所有结果卡片**必须**等宽（整行通栏）。
+   旧版两列混排（普通卡半宽 568px / wide 卡通栏 1152px）会在隐藏卡片后
+   留下半宽空位，右侧显得参差；现统一为单列，宽度恒等于 main 宽。 */
 @media (min-width:1280px){
   .cards{
     display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:minmax(0,1fr);
     gap:16px;
     align-items:start;
   }
-  /* 净值曲线 / 回撤 / 月度热力图 / 统计：各占一列，并排展示 */
-  .cards > .card:not(.wide){grid-column:span 1}
-  /* IC 卡片与调仓记录：整行通栏 */
-  .cards > .card.wide{grid-column:span 2}
+  /* 不区分 wide：所有卡片一律占满整行，禁止 span 2 制造通栏卡 */
+  .cards > .card{grid-column:1 / -1}
   .cards > .card h2{margin-bottom:10px}
-  /* 两列下图表略收高度，单屏可见更多内容 */
   .chart{height:300px}
   .chart.short{height:230px}
 }
