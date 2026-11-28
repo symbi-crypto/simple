@@ -5,8 +5,9 @@
 <link rel="stylesheet" href="../common/theme.css">
 <script src="../common/theme.js"></script>
 <script src="../common/cond-ops.js"></script>
-<script src="../common/research-gate.js?v=9912"></script>
-<script src="../common/instrument-rules.js?v=9912"></script>
+<script src="../common/expr-migrate.js?v=9913"></script>
+<script src="../common/research-gate.js?v=9913"></script>
+<script src="../common/instrument-rules.js?v=9913"></script>
 
 <script>/* 体检视图首屏：在解析系统页 DOM 之前就隐藏品牌头/功能tab/返回按钮，
    避免慢网络下先闪出一整套「回测系统」壳（此前靠文件尾部脚本运行时注入，CB 1.5MB 时尤其明显） */
@@ -32,7 +33,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7490'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='%23fff' font-family='serif'%3E福%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../common/health-common.css">
-<script src="../common/range.js?v=9912"></script>
+<script src="../common/range.js?v=9913"></script>
 <style>
 :root{
   --bg:var(--c-bg); --card:var(--c-surface); --line:var(--c-line);
@@ -854,7 +855,7 @@ document.addEventListener("DOMContentLoaded",function(){
             </div>
             <div style="flex:1.2;overflow:auto;border:1px solid var(--c-line);border-radius:4px;padding:4px">
               <div style="font-size:11px;color:var(--c-gray);margin-bottom:3px">说明</div>
-              <div id="fmHelp" style="font-size:11px;color:var(--c-muted);line-height:1.55;word-break:break-all">点击字段自动带默认窗口参数（如 涨幅(20)、MACD(20)、乖离率(20)），可改数字；点击函数插入可嵌套组合，支持中文名称。运算 + - * / ( )，比较 > >= < <= == !=，逻辑 &amp;&amp; || !。</div>
+              <div id="fmHelp" style="font-size:11px;color:var(--c-muted);line-height:1.55;word-break:break-all">点击字段自动带默认窗口参数（如 ROC(20)、MACD(20)、乖离率(20)），可改数字；点击函数插入可嵌套组合，支持中文名称。运算 + - * / ( )，比较 > >= < <= == !=，逻辑 &amp;&amp; || !。</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
@@ -1945,8 +1946,8 @@ window.WufuExpr = (function () {
     { id: 'volume', cn: '成交量', cat: 'price', win: [20], help: 'N 日平均成交量（手）· 与成交额同源，2017-01-03 起' },
     { id: 'amount', cn: '成交额', cat: 'price', win: [20], help: 'N 日平均成交额' },
     { id: 'turnover', cn: '换手率', cat: 'price', win: [20], help: 'N 日换手率均值（%）' },
-    { id: 'roc', cn: '涨幅', cat: 'price', win: [20], help: 'N 日涨幅（默认20日）' },
-    { id: 'nav_roc', cn: '净值涨幅', cat: 'price', win: [20], help: '单位净值 N 日涨幅（默认20日）' },
+    { id: 'roc', cn: 'ROC', cat: 'price', win: [20], help: 'N 日涨幅 = 今收 ÷ N 个交易日前收 − 1；写法 ROC(X,N)' },
+    { id: 'nav_roc', cn: '净值涨幅', cat: 'price', win: [20], legacy: true, help: '（旧写法）请改用 ROC(单位净值,N)' },
     { id: 'premium', cn: '溢价率均值', cat: 'price', win: [20], help: 'N 日平均折溢价率（小数，负=折价）' },
     { id: 'vol', cn: '收益波动率', cat: 'tech', win: [20], help: 'N 日收益波动率（默认20日）' },
     { id: 'bias', cn: '乖离率', cat: 'tech', win: [20], help: '收盘价相对 N 日均线（默认20日，BIAS）' },
@@ -1986,11 +1987,10 @@ window.WufuExpr = (function () {
     { name: 'STD', cn: 'STD', help: 'N 日总体标准差', args: 2 },
     { name: 'SLOPE', cn: 'SLOPE', help: 'X 的 N 日线性回归斜率（OLS）；如 SLOPE(乖离率(90),25) 或 SLOPE(BIAS(90),25)', args: 2 },
     { name: 'ABS', cn: 'ABS', help: '绝对值', args: 1 },
-    { name: 'ROC', cn: 'ROC', help: 'N 日涨幅：ROC(X,N)，省略 X 时作用于净值（如 ROC(20)）', args: 2 },
+    { name: 'ROC', cn: 'ROC', help: 'N 日涨幅：ROC(X,N)，省略 X 时作用于后复权收盘价（如 ROC(20)）', args: 2 },
     { name: 'VOL', cn: '收益波动率', help: 'N 日收益波动率：VOL(X,N)，省略 X 时作用于净值（如 收益波动率(20)）', args: 2 },
-    { name: 'NAV_ROC', cn: '净值涨幅', help: 'N 日净值涨幅：净值涨幅(N) 作用于策略净值', args: 2 },
+    { name: 'NAV_ROC', cn: '净值涨幅', legacy: true, help: '（旧写法）请改用 ROC(单位净值,N)', args: 2 },
     { name: 'BIAS', cn: '乖离率', help: '乖离率：乖离率(N) 为净值相对 N 日均线（如 乖离率(20)）', args: 2 },
-    { name: '涨幅', cn: '涨幅', help: 'X 当日涨幅（ROC(X,1)）', args: 1 },
     { name: 'LOG', cn: 'LOG', help: '自然对数 ln(X)', args: 1 },
     // 技术/行情窗口因子（仅作公式编译白名单，按钮在字段区点击插入，如 MACD(20)；求值委托引擎与内置因子口径一致）
     { name: 'MACD', cn: 'MACD', fieldOnly: true, help: 'N 日 MACD 柱均值（DIF-DEA，参数12/26/9）；如 MACD(20)', args: 1 },
@@ -2555,7 +2555,6 @@ window.WufuExpr = (function () {
         case 'vol': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var rr = []; for (var q = 1; q < s.length; q++) { if (s[q - 1] === 0) return NaN; rr.push(s[q] / s[q - 1] - 1); } if (rr.length < 2) return NaN; var mu = 0; for (var q = 0; q < rr.length; q++) mu += rr[q]; mu /= rr.length; var vv = 0; for (var q = 0; q < rr.length; q++) vv += (rr[q] - mu) * (rr[q] - mu); return Math.sqrt(vv / rr.length); }
         case 'nav_roc': N = argNum(1) || 20; if (i - N < 0) return NaN; { var nvA = navs[code]; if (nvA) { var na = nvA[i], nb = nvA[i - N]; return (na == null || nb == null || isNaN(na) || isNaN(nb) || nb <= 0) ? NaN : na / nb - 1; } var a = exprEvalAt(args[0], code, i), b = exprEvalAt(args[0], code, i - N); return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
         case 'bias': N = argNum(1) || 20; s = win(args[0], N); if (!s) return NaN; { var mu = 0; for (var q = 0; q < s.length; q++) mu += s[q]; mu /= s.length; return mu === 0 ? NaN : s[s.length - 1] / mu - 1; }
-        case '涨幅': { var a = exprEvalAt(args[0], code, i), b = (i > 0) ? exprEvalAt(args[0], code, i - 1) : NaN; return (isNaN(a) || isNaN(b) || b === 0) ? NaN : a / b - 1; }
         case 'log': { var x = argNum(0); return x <= 0 ? NaN : Math.log(x); }
         // 技术/行情窗口因子：委托 factorValue 求值，与因子管理内置因子口径完全一致
         case 'volume': case 'amount': case 'turnover': case 'premium': case 'macd': case 'kdj': case 'boll': case 'atr':
@@ -2859,8 +2858,8 @@ window.WufuExpr = (function () {
         return avgCorrOf(code, i, w1, _curCandidates);
       }
       if (kind === "roc") {
-        if (i + 1 < w1) return NaN;
-        var seg = cArr.slice(i - w1 + 1, i + 1);
+        if (i - w1 < 0) return NaN;
+        var seg = cArr.slice(i - w1, i + 1);
         for (var q = 0; q < seg.length; q++) if (isMiss(seg[q])) return NaN;
         return seg[seg.length - 1] / seg[0] - 1;
       }
@@ -2868,8 +2867,8 @@ window.WufuExpr = (function () {
         // 净值动量：单位净值 N 日涨幅（基于官方公布净值，口径同 roc）
         var nvArr = navs[code];
         if (!nvArr) return NaN;
-        if (i + 1 < w1) return NaN;
-        var segN = nvArr.slice(i - w1 + 1, i + 1);
+        if (i - w1 < 0) return NaN;
+        var segN = nvArr.slice(i - w1, i + 1);
         for (var qn = 0; qn < segN.length; qn++) {
           if (segN[qn] == null || isNaN(segN[qn]) || segN[qn] <= 0) return NaN;
         }
@@ -5961,7 +5960,7 @@ function fmFillFields() {
     hd.style.cssText = WufuTheme.sub("font-size:11px;color:§WFT0002§;margin:6px 0 3px");
     hd.textContent = cg[1] + "字段";
     fb.appendChild(hd);
-    window.WufuExpr.FIELDS.filter(function (f) { return f.cat === cg[0]; }).forEach(function (f) {
+    window.WufuExpr.FIELDS.filter(function (f) { return f.cat === cg[0] && !f.legacy; }).forEach(function (f) {
       var b = document.createElement("button"); b.type = "button";
       b.textContent = f.cn; b.title = f.help;
       b.style.cssText = WufuTheme.sub("display:block;width:100%;text-align:left;font-size:11.5px;padding:3px 5px;margin:2px 0;background:§WFT0008§;border:1px solid §WFT0001§;border-radius:4px;color:§WFT0005§;cursor:pointer");
@@ -6032,6 +6031,7 @@ function fmInsertFunc(fnCn, nArgs) {
   fmFillFields();
   var fc = $("fmFuncs");
   window.WufuExpr.FUNCS.forEach(function (fn) {
+    if (fn.legacy) return;
     if (fn.fieldOnly) return; // 技术/行情窗口因子在字段区点击插入，不在函数区重复展示
     var b = document.createElement("button"); b.type = "button";
     b.textContent = fn.cn; b.title = fn.help;
@@ -7049,6 +7049,7 @@ function buildChips() {
     } catch (e) {}
   }
   function loadStored() {
+    try { if (window.WufuExprMigrate) WufuExprMigrate.migrateStore(WufuExprMigrate.STORES); } catch (e) {}
     var m = {};
     try { m = JSON.parse(localStorage.getItem(ST_KEY) || "{}") || {}; } catch (e) { m = {}; }
     // 一次性迁移（仅本版本保留）：网格策略功能已剥离，清除遗留的 grid 类型条目；执行一次后数据已清，后续版本可移除本段
@@ -7656,7 +7657,7 @@ function buildChips() {
     var rd = new FileReader();
     rd.onload = function () {
       try {
-        var j = JSON.parse(rd.result);
+        var j = JSON.parse(rd.result); try { if (window.WufuExprMigrate) j = WufuExprMigrate.migrateAny(j); } catch (e) {}
         var multi = normalizeStrategies(j);
         if (multi) {
           var m = loadStored(), n = 0, names = Object.keys(multi);
@@ -7700,7 +7701,7 @@ function buildChips() {
   // ---------- 粘贴导入：手机浏览器（微信/QQ/文件改名等）常拿不到文件，粘贴是最可靠通道 ----------
   function doImportPaste(txt) {
     try {
-      var j = JSON.parse(txt);
+      var j = JSON.parse(txt); try { if (window.WufuExprMigrate) j = WufuExprMigrate.migrateAny(j); } catch (e) {}
       var multi = normalizeStrategies(j);
       if (multi) {
         var m = loadStored(), n = 0;
@@ -13846,8 +13847,8 @@ function showStrategyDetail(name) {
       return tot2;
     }
     if (kind === "roc") {
-      if (i + 1 < w1) return NaN;
-      var seg = cArr.slice(i - w1 + 1, i + 1);
+      if (i - w1 < 0) return NaN;
+      var seg = cArr.slice(i - w1, i + 1);
       for (var q = 0; q < seg.length; q++) if (isMiss(seg[q])) return NaN;
       return seg[seg.length - 1] / seg[0] - 1;
     }
@@ -13855,8 +13856,8 @@ function showStrategyDetail(name) {
       // 净值动量：单位净值 N 日涨幅（与主引擎 factorValue 同构）
       var nvArrI = seq.navs[code];
       if (!nvArrI) return NaN;
-      if (i + 1 < w1) return NaN;
-      var segN = nvArrI.slice(i - w1 + 1, i + 1);
+      if (i - w1 < 0) return NaN;
+      var segN = nvArrI.slice(i - w1, i + 1);
       for (var qn = 0; qn < segN.length; qn++) {
         if (segN[qn] == null || isNaN(segN[qn]) || segN[qn] <= 0) return NaN;
       }
@@ -14450,7 +14451,7 @@ function showStrategyDetail(name) {
       var bin = Uint8Array.from(atob(b64), function (c) { return c.charCodeAt(0); });
       var txt = (typeof window.__gunzipText === "function") ? window.__gunzipText(bin) : null;
       if (!txt) return false;
-      var V = JSON.parse(txt);
+      var V = JSON.parse(txt); try { if (window.WufuExprMigrate) V = WufuExprMigrate.migrateAny(V); } catch (e) {}
       if (!V || !V.series) return false;
       Object.keys(V.series).forEach(function (c) {
         var src = V.series[c], dst = D.series[c];

@@ -1,11 +1,11 @@
 {
  "contract": "数据方法与契约.md",
- "contractSha1": "83161bb42be3",
+ "contractSha1": "982808098124",
  "gate": "pass",
  "summary": {
   "blocking": {
-   "total": 105,
-   "passed": 105,
+   "total": 106,
+   "passed": 106,
    "failed": 0
   },
   "advisory": {
@@ -13,8 +13,8 @@
    "gaps": 0
   },
   "fixtures": {
-   "total": 35,
-   "passed": 35,
+   "total": 36,
+   "passed": 36,
    "failed": 0
   },
   "snapshots": 16
@@ -733,6 +733,13 @@
    "detail": "单列定义=True / 无两列=True / 无 span2=True / 全卡占满=True / 左右两列布局保留=True / 契约 §12=True"
   },
   {
+   "id": "V44",
+   "rule": "数据契约 §13 涨幅族合并为 ROC + N 日窗口修正 + 已存策略自动迁移",
+   "severity": "blocking",
+   "status": "pass",
+   "detail": "真源=True / 四页引用=True / 死代码清零=True / 窗口修正=True / 分支干净=True / 迁移hook=True / ROC界面=True / 组合页排除=True / 契约=True"
+  },
+  {
    "id": "V36",
    "rule": "界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点",
    "severity": "blocking",
@@ -1434,6 +1441,60 @@
     },
     {
      "name": "删掉契约 §12 条款 → 挡",
+     "actual": true,
+     "expect": true
+    }
+   ],
+   "failed": []
+  },
+  {
+   "id": "R36",
+   "case": "「删真源 / 删迁移 hook / 窗口改回 N 点 / 组合页被误迁 / 删契约」→ 必须全挡",
+   "rule": "数据契约 §13",
+   "status": "pass",
+   "checks": [
+    {
+     "name": "单一真源齐备",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页均引用 expr-migrate.js",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "死代码 涨幅 函数与分支清零",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "四页窗口改为 i-w1 端点",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "roc/nav_roc 分支无旧 slice",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "存档与导入均挂迁移",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "界面只暴露 ROC",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "组合存档明确排除",
+     "actual": true,
+     "expect": true
+    },
+    {
+     "name": "删掉契约 §13 → 挡",
      "actual": true,
      "expect": true
     }

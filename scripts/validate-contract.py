@@ -1186,6 +1186,58 @@ console.log(JSON.stringify(out));
         ('删掉契约 §12 条款 → 挡', _rule12, True),
     ])
 
+    # ── v0.9913 涨幅族合并 + 字段窗口修正 + 自动迁移 ─────────────────
+    _p4 = ['etf/tool.html', 'etf/index.html', 'cb/tool.html', 'cb/index.html']
+    _em = text(root, 'common/expr-migrate.js')
+    _em_ok = ('migrateExpr' in _em and 'migrateAny' in _em and 'migrateStore' in _em
+              and 'ROC(单位净值' in _em and 'wufu_combos_v1' in _em
+              and 'COMBO_EXCLUDED' in _em and 'STORES' in _em)
+    _em_ref = all('common/expr-migrate.js' in text(root, f) for f in _p4)
+    _no_dead = all("name: '涨幅'" not in text(root, f)
+                   and "case '涨幅'" not in text(root, f) for f in _p4)
+    _win_fix = all(
+        ('if (kind === "roc") {' in text(root, f)
+         and 'if (i - w1 < 0) return NaN;' in text(root, f)
+         and 'slice(i - w1, i + 1)' in text(root, f)) for f in _p4)
+    # 每个 roc/nav_roc 分支内不得残留旧窗口写法（其它因子分支仍用 N 点，不能全局判）
+    def _branch_clean(src):
+        pos = 0
+        while True:
+            m = re.search(r'if \(kind === "(?:roc|nav_roc)"\) \{', src[pos:])
+            if not m: return True
+            s0 = pos + m.start()
+            nxt = src.find('if (kind ===', s0 + 10)
+            seg = src[s0:(nxt if nxt > 0 else s0 + 800)]
+            if 'slice(i - w1 + 1, i + 1)' in seg: return False
+            pos = s0 + 10
+    _branch_ok = all(_branch_clean(text(root, f)) for f in _p4)
+    _hook = all('WufuExprMigrate.migrateStore' in text(root, f)
+                and 'WufuExprMigrate.migrateAny' in text(root, f) for f in _p4)
+    _roc_ui = all("cn: 'ROC'" in text(root, f)
+                  and "legacy: true" in text(root, f)
+                  and "!f.legacy" in text(root, f) for f in _p4)
+    _combo_safe = ('wufu_combos_v1' in _em
+                   and 'if (key === COMBO_EXCLUDED) return;' in _em)
+    _rule13 = ('## §13 自定义公式涨幅口径与迁移' in text(root, '数据方法与契约.md')
+               and 'N+1 个端点' in text(root, '数据方法与契约.md'))
+    add('V44', '数据契约 §13 涨幅族合并为 ROC + N 日窗口修正 + 已存策略自动迁移', 'blocking',
+        _em_ok and _em_ref and _no_dead and _win_fix and _branch_ok and _hook
+        and _roc_ui and _combo_safe and _rule13,
+        '真源=%s / 四页引用=%s / 死代码清零=%s / 窗口修正=%s / 分支干净=%s / 迁移hook=%s / ROC界面=%s / 组合页排除=%s / 契约=%s'
+        % (_em_ok, _em_ref, _no_dead, _win_fix, _branch_ok, _hook, _roc_ui, _combo_safe, _rule13))
+    fixture('R36', '「删真源 / 删迁移 hook / 窗口改回 N 点 / 组合页被误迁 / 删契约」→ 必须全挡',
+        '数据契约 §13', [
+        ('单一真源齐备', _em_ok, True),
+        ('四页均引用 expr-migrate.js', _em_ref, True),
+        ('死代码 涨幅 函数与分支清零', _no_dead, True),
+        ('四页窗口改为 i-w1 端点', _win_fix, True),
+        ('roc/nav_roc 分支无旧 slice', _branch_ok, True),
+        ('存档与导入均挂迁移', _hook, True),
+        ('界面只暴露 ROC', _roc_ui, True),
+        ('组合存档明确排除', _combo_safe, True),
+        ('删掉契约 §13 → 挡', _rule13, True),
+    ])
+
     add('V36', '界面契约 §4.4 六种比较符真值表 + 等于不限类型 + 区间含端点', 'blocking',
         bool(_truth) and _truth.get('gte') == [False, True, True]
         and _truth.get('lte') == [True, True, False]
