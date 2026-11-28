@@ -1188,6 +1188,9 @@ console.log(JSON.stringify(out));
 
     # ── v0.9913 涨幅族合并 + 字段窗口修正 + 自动迁移 ─────────────────
     _p4 = ['etf/tool.html', 'etf/index.html', 'cb/tool.html', 'cb/index.html']
+    # v0.9915：解析器真源（表/文案/arity 均在此），供 V44/V45/V46 联合判定
+    _lib9915 = text(root, 'common/expr-funcs.js')
+    _joint9915 = '\n'.join(text(root, f) for f in _p4) + '\n' + _lib9915
     _em = text(root, 'common/expr-migrate.js')
     _em_ok = ('migrateExpr' in _em and 'migrateAny' in _em and 'migrateStore' in _em
               and 'STORES' in _em and 'MAP' in _em and 'COMBO_KEY' in _em
@@ -1214,9 +1217,9 @@ console.log(JSON.stringify(out));
     _branch_ok = all(_branch_clean(text(root, f)) for f in _p4)
     _hook = all('WufuExprMigrate.migrateStore' in text(root, f)
                 and 'WufuExprMigrate.migrateAny' in text(root, f) for f in _p4)
-    _roc_ui = all("cn: 'ROC'" in text(root, f)
-                  and "legacy: true" in text(root, f)
-                  and "!f.legacy" in text(root, f) for f in _p4)
+    # v0.9915：ROC / legacy 声明在真源 JSON 里，按钮过滤 !f.legacy 仍在四页
+    _roc_ui = ('"cn":"ROC"' in _lib9915 and '"legacy":true' in _lib9915
+               and all("!f.legacy" in text(root, f) for f in _p4))
     _combo_safe = ('wufu_combos_v1' in _em and 'migrateComboExpr' in _em
                    and 'key === COMBO_KEY ? migrateComboExpr : migrateExpr' in _em
                    and 'COMBO_MAP' in _em)
@@ -1230,22 +1233,23 @@ console.log(JSON.stringify(out));
         return ('if (!a.fo && n.args.length !== a.n)' in src
                 and '请写全「序列, 窗口」' in src
                 and "throw new Error('表达式不合法：函数" in src)
-    _arity = all(_arity_of(text(root, f)) for f in _p4)
+    # v0.9915：解析器骨架只在真源里一份，逐页判定改为对真源判定
+    _arity = _arity_of(_lib9915)
     # 活性检查：把条件短路后必须判为失效，防止「字符串在、逻辑被绕过」
-    _arity_live = all(not _arity_of(text(root, f).replace('if (!a.fo &&', 'if (false && !a.fo &&'))
-                      for f in _p4)
+    _arity_live = not _arity_of(_lib9915.replace('if (!a.fo &&', 'if (false && !a.fo &&'))
     _no_default = all('argNum(1) || 20' not in text(root, f)
                       and 'argNum(1) || 10' not in text(root, f)
                       and 'argNum(1) || 25' not in text(root, f) for f in _p4)
-    _expr_btns = all("expr: 'ROC(后复权收盘价,20)'" in text(root, f)
-                     and "expr: 'VOL(后复权收盘价,20)'" in text(root, f)
-                     and "expr: 'BIAS(后复权收盘价,20)'" in text(root, f)
-                     and "expr: 'MA(后复权收盘价,20)'" in text(root, f)
-                     and 'var ins = f.expr ? f.expr' in text(root, f) for f in _p4)
+    # v0.9915：FIELDS 表搬进真源（JSON 字面量），按钮消费逻辑仍在四页
+    _expr_btns = all(x in _lib9915 for x in
+                     ['"expr":"ROC(后复权收盘价,20)"', '"expr":"VOL(后复权收盘价,20)"',
+                      '"expr":"BIAS(后复权收盘价,20)"', '"expr":"MA(后复权收盘价,20)"']) \
+                 and all('var ins = f.expr ? f.expr' in text(root, f) for f in _p4)
     _quick = all('"净值涨幅(净值,20)"' in text(root, f)
                  and '"收益波动率(净值,20)"' in text(root, f) for f in _p4)
-    _no_single_help = all('如 ROC(20)' not in text(root, f)
-                          and 'SLOPE(乖离率(90),25)' not in text(root, f) for f in _p4)
+    # v0.9915：帮助文案随表搬进真源，按「四页 + 真源」联合判定
+    _no_single_help = ('如 ROC(20)' not in _joint9915
+                       and 'SLOPE(乖离率(90),25)' not in _joint9915)
     _combo_rule = ('migrateComboExpr' in _em and 'COMBO_MAP' in _em
                    and 'COMBO_KEY' in _em and 'COMBO_EXCLUDED' not in _em)
     _mig_single = ("'MA': ['MA'" in _em and "'ROC': ['ROC'" in _em
@@ -1253,6 +1257,47 @@ console.log(JSON.stringify(out));
     _rule14 = ('## §14 自定义公式参数显式化' in text(root, '数据方法与契约.md')
                and '不得' in text(root, '数据方法与契约.md').split('## §14')[-1][:900]
                and '编译期报错' in text(root, '数据方法与契约.md'))
+    # ── v0.9915 自定义公式单一真源 ────────────────────────────────
+    _p4 = ['etf/tool.html', 'etf/index.html', 'cb/tool.html', 'cb/index.html']
+    _lib = text(root, 'common/expr-funcs.js')
+    _prof = {'etf/tool.html': 'etf-tool', 'etf/index.html': 'etf-index',
+             'cb/tool.html': 'cb-tool', 'cb/index.html': 'cb-index'}
+    _no_inline = all('window.WufuExpr = (function ()' not in text(root, f) for f in _p4)
+    _ref_ok = all('common/expr-funcs.js?v=9915' in text(root, f)
+                  and 'window.WufuExprLib.create("%s")' % _prof[f] in text(root, f)
+                  for f in _p4)
+    _one_skeleton = all(k in _lib for k in
+        ['function tokenize(', 'function Parser(', 'function evalNum(', 'function validate(',
+         'n.args.length !== a.n', 'buildAlias(sys)', 'buildFields(sys)',
+         'buildFuncs(sys, withSlope)', 'PROFILES:'])
+    _profiles_ok = all(("'%s'" % v) in _lib for v in _prof.values())
+    _shared_ok = ('ALIAS_COMMON' in _lib and 'ALIAS_EXTRA' in _lib
+                  and 'FIELDS_HEAD' in _lib and 'FIELDS_TECH' in _lib
+                  and 'FUNCS_HEAD' in _lib and 'FUNCS_TECH' in _lib
+                  and 'SLOPE_ITEM' in _lib
+                  # 活性：共有段必须真有声明，不能只留引用字符串
+                  and re.search(r'var FUNCS_HEAD\s*=\s*\[', _lib) is not None
+                  and re.search(r'var ALIAS_COMMON\s*=\s*\{', _lib) is not None
+                  and re.search(r'var FUNCS_TAIL\s*=\s*\[', _lib) is not None)
+    _in_sw = '"common/expr-funcs.js"' in text(root, 'sw.js')
+    _rule15 = ('## §15 自定义公式解析器单一真源' in text(root, '数据方法与契约.md')
+               and '不得' in text(root, '数据方法与契约.md').split('## §15')[-1][:1200])
+    add('V46', '数据契约 §15 自定义公式解析器单一真源 + 四页 profile 引用', 'blocking',
+        _no_inline and _ref_ok and _one_skeleton and _profiles_ok
+        and _shared_ok and _in_sw and _rule15,
+        '内嵌清零=%s / 四页引用=%s / 骨架一份=%s / profile齐=%s / 共有段=%s / SW=%s / 契约=%s'
+        % (_no_inline, _ref_ok, _one_skeleton, _profiles_ok, _shared_ok, _in_sw, _rule15))
+    fixture('R38', '「恢复内嵌实现 / 删引用 / profile 串台 / 拆表 / 删契约」→ 必须全挡',
+        '数据契约 §15', [
+        ('四页无内嵌 WufuExpr', _no_inline, True),
+        ('四页按 profile 引用真源', _ref_ok, True),
+        ('真源骨架齐备且唯一', _one_skeleton, True),
+        ('四个 profile 声明齐备', _profiles_ok, True),
+        ('表按共有段+系统专属组装', _shared_ok, True),
+        ('SW 预缓存真源', _in_sw, True),
+        ('删掉契约 §15 → 挡', _rule15, True),
+    ])
+
     add('V45', '数据契约 §14 取消省略模式 + 编译期参数个数报错 + 老存档补齐', 'blocking',
         _no_win1 and _arity and _arity_live and _no_default and _expr_btns and _quick
         and _no_single_help and _combo_rule and _mig_single and _rule14,
